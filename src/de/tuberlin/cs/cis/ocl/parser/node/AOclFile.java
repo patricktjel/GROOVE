@@ -8,7 +8,7 @@ import de.tuberlin.cs.cis.ocl.parser.analysis.*;
 @SuppressWarnings("nls")
 public final class AOclFile extends POclFile
 {
-    private final LinkedList<POclPackage> _oclPackage_ = new LinkedList<POclPackage>();
+    private final LinkedList<PConstraint> _constraint_ = new LinkedList<PConstraint>();
 
     public AOclFile()
     {
@@ -16,10 +16,10 @@ public final class AOclFile extends POclFile
     }
 
     public AOclFile(
-        @SuppressWarnings("hiding") List<?> _oclPackage_)
+        @SuppressWarnings("hiding") List<?> _constraint_)
     {
         // Constructor
-        setOclPackage(_oclPackage_);
+        setConstraint(_constraint_);
 
     }
 
@@ -27,7 +27,7 @@ public final class AOclFile extends POclFile
     public Object clone()
     {
         return new AOclFile(
-            cloneList(this._oclPackage_));
+            cloneList(this._constraint_));
     }
 
     @Override
@@ -36,29 +36,29 @@ public final class AOclFile extends POclFile
         ((Analysis) sw).caseAOclFile(this);
     }
 
-    public LinkedList<POclPackage> getOclPackage()
+    public LinkedList<PConstraint> getConstraint()
     {
-        return this._oclPackage_;
+        return this._constraint_;
     }
 
-    public void setOclPackage(List<?> list)
+    public void setConstraint(List<?> list)
     {
-        for(POclPackage e : this._oclPackage_)
+        for(PConstraint e : this._constraint_)
         {
             e.parent(null);
         }
-        this._oclPackage_.clear();
+        this._constraint_.clear();
 
         for(Object obj_e : list)
         {
-            POclPackage e = (POclPackage) obj_e;
+            PConstraint e = (PConstraint) obj_e;
             if(e.parent() != null)
             {
                 e.parent().removeChild(e);
             }
 
             e.parent(this);
-            this._oclPackage_.add(e);
+            this._constraint_.add(e);
         }
     }
 
@@ -66,14 +66,14 @@ public final class AOclFile extends POclFile
     public String toString()
     {
         return ""
-            + toString(this._oclPackage_);
+            + toString(this._constraint_);
     }
 
     @Override
     void removeChild(@SuppressWarnings("unused") Node child)
     {
         // Remove child
-        if(this._oclPackage_.remove(child))
+        if(this._constraint_.remove(child))
         {
             return;
         }
@@ -85,13 +85,13 @@ public final class AOclFile extends POclFile
     void replaceChild(@SuppressWarnings("unused") Node oldChild, @SuppressWarnings("unused") Node newChild)
     {
         // Replace child
-        for(ListIterator<POclPackage> i = this._oclPackage_.listIterator(); i.hasNext();)
+        for(ListIterator<PConstraint> i = this._constraint_.listIterator(); i.hasNext();)
         {
             if(i.next() == oldChild)
             {
                 if(newChild != null)
                 {
-                    i.set((POclPackage) newChild);
+                    i.set((PConstraint) newChild);
                     newChild.parent(this);
                     oldChild.parent(null);
                     return;

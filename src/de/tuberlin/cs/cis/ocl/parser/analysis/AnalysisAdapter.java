@@ -81,18 +81,6 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseAOclPackage(AOclPackage node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAPackageName(APackageName node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
     public void caseAConstraint(AConstraint node)
     {
         defaultCase(node);
@@ -970,18 +958,6 @@ public class AnalysisAdapter implements Analysis
 
     @Override
     public void caseTIn(TIn node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseTPackage(TPackage node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseTEndpackage(TEndpackage node)
     {
         defaultCase(node);
     }

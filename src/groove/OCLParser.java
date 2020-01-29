@@ -11,7 +11,8 @@ import java.io.StringReader;
 public class OCLParser {
 
     static public void main(String[] args) throws Exception {
-        Reader reader = new StringReader("package Library context Book inv: Library.allInstances()->any(books->includes(self)) endpackage");
+        Reader reader = new StringReader("context Transition inv: self.preArc -> notEmpty() " +
+                                            "context Place inv: self.token >= 0");
         Parser parser = new Parser(new Lexer(new PushbackReader(reader)));
         Start parsed = parser.parse();
         System.out.println(parsed);

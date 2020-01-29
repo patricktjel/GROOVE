@@ -51,35 +51,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
     {
         inAOclFile(node);
         {
-            List<POclPackage> copy = new ArrayList<POclPackage>(node.getOclPackage());
-            Collections.reverse(copy);
-            for(POclPackage e : copy)
-            {
-                e.apply(this);
-            }
-        }
-        outAOclFile(node);
-    }
-
-    public void inAOclPackage(AOclPackage node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAOclPackage(AOclPackage node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAOclPackage(AOclPackage node)
-    {
-        inAOclPackage(node);
-        if(node.getEndpackage() != null)
-        {
-            node.getEndpackage().apply(this);
-        }
-        {
             List<PConstraint> copy = new ArrayList<PConstraint>(node.getConstraint());
             Collections.reverse(copy);
             for(PConstraint e : copy)
@@ -87,36 +58,7 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
                 e.apply(this);
             }
         }
-        if(node.getPackageName() != null)
-        {
-            node.getPackageName().apply(this);
-        }
-        if(node.getPackage() != null)
-        {
-            node.getPackage().apply(this);
-        }
-        outAOclPackage(node);
-    }
-
-    public void inAPackageName(APackageName node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAPackageName(APackageName node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAPackageName(APackageName node)
-    {
-        inAPackageName(node);
-        if(node.getPathName() != null)
-        {
-            node.getPathName().apply(this);
-        }
-        outAPackageName(node);
+        outAOclFile(node);
     }
 
     public void inAConstraint(AConstraint node)

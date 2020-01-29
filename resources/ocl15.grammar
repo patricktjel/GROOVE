@@ -104,9 +104,6 @@ Tokens
 	let = 'let';
 	in = 'in';
 	
-	package = 'package';
-	endpackage = 'endpackage';
-	
 	number_literal =
 		digit (digit)* // integer
 		( '.' digit (digit)*)? // decimal
@@ -137,10 +134,7 @@ Productions
 /*************************************************************
 file structure and constraint declarations
 *************************************************************/
-	ocl_file = ocl_package+;
-		ocl_package = package package_name constraint* endpackage;
-		
-	package_name = path_name;
+	ocl_file = constraint*;
 	
 	// changed: replaces 'oclExpressions'
 	// kleenex operator relocated to 'oclFile'.

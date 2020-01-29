@@ -51,70 +51,13 @@ public class DepthFirstAdapter extends AnalysisAdapter
     {
         inAOclFile(node);
         {
-            List<POclPackage> copy = new ArrayList<POclPackage>(node.getOclPackage());
-            for(POclPackage e : copy)
-            {
-                e.apply(this);
-            }
-        }
-        outAOclFile(node);
-    }
-
-    public void inAOclPackage(AOclPackage node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAOclPackage(AOclPackage node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAOclPackage(AOclPackage node)
-    {
-        inAOclPackage(node);
-        if(node.getPackage() != null)
-        {
-            node.getPackage().apply(this);
-        }
-        if(node.getPackageName() != null)
-        {
-            node.getPackageName().apply(this);
-        }
-        {
             List<PConstraint> copy = new ArrayList<PConstraint>(node.getConstraint());
             for(PConstraint e : copy)
             {
                 e.apply(this);
             }
         }
-        if(node.getEndpackage() != null)
-        {
-            node.getEndpackage().apply(this);
-        }
-        outAOclPackage(node);
-    }
-
-    public void inAPackageName(APackageName node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAPackageName(APackageName node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAPackageName(APackageName node)
-    {
-        inAPackageName(node);
-        if(node.getPathName() != null)
-        {
-            node.getPathName().apply(this);
-        }
-        outAPackageName(node);
+        outAOclFile(node);
     }
 
     public void inAConstraint(AConstraint node)

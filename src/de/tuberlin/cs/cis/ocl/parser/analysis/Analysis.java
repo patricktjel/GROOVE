@@ -13,8 +13,6 @@ public interface Analysis extends Switch
 
     void caseStart(Start node);
     void caseAOclFile(AOclFile node);
-    void caseAOclPackage(AOclPackage node);
-    void caseAPackageName(APackageName node);
     void caseAConstraint(AConstraint node);
     void caseADefinitionContextBodypart(ADefinitionContextBodypart node);
     void caseAConstraintContextBodypart(AConstraintContextBodypart node);
@@ -163,8 +161,6 @@ public interface Analysis extends Switch
     void caseTBooleanLiteral(TBooleanLiteral node);
     void caseTLet(TLet node);
     void caseTIn(TIn node);
-    void caseTPackage(TPackage node);
-    void caseTEndpackage(TEndpackage node);
     void caseTNumberLiteral(TNumberLiteral node);
     void caseTStringLiteral(TStringLiteral node);
     void caseTIdentifier(TIdentifier node);
