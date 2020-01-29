@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="xerces-2_11_0">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/xerces-2_11_0" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/xerces-2_11_0" recursive="false" />
+  </library>
+</component>

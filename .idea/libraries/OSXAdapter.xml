@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="OSXAdapter">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/OSXAdapter.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

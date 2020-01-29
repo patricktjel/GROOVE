@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="emf-2_10_1">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/emf-2_10_1" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/emf-2_10_1" recursive="false" />
+  </library>
+</component>

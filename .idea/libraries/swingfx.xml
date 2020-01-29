@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="swingfx">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/swingfx.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

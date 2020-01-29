@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="jaxfront">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/lib/jaxfront" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/jaxfront" recursive="false" />
+  </library>
+</component>
