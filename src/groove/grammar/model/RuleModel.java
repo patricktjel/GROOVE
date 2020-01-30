@@ -2509,9 +2509,7 @@ public class RuleModel extends GraphBasedModel<Rule> implements Comparable<RuleM
          * @see #toResource()
          */
         private Condition createNAC(RuleGraph lhs, RuleGraph nac) {
-            String name = nac.getName();
-            return new Condition(name, Condition.Op.NOT, nac, getIntersection(lhs, nac),
-                getGrammarProperties());
+            return new Condition(nac.getName(), Condition.Op.NOT, nac, getIntersection(lhs, nac), getGrammarProperties());
         }
 
         /**
@@ -2523,8 +2521,7 @@ public class RuleModel extends GraphBasedModel<Rule> implements Comparable<RuleM
          * @return the fresh rule created by the factory
          */
         private Rule createRule(Condition condition, RuleGraph rhs, RuleGraph coRoot) {
-            Rule result = new Rule(condition, rhs, coRoot);
-            return result;
+            return new Rule(condition, rhs, coRoot);
         }
 
         /**

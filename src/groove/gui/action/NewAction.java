@@ -25,8 +25,7 @@ public class NewAction extends SimulatorAction {
         if (newName != null) {
             try {
                 if (resource.isGraphBased()) {
-                    final AspectGraph newGraph =
-                        AspectGraph.emptyGraph(newName.toString(), resource.getGraphRole());
+                    final AspectGraph newGraph = AspectGraph.emptyGraph(newName.toString(), resource.getGraphRole());
                     getSimulatorModel().doAddGraph(resource, newGraph, false);
                 } else {
                     getSimulatorModel().doAddText(getResourceKind(), newName, "");

@@ -33,8 +33,7 @@ import java.util.List;
  * @author Arash Jalali
  * @version $Revision $
  */
-public abstract class AbstractPathChecker extends ReteNetworkNode implements
-        ReteStateSubscriber {
+public abstract class AbstractPathChecker extends ReteNetworkNode implements ReteStateSubscriber {
 
     /**
      * The static pattern representing this path's regular expression edge.
@@ -59,16 +58,14 @@ public abstract class AbstractPathChecker extends ReteNetworkNode implements
      * Creates a path checker node based on a given regular expression 
      * and a flag that determines if this checker is loop path checker.
      */
-    public AbstractPathChecker(ReteNetwork network, RegExpr expression,
-            boolean isLoop) {
+    public AbstractPathChecker(ReteNetwork network, RegExpr expression, boolean isLoop) {
         super(network);
         assert (network != null) && (expression != null);
         this.expression = expression;
         RuleFactory f = RuleFactory.newInstance();
         RuleNode n1 = f.createNode();
         RuleNode n2 = (isLoop) ? n1 : f.createNode();
-        this.pattern =
-            new RuleEdge[] {f.createEdge(n1, new RuleLabel(expression), n2)};
+        this.pattern = new RuleEdge[] {f.createEdge(n1, new RuleLabel(expression), n2)};
         this.loop = isLoop;
         this.cache = new PathMatchCache();
         this.getOwner().getState().subscribe(this);
