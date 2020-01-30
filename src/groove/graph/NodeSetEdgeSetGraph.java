@@ -57,10 +57,8 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
 
     @Override
     public boolean addNode(N node) {
-        boolean result;
         assert !isFixed() : "Trying to add " + node + " to unmodifiable graph";
-        result = this.graphNodeSet.add(node);
-        return result;
+        return this.graphNodeSet.add(node);
     }
 
     @Override
@@ -82,9 +80,7 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
     @Override
     public boolean removeNode(N node) {
         assert isTypeCorrect(node);
-        boolean result;
-        result = this.graphNodeSet.remove(node);
-        return result;
+        return this.graphNodeSet.remove(node);
     }
 
     @Override
@@ -96,8 +92,7 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
 
     @Override
     public NodeSetEdgeSetGraph<N,E> clone() {
-        NodeSetEdgeSetGraph<N,E> result = new NodeSetEdgeSetGraph<>(this);
-        return result;
+        return new NodeSetEdgeSetGraph<>(this);
     }
 
     @Override
