@@ -1,21 +1,20 @@
-package groove;
-
-import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
-import de.tuberlin.cs.cis.ocl.parser.lexer.Lexer;
-import de.tuberlin.cs.cis.ocl.parser.lexer.LexerException;
-import de.tuberlin.cs.cis.ocl.parser.node.Node;
-import de.tuberlin.cs.cis.ocl.parser.node.Start;
-import de.tuberlin.cs.cis.ocl.parser.parser.Parser;
-import de.tuberlin.cs.cis.ocl.parser.parser.ParserException;
 import groove.ocl.GraphBuilder;
-import groove.ocl.TranslateOCLToLax;
 import groove.util.Log;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.logging.Logger;
+
+//import de.tuberlin.cs.cis.ocl.parser.lexer.*;
+//import de.tuberlin.cs.cis.ocl.parser.node.*;
+//import de.tuberlin.cs.cis.ocl.parser.parser.*;
+//import de.tuberlin.cs.cis.ocl.parser.analysis.*;
+
+import ocl_ast.lexer.*;
+import ocl_ast.node.*;
+import ocl_ast.parser.*;
+import ocl_ast.analysis.*;
 
 public class parseOCL {
 
@@ -83,7 +82,7 @@ public class parseOCL {
 
         public void defaultIn(Node node) {
             indent();
-            out.println(node.getClass().getName());
+            out.println(node.getClass().getSimpleName());
             depth = depth + 1;
         }
 

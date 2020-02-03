@@ -1,4 +1,4 @@
-Package de.tuberlin.cs.cis.ocl.parser;
+Package ocl_ast;
 
 Helpers
 	unicode_character = [0..0xffff];
@@ -131,9 +131,9 @@ Ignored Tokens
 	white_space, end_of_line_comment;
 
 Productions
-/*************************************************************
-file structure and constraint declarations
-*************************************************************/
+    /*************************************************************
+    file structure and constraint declarations
+    *************************************************************/
 	ocl_file                    = constraint* ;
 
 	constraint                  = context_declaration context_bodypart+ ;
@@ -160,9 +160,9 @@ file structure and constraint declarations
         formal_parameter        = name type_postfix ;
         next_param              = comma formal_parameter ;
 
-/*************************************************************
-expressions
-*************************************************************/
+    /*************************************************************
+    expressions
+    *************************************************************/
 	ocl_expression              = let_declaration? expression ;
 		let_declaration         = let_expression* in ;
 
@@ -217,9 +217,9 @@ expressions
 
 	time_expression             = at pre ;
 
-/*************************************************************
-property calls
-*************************************************************/
+    /*************************************************************
+    property calls
+    *************************************************************/
     property_call               = path_name time_expression? qualifiers? property_call_parameters? ;
     property_call_parameters    = l_par declarator? actual_parameter_list? r_par ;
 
@@ -231,9 +231,9 @@ property calls
         simple_type_postfix     = colon simple_type_specifier ;
 	    qualifiers              = l_bracket actual_parameter_list r_bracket ;
 
-/*************************************************************
-operators
-*************************************************************/
+    /*************************************************************
+    operators
+    *************************************************************/
 	logical_operator            =
 	                              boolean_operator
 		                        | {implicative} implies_operator
@@ -279,9 +279,9 @@ operators
                                 | {not} not
                                 ;
 
-/*************************************************************
-literals and type specifiers
-**************************************************************/
+    /*************************************************************
+    literals and type specifiers
+    **************************************************************/
 	type_specifier              =
                                   {ocl_any} simple_type_specifier
                                 | {collection} collection_type
@@ -311,9 +311,195 @@ literals and type specifiers
                                 | {boolean} boolean_literal
                                 ;
 
-/*************************************************************
-names
-*************************************************************/
+    /*************************************************************
+    names
+    *************************************************************/
+	name                        = identifier ;
+
+	path_name                   = name_qualifier* name ;
+		name_qualifier          = name dcolon ;
+
+Abstract Syntax Tree
+	ocl_file                    = constraint* ;
+
+	constraint                  = context_declaration context_bodypart+ ;
+		context_bodypart        =
+                                  {definition} def name? colon let_expression*
+                                | {constraint} stereotype name? colon ocl_expression
+                                ;
+        stereotype              = {invariant} inv ;
+	    context_declaration     = context context_kind ;
+		context_kind            = {classifier} name classifier_type? ;
+        return_type             = colon type_specifier ;
+        classifier_type         = colon name ;
+
+        context_operation_name  =
+                                  name
+                                | {logical} logical_operator
+                                | {relational} relational_operator
+                                | {add} add_operator
+                                | {multiply} multiply_operator
+                                ;
+
+	formal_parameter_list       = param_list? ;
+		param_list              = formal_parameter next_param* ;
+        formal_parameter        = name type_postfix ;
+        next_param              = comma formal_parameter ;
+
+    /*************************************************************
+    expressions
+    *************************************************************/
+	ocl_expression              = let_declaration? expression ;
+		let_declaration         = let_expression* in ;
+
+	let_expression              = let name let_parameter_list? type_postfix? equal expression ;
+        let_parameter_list      = l_par formal_parameter_list r_par ;
+        type_postfix            = colon type_specifier ;
+
+	if_expression               =
+                                if [condition] : expression
+                                then [then_branch] : expression
+                                else [else_branch] : expression endif
+                                ;
+
+	expression                  = logical_expression ;
+
+	logical_expression          = boolean_expression implication* ;
+        implication             = implies_operator boolean_expression ;
+
+	boolean_expression          = relational_expression boolean_operation* ;
+		boolean_operation       = boolean_operator relational_expression ;
+
+	relational_expression       = compareable_expression equation? ;
+		equation                = equation_operator compareable_expression ;
+
+	compareable_expression      = additive_expression comparison? ;
+		comparison              = compare_operator additive_expression ;
+
+	additive_expression         = multiplicative_expression addition* ;
+		addition                = add_operator multiplicative_expression ;
+
+	multiplicative_expression   = unary_expression multiplication* ;
+		multiplication          = multiply_operator unary_expression ;
+
+	unary_expression            =
+                                  {prefixed} unary_operator postfix_expression
+                                | postfix_expression
+                                ;
+
+	postfix_expression          = primary_expression property_invocation* ;
+		property_invocation     =
+                                  {object} dot property_call
+                                | {collection} arrow property_call
+                                ;
+
+	primary_expression          =
+                                  {collection} literal_collection
+                                | {literal} literal
+                                | {property_call} property_call
+                                | {parenthesed} l_par expression r_par
+                                | {if} if_expression
+                                ;
+
+	time_expression             = at pre ;
+
+    /*************************************************************
+    property calls
+    *************************************************************/
+    property_call               = path_name time_expression? qualifiers? property_call_parameters? ;
+    property_call_parameters    = l_par declarator? actual_parameter_list? r_par ;
+
+    actual_parameter_list       = expression next_expr* ;
+        next_expr               = comma expression ;
+
+	    declarator              = {concrete} actual_parameter_list simple_type_postfix? accumulator? bar ;
+        accumulator             = semicolon name colon type_specifier equal expression ;
+        simple_type_postfix     = colon simple_type_specifier ;
+	    qualifiers              = l_bracket actual_parameter_list r_bracket ;
+
+    /*************************************************************
+    operators
+    *************************************************************/
+	logical_operator            =
+	                              boolean_operator
+		                        | {implicative} implies_operator
+		                        ;
+
+	boolean_operator            =
+                                  {and} and
+                                | {or} or
+                                | {xor} xor
+                                ;
+
+	implies_operator            = implies ;
+
+	relational_operator         =
+                                  {equality} equation_operator
+                                | {compare} compare_operator
+                                ;
+
+	equation_operator           =
+	                              equal
+		                        | {in} n_equal
+		                        ;
+
+	compare_operator            =
+                                  {gt} gt
+                                | {lt} lt
+                                | {gteq} gteq
+                                | {lteq} lteq
+                                ;
+
+	add_operator                =
+                                  {plus} plus
+                                | {minus} minus
+                                ;
+
+	multiply_operator           =
+                                  {mult} mult
+                                | {div} div
+                                ;
+
+	unary_operator              =
+                                  {minus} minus
+                                | {not} not
+                                ;
+
+    /*************************************************************
+    literals and type specifiers
+    **************************************************************/
+	type_specifier              =
+                                  {ocl_any} simple_type_specifier
+                                | {collection} collection_type
+                                ;
+
+	simple_type_specifier       = path_name ;
+
+	collection_type             = collection_kind l_par simple_type_specifier r_par ;
+
+	collection_kind             =
+                                  {set} set
+                                | {bag} bag
+                                | {sequence} sequence
+                                | collection
+                                ;
+
+	literal_collection          = collection_kind l_brace collection_item_list r_brace ;
+		collection_item_list    = collection_item next_collection_item * ;
+        next_collection_item    = comma collection_item ;
+
+	collection_item             = expression range? ;
+		range                   = ddot expression ;
+
+	literal                     =
+                                  {string} string_literal
+                                | {number} number_literal
+                                | {boolean} boolean_literal
+                                ;
+
+    /*************************************************************
+    names
+    *************************************************************/
 	name                        = identifier ;
 
 	path_name                   = name_qualifier* name ;
