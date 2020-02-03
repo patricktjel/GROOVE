@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 public class GraphBuilder {
-    private final static Logger LOGGER = Log.getLogger(OCLParser.class.getName());
+    private final static Logger LOGGER = Log.getLogger(GraphBuilder.class.getName());
 
     private AspectGraph graph;
     private int nodeNumber;

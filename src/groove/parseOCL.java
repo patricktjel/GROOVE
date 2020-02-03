@@ -1,13 +1,39 @@
 package groove;
 
+import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
+import de.tuberlin.cs.cis.ocl.parser.lexer.Lexer;
+import de.tuberlin.cs.cis.ocl.parser.lexer.LexerException;
+import de.tuberlin.cs.cis.ocl.parser.node.Node;
+import de.tuberlin.cs.cis.ocl.parser.node.Start;
+import de.tuberlin.cs.cis.ocl.parser.parser.Parser;
+import de.tuberlin.cs.cis.ocl.parser.parser.ParserException;
 import groove.ocl.GraphBuilder;
-import groove.ocl.OCLParser;
+import groove.ocl.TranslateOCLToLax;
+import groove.util.Log;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.PushbackReader;
+import java.io.StringReader;
+import java.util.logging.Logger;
 
 public class parseOCL {
 
-    static public void main(String[] args) {
-        OCLParser parser = new OCLParser();
-        parser.parseOCL("context Person inv: self.age >= 18");
+    private final static Logger LOGGER = Log.getLogger(parseOCL.class.getName());
+
+    static public void main(String[] args) throws ParserException, IOException, LexerException {
+        String ocl =
+                "context Person inv: self.age >= 18" +
+//                "context a:Person inv: self.age >= 18" +
+//                "context Person inv: self.age.isEmpty()" +
+//                "context Person inv: self.age.forall(a | a > 18)" +
+                "";
+        Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
+        Start parseTree = parser.parse();
+        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
+
+//        parseTree.apply(new TranslateOCLToLax());
+
 //        testGraphBuilder();
     }
 
@@ -37,5 +63,37 @@ public class parseOCL {
         builder.addEdge("prod", "int:ge", "bool:true");
 
         builder.save();
+    }
+
+    public static class TreePrinter extends DepthFirstAdapter {
+        private int depth = 0;
+        private PrintWriter out;
+
+        public TreePrinter(PrintWriter out) {
+            this.out = out;
+        }
+
+        public void defaultCase(Node node) {
+            indent();
+            out.println(
+//                    node.getClass().getName() +
+//                            "\t" +
+                            node.toString());
+        }
+
+        public void defaultIn(Node node) {
+            indent();
+            out.println(node.getClass().getName());
+            depth = depth + 1;
+        }
+
+        public void defaultOut(Node node) {
+            depth = depth - 1;
+            out.flush();
+        }
+
+        private void indent() {
+            for (int i = 0; i < depth; i++) out.write("\t");
+        }
     }
 }
