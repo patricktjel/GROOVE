@@ -6,15 +6,10 @@ import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.logging.Logger;
 
-//import de.tuberlin.cs.cis.ocl.parser.lexer.*;
-//import de.tuberlin.cs.cis.ocl.parser.node.*;
-//import de.tuberlin.cs.cis.ocl.parser.parser.*;
-//import de.tuberlin.cs.cis.ocl.parser.analysis.*;
-
-import ocl_ast.lexer.*;
-import ocl_ast.node.*;
-import ocl_ast.parser.*;
-import ocl_ast.analysis.*;
+import de.tuberlin.cs.cis.ocl.parser.lexer.*;
+import de.tuberlin.cs.cis.ocl.parser.node.*;
+import de.tuberlin.cs.cis.ocl.parser.parser.*;
+import de.tuberlin.cs.cis.ocl.parser.analysis.*;
 
 public class parseOCL {
 
