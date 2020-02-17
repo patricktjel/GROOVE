@@ -1,4 +1,5 @@
 import groove.ocl.GraphBuilder;
+import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,15 +19,15 @@ public class parseOCL {
     static public void main(String[] args) throws ParserException, IOException, LexerException {
         String ocl =
                 "context Person inv: self.age >= 18" +
-//                "context a:Person inv: self.age >= 18" +
-//                "context Person inv: self.age.isEmpty()" +
+//                "context a:Person inv: a.age >= 18" +
+//                "context Person inv: self.age >= 18 and self.age.isEmpty()" +
 //                "context Person inv: self.age.forall(a | a > 18)" +
                 "";
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
         Start parseTree = parser.parse();
-        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
 
-//        parseTree.apply(new TranslateOCLToLax());
+//        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
+        parseTree.apply(new TranslateOCLToLax());
 
 //        testGraphBuilder();
     }
