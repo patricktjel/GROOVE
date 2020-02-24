@@ -11,4 +11,9 @@ public class BooleanConstant extends Constant {
     public final boolean getConstant() {
         return constant;
     }
+
+    @Override
+    public String toString() {
+        return Boolean.toString(constant);
+    }
 }

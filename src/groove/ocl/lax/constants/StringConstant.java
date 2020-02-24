@@ -11,4 +11,9 @@ public class StringConstant extends Constant {
     public final String getConstant() {
         return constant;
     }
+
+    @Override
+    public String toString() {
+        return constant;
+    }
 }

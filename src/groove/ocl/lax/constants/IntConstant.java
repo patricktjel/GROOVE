@@ -11,4 +11,9 @@ public class IntConstant extends Constant {
     public final int getConstant() {
         return constant;
     }
+
+    @Override
+    public String toString() {
+        return Integer.toString(constant);
+    }
 }

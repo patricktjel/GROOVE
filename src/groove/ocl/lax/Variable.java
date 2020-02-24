@@ -1,20 +1,38 @@
 package groove.ocl.lax;
 
-public class Variable extends Expression{
+import java.util.Objects;
+
+public class Variable implements Expression{
     private final String className;
-    private final String variableName;
+    private String variableName;
 
     protected Variable(String variableName, String className) {
         this.variableName = variableName;
         this.className = className;
     }
 
-    public String getClassName() {
+    public final String getClassName() {
         return className;
     }
 
-    public String getVariableName() {
+    public final String getVariableName() {
         return variableName;
+    }
+
+    @Override
+    public void renameVar(String o, String n) {
+        if (variableName.equals(o)) {
+            this.variableName = n;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Variable variable = (Variable) o;
+        return Objects.equals(className, variable.className) &&
+                Objects.equals(variableName, variable.variableName);
     }
 
     @Override

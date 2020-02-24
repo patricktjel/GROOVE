@@ -1,5 +1,7 @@
 package groove.ocl.lax;
 
-public abstract class Expression {
+interface Expression {
+
+    void renameVar(String o, String n);
 
 }
