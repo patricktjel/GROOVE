@@ -3,14 +3,9 @@ package groove.ocl;
 import groove.grammar.aspect.AspectGraph;
 import groove.grammar.aspect.AspectLabel;
 import groove.grammar.aspect.AspectNode;
-import groove.grammar.model.ResourceKind;
 import groove.graph.GraphRole;
-import groove.io.store.SystemStore;
 import groove.util.Log;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -22,8 +17,6 @@ public class GraphBuilder {
     private int nodeNumber;
     private Map<String, AspectNode> nodeMap;
 
-    private static final String graphLocation = "C:\\Users\\patri\\Google Drive\\UT\\afstuderen\\groove\\test.gps";
-    private SystemStore store;
     /**
      * Creates or overwrites the graph with the name {@param ruleName}
      * And provides helper methods to make it easier to create graphs of type Rule conditions.
@@ -32,16 +25,11 @@ public class GraphBuilder {
         graph = new AspectGraph(graphName, GraphRole.RULE);
         nodeNumber = 0;
         nodeMap = new HashMap<>();
-        try {
-            store = SystemStore.newStore(new File(graphLocation), false);
-        } catch (IOException e) {
-            LOGGER.severe("Could not load graph grammar");
-        }
     }
 
     /**
      * Create a new node and add the label of the node
-     *      The lable of a node is implemented as a self loop.
+     *      The label of a node is implemented as a self loop.
      * @param label     The name of a node
      */
     public void addNode(String name, String label) {
@@ -68,14 +56,6 @@ public class GraphBuilder {
      * Saves the created graph
      */
     public void save() {
-        try {
-            store.reload();
-            store.putGraphs(ResourceKind.RULE, Collections.singleton(graph), false);
-            LOGGER.info(String.format("Rule graph: %s is saved", graph.getQualName()));
-        } catch (IOException e) {
-            LOGGER.warning(String.format("Could not save: %s", graph.getQualName()));
-            e.printStackTrace();
-        }
+        GrammarStorage.saveGraph(graph);
     }
-
 }

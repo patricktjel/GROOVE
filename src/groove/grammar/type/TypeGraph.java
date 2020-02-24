@@ -16,56 +16,28 @@
  */
 package groove.grammar.type;
 
-import static groove.graph.EdgeRole.FLAG;
-import static groove.graph.EdgeRole.NODE_TYPE;
-import static groove.graph.GraphRole.TYPE;
-
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
-
 import groove.automaton.RegExpr;
 import groove.automaton.RegExprTyper;
 import groove.automaton.RegExprTyper.Result;
 import groove.grammar.QualName;
-import groove.grammar.host.HostEdge;
-import groove.grammar.host.HostFactory;
-import groove.grammar.host.HostGraph;
-import groove.grammar.host.HostGraphMorphism;
-import groove.grammar.host.HostNode;
-import groove.grammar.host.ValueNode;
-import groove.grammar.rule.DefaultRuleNode;
-import groove.grammar.rule.LabelVar;
-import groove.grammar.rule.OperatorNode;
-import groove.grammar.rule.RuleEdge;
-import groove.grammar.rule.RuleFactory;
-import groove.grammar.rule.RuleGraph;
-import groove.grammar.rule.RuleGraphMorphism;
-import groove.grammar.rule.RuleLabel;
-import groove.grammar.rule.RuleNode;
-import groove.grammar.rule.VariableNode;
-import groove.graph.Edge;
-import groove.graph.EdgeRole;
-import groove.graph.GraphRole;
+import groove.grammar.host.*;
+import groove.grammar.rule.*;
 import groove.graph.Label;
-import groove.graph.Node;
-import groove.graph.NodeSetEdgeSetGraph;
+import groove.graph.*;
 import groove.util.Groove;
 import groove.util.parse.FormatError;
 import groove.util.parse.FormatErrorSet;
 import groove.util.parse.FormatException;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import java.awt.*;
+import java.util.List;
+import java.util.*;
+
+import static groove.graph.EdgeRole.FLAG;
+import static groove.graph.EdgeRole.NODE_TYPE;
+import static groove.graph.GraphRole.TYPE;
 
 /**
  * Extends a standard graph with some useful functionality for querying a type
@@ -74,6 +46,62 @@ import groove.util.parse.FormatException;
  * @version $Revision $
  */
 public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements TypeChecker {
+    /** Type factory associated with this type graph. */
+    private final TypeFactory factory;
+    /** Set of imported nodes. */
+    private final Set<TypeNode> imports = new HashSet<>();
+    /**
+     * Flag indicating that this is an implicit type graph.
+     * This affects the type analysis: an implicit type graph cannot
+     * give rise to typing errors.
+     */
+    private final boolean implicit;
+    /** Mapping from node type labels to the corresponding type nodes. */
+    private final Map<Label,TypeNode> typeNodeMap = new HashMap<>();
+    /**
+     * Mapping from node types to direct supertypes.
+     * The inverse of {@link #nodeDirectSubtypeMap}.
+     * Built at the moment of fixing the type graph.
+     */
+    private final NodeTypeMap nodeDirectSupertypeMap = new NodeTypeMap(false);
+    /**
+     * Mapping from node types to direct subtypes.
+     * The inverse of {@link #nodeDirectSupertypeMap}.
+     * Built at the moment of fixing the type graph.
+     */
+    private final NodeTypeMap nodeDirectSubtypeMap = new NodeTypeMap(false);
+    /**
+     * Reflexive and transitive mapping from node types to node subtypes.
+     * The closure of {@link #nodeDirectSubtypeMap}, and the inverse of {@link #nodeSupertypeMap}.
+     * Built at the moment of fixing the type graph.
+     */
+    private final NodeTypeMap nodeSubtypeMap = new NodeTypeMap(true);
+    /**
+     * Mapping from abstract edge types to edge subtypes.
+     * Built at the moment of fixing the type graph.
+     */
+    private final Map<TypeEdge,Set<TypeEdge>> edgeSubtypeMap = new HashMap<>();
+    /**
+     * Reflexive and transitive mapping from node types to node supertypes.
+     * The closure of {@link #nodeDirectSupertypeMap}, and the inverse of {@link #nodeSubtypeMap}.
+     * Built at the moment of fixing the type graph.
+     */
+    private final NodeTypeMap nodeSupertypeMap = new NodeTypeMap(true);
+    /**
+     * Mapping from edge types to abstract edge supertypes.
+     * Built at the moment of fixing the type graph.
+     */
+    private final Map<TypeEdge,Set<TypeEdge>> edgeSupertypeMap = new HashMap<>();
+    /** Mapping from component type graph names to the type elements in this type graph. */
+    private final SortedMap<String,Sub> componentMap = new TreeMap<>();
+    /** Node-label-edge-map for precisely matching type edges. */
+    private TypeEdgeMap exactEdgeMap;
+    /** Node-label-edge-map for type edges starting at supertypes. */
+    private TypeEdgeMap superEdgeMap;
+    /** Set of all labels occurring in the type graph. */
+    private Set<TypeLabel> labels;
+    private List<TypeChecker> checkers;
+
     /** Constructs a fresh type graph.
      * @param name the (non-{@code null}) name of the type graph
      */
@@ -178,8 +206,7 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
      * @return the created and added node type
      */
     public TypeNode addNode(TypeLabel label) {
-        assert label.getRole() == EdgeRole.NODE_TYPE : String.format("Label %s is not a node type",
-            label);
+        assert label.getRole() == EdgeRole.NODE_TYPE : String.format("Label %s is not a node type", label);
         TypeNode result = this.typeNodeMap.get(label);
         if (result == null) {
             // the following implicitly adds the node to the graph
@@ -375,16 +402,10 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         return this.factory;
     }
 
-    /** Type factory associated with this type graph. */
-    private final TypeFactory factory;
-
     /** Returns the set of imported node types. */
     public Set<TypeNode> getImports() {
         return this.imports;
     }
-
-    /** Set of imported nodes. */
-    private final Set<TypeNode> imports = new HashSet<>();
 
     /**
      * Indicates if this is a degenerate type graph,
@@ -393,13 +414,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
     public boolean isImplicit() {
         return this.implicit;
     }
-
-    /**
-     * Flag indicating that this is an implicit type graph.
-     * This affects the type analysis: an implicit type graph cannot
-     * give rise to typing errors.
-     */
-    private final boolean implicit;
 
     /** Indicates if a given label kind is used to determine node types. */
     public boolean isNodeType(EdgeRole role) {
@@ -451,8 +465,7 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
      * @return a morphism from the rule graph to a typed version
      * @throws FormatException if the rule graph contains type errors
      */
-    public RuleGraphMorphism analyzeRule(RuleGraph source, RuleGraphMorphism parentTyping)
-        throws FormatException {
+    public RuleGraphMorphism analyzeRule(RuleGraph source, RuleGraphMorphism parentTyping) throws FormatException {
         testFixed(true);
         RuleFactory ruleFactory = parentTyping.getFactory();
         RuleGraphMorphism result = new RuleGraphMorphism(ruleFactory);
@@ -835,8 +848,8 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
 
     /**
      * Attempts to find a typing for a given host graph.
-     * @param source the rule graph to be typed
-     * @return a morphism from the rule graph to a typed version
+     * @param source the host graph to be typed
+     * @return a morphism from the host graph to a typed version
      * @throws FormatException if the rule graph contains type errors
      */
     public HostGraphMorphism analyzeHost(HostGraph source) throws FormatException {
@@ -859,22 +872,17 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
                         errors.add("Untyped node", node);
                         image = node;
                     } else if (nodeTypeEdges.size() > 1) {
-                        errors.add("Multiple node types %s, %s",
-                            nodeTypeEdges.get(0),
-                            nodeTypeEdges.get(1),
-                            node);
+                        errors.add("Multiple node types %s, %s", nodeTypeEdges.get(0), nodeTypeEdges.get(1), node);
                         image = node;
                     } else {
                         HostEdge nodeTypeEdge = nodeTypeEdges.get(0);
                         TypeLabel nodeType = nodeTypeEdge.label();
                         TypeNode type = getNode(nodeType);
                         if (type == null) {
-                            throw new FormatException("Unknown node type '%s'", nodeType,
-                                nodeTypeEdge);
+                            throw new FormatException("Unknown node type '%s'", nodeType, nodeTypeEdge);
                         }
                         if (type.isAbstract()) {
-                            throw new FormatException("Abstract node type '%s'", type,
-                                nodeTypeEdge);
+                            throw new FormatException("Abstract node type '%s'", type, nodeTypeEdge);
                         }
                         image = hostFactory.nodes(type)
                             .createNode(node.getNumber());
@@ -916,8 +924,7 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
                     errors.add("%s-node has unknown %s-%s to %s",
                         sourceType,
                         edgeType.text(),
-                        edgeType.getRole()
-                            .getDescription(false),
+                        edgeType.getRole().getDescription(false),
                         targetType,
                         edge.source());
                 }
@@ -940,9 +947,8 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
      * Derives a type label for a node from the outgoing node type edges in a graph.
      * @param source the source graph to create the mappings for
      * @param node the node for which to discover the type
-     * @throws FormatException on nonexistent, abstract or duplicate node types
      */
-    private List<HostEdge> detectNodeType(HostGraph source, HostNode node) throws FormatException {
+    private List<HostEdge> detectNodeType(HostGraph source, HostNode node) {
         List<HostEdge> result = new ArrayList<>();
         // find a node type among the outgoing edges
         for (HostEdge edge : source.outEdgeSet(node)) {
@@ -960,9 +966,8 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
      * @param precise if {@code true}, the source and target types must be observed
      * precisely; otherwise, supertypes are allowed
      */
-    public TypeEdge getTypeEdge(TypeNode sourceType, TypeLabel label, TypeNode targetType,
-        boolean precise) {
-        TypeEdge result = null;
+    public TypeEdge getTypeEdge(TypeNode sourceType, TypeLabel label, TypeNode targetType, boolean precise) {
+        TypeEdge result;
         if (isFixed()) {
             TypeEdgeMap edgeMap;
             if (precise) {
@@ -982,11 +987,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         }
         return result;
     }
-
-    /** Node-label-edge-map for precisely matching type edges. */
-    private TypeEdgeMap exactEdgeMap;
-    /** Node-label-edge-map for type edges starting at supertypes. */
-    private TypeEdgeMap superEdgeMap;
 
     private TypeEdgeMap computeEdgeMap(boolean precise) {
         TypeEdgeMap result = new TypeEdgeMap();
@@ -1067,9 +1067,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         }
     }
 
-    /** Mapping from node type labels to the corresponding type nodes. */
-    private final Map<Label,TypeNode> typeNodeMap = new HashMap<>();
-
     /**
      * Returns the actual type label wrapped inside a (possibly sharp) type.
      * Returns {@code null} if the label is an operator or argument edge.
@@ -1128,32 +1125,15 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         return this.labels;
     }
 
-    /** Set of all labels occurring in the type graph. */
-    private Set<TypeLabel> labels;
-
     /** Returns an unmodifiable view on the mapping from node type labels to direct supertypes. */
     public Map<TypeNode,Set<TypeNode>> getDirectSupertypeMap() {
         return Collections.unmodifiableMap(this.nodeDirectSupertypeMap);
     }
 
-    /**
-     * Mapping from node types to direct supertypes.
-     * The inverse of {@link #nodeDirectSubtypeMap}.
-     * Built at the moment of fixing the type graph.
-     */
-    private final NodeTypeMap nodeDirectSupertypeMap = new NodeTypeMap(false);
-
     /** Returns an unmodifiable view on the mapping from node type labels to direct subtypes. */
     public Map<TypeNode,Set<TypeNode>> getDirectSubtypeMap() {
         return Collections.unmodifiableMap(this.nodeDirectSubtypeMap);
     }
-
-    /**
-     * Mapping from node types to direct subtypes.
-     * The inverse of {@link #nodeDirectSupertypeMap}.
-     * Built at the moment of fixing the type graph.
-     */
-    private final NodeTypeMap nodeDirectSubtypeMap = new NodeTypeMap(false);
 
     /** Returns the set of subtypes of a given node type. */
     public @NonNull Set<TypeNode> getSubtypes(TypeNode node) {
@@ -1168,13 +1148,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         return result;
     }
 
-    /**
-     * Reflexive and transitive mapping from node types to node subtypes.
-     * The closure of {@link #nodeDirectSubtypeMap}, and the inverse of {@link #nodeSupertypeMap}.
-     * Built at the moment of fixing the type graph.
-     */
-    private final NodeTypeMap nodeSubtypeMap = new NodeTypeMap(true);
-
     /** Returns the set of subtypes of a given edge type. */
     public @NonNull Set<TypeEdge> getSubtypes(TypeEdge edge) {
         Set<TypeEdge> result;
@@ -1187,12 +1160,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         assert result != null;
         return result;
     }
-
-    /**
-     * Mapping from abstract edge types to edge subtypes.
-     * Built at the moment of fixing the type graph.
-     */
-    private final Map<TypeEdge,Set<TypeEdge>> edgeSubtypeMap = new HashMap<>();
 
     /** Returns the set of supertypes of a given node type. */
     public @NonNull Set<TypeNode> getSupertypes(TypeNode node) {
@@ -1207,13 +1174,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         return result;
     }
 
-    /**
-     * Reflexive and transitive mapping from node types to node supertypes.
-     * The closure of {@link #nodeDirectSupertypeMap}, and the inverse of {@link #nodeSubtypeMap}.
-     * Built at the moment of fixing the type graph.
-     */
-    private final NodeTypeMap nodeSupertypeMap = new NodeTypeMap(true);
-
     /** Returns the set of supertypes of a given edge type. */
     public @NonNull Set<TypeEdge> getSupertypes(TypeEdge edge) {
         Set<TypeEdge> result;
@@ -1226,12 +1186,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         assert result != null;
         return result;
     }
-
-    /**
-     * Mapping from edge types to abstract edge supertypes.
-     * Built at the moment of fixing the type graph.
-     */
-    private final Map<TypeEdge,Set<TypeEdge>> edgeSupertypeMap = new HashMap<>();
 
     /**
      * Returns the set of type nodes and edges in this type graph
@@ -1365,9 +1319,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         return !this.componentMap.isEmpty();
     }
 
-    /** Mapping from component type graph names to the type elements in this type graph. */
-    private final SortedMap<String,Sub> componentMap = new TreeMap<>();
-
     @Override
     protected boolean isTypeCorrect(Node node) {
         return node instanceof TypeNode;
@@ -1415,10 +1366,10 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         return this.checkers;
     }
 
-    private List<TypeChecker> checkers;
-
     /** Class holding a mapping from type nodes to sets of type nodes. */
     private static class NodeTypeMap extends HashMap<TypeNode,Set<TypeNode>> {
+        private final boolean reflexive;
+
         /** Creates a new, possibly reflexive map. */
         public NodeTypeMap(boolean reflexive) {
             this.reflexive = reflexive;
@@ -1437,12 +1388,14 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
                 record.add(node);
             }
         }
-
-        private final boolean reflexive;
     }
 
     /** Component type graph. */
     public static class Sub {
+        private final String name;
+        private final Set<TypeNode> nodes;
+        private final Set<TypeEdge> edges;
+
         /** Constructs a component type entry. */
         public Sub(String name, Set<TypeNode> nodes, Set<TypeEdge> edges) {
             super();
@@ -1465,10 +1418,6 @@ public class TypeGraph extends NodeSetEdgeSetGraph<TypeNode,TypeEdge> implements
         public Set<TypeEdge> getEdges() {
             return this.edges;
         }
-
-        private final String name;
-        private final Set<TypeNode> nodes;
-        private final Set<TypeEdge> edges;
     }
 
     private class TypeEdgeMap extends HashMap<TypeLabel,Map<TypeNode,TypeEdge[]>> {

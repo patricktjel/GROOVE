@@ -581,7 +581,7 @@ public class GrammarModel implements Observer {
         }
         // update the set of resource models
         Map<QualName,NamedResourceModel<?>> modelMap = this.resourceMap.get(kind);
-        Map<QualName,? extends Object> sourceMap;
+        Map<QualName,?> sourceMap;
         if (kind.isGraphBased()) {
             sourceMap = getStore().getGraphs(kind);
         } else {
@@ -596,7 +596,7 @@ public class GrammarModel implements Observer {
             newActiveNames.addAll(getProperties().getActiveNames(kind));
         }
         // now synchronise the models with the sources in the store
-        for (Map.Entry<QualName,? extends Object> sourceEntry : sourceMap.entrySet()) {
+        for (Map.Entry<QualName,?> sourceEntry : sourceMap.entrySet()) {
             QualName name = sourceEntry.getKey();
             Object source = sourceEntry.getValue();
             NamedResourceModel<?> model = modelMap.get(name);
@@ -740,8 +740,7 @@ public class GrammarModel implements Observer {
     static public GrammarModel newInstance(URL url) throws IllegalArgumentException, IOException {
         SystemStore store = SystemStore.newStore(url);
         store.reload();
-        GrammarModel result = store.toGrammarModel();
-        return result;
+        return store.toGrammarModel();
     }
 
     /**
@@ -764,8 +763,7 @@ public class GrammarModel implements Observer {
     static public GrammarModel newInstance(File file, boolean create) throws IOException {
         SystemStore store = SystemStore.newStore(file, create);
         store.reload();
-        GrammarModel result = store.toGrammarModel();
-        return result;
+        return store.toGrammarModel();
     }
 
     /**
@@ -780,9 +778,7 @@ public class GrammarModel implements Observer {
         throws IllegalArgumentException, IOException {
         try {
             return newInstance(new URL(location));
-        } catch (IllegalArgumentException exc) {
-            return newInstance(new File(location), false);
-        } catch (IOException exc) {
+        } catch (IllegalArgumentException | IOException exc) {
             return newInstance(new File(location), false);
         }
     }
@@ -796,7 +792,7 @@ public class GrammarModel implements Observer {
      * update operations that can be applied to the set of selected start
      * graphs.
      */
-    public static enum Manipulation {
+    public enum Manipulation {
         /** Add elements to the set. */
         ADD,
         /** Remove elements from the set. */

@@ -29,8 +29,15 @@ import java.util.Set;
  * @author Arend Rensink
  * @version $Revision: 5787 $
  */
-public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGraph<N,E> implements
-    Cloneable {
+public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGraph<N,E> implements Cloneable {
+
+    /** The set of edges of this graph. */
+    protected final Set<E> graphEdgeSet;
+    /** The set of nodes of this graph. */
+    protected final Set<N> graphNodeSet;
+
+    // ------------------------- COMMANDS ------------------------------
+
     /**
      * Creates a new, named empty graph.
      * @param name name of the new graph
@@ -53,7 +60,7 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
         GraphInfo.transfer(graph, this, null);
     }
 
-    // ------------------------- COMMANDS ------------------------------
+    // -------------------- PackageGraph methods ---------------------
 
     @Override
     public boolean addNode(N node) {
@@ -67,8 +74,6 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
         return this.graphEdgeSet.remove(edge);
     }
 
-    // -------------------- PackageGraph methods ---------------------
-
     @Override
     public boolean addEdge(E edge) {
         assert isTypeCorrect(edge);
@@ -76,6 +81,8 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
         result = this.graphEdgeSet.add(edge);
         return result;
     }
+
+    // ------------- general methods (see AbstractGraph) ----------
 
     @Override
     public boolean removeNode(N node) {
@@ -87,8 +94,6 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
     public boolean removeNodeSet(Collection<? extends N> nodeSet) {
         return this.graphNodeSet.removeAll(nodeSet);
     }
-
-    // ------------- general methods (see AbstractGraph) ----------
 
     @Override
     public NodeSetEdgeSetGraph<N,E> clone() {
@@ -143,47 +148,11 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
         return new EdgeNotifySet(edgeSet);
     }
 
-    /** The set of edges of this graph. */
-    protected final Set<E> graphEdgeSet;
-    /** The set of nodes of this graph. */
-    protected final Set<N> graphNodeSet;
-
     /**
      * Extension of <tt>Set</tt> that invokes the notify methods of the graph
      * when elements are added or deleted
      */
     abstract private class NotifySet<EL extends Element> extends LinkedHashSet<EL> {
-        /**
-         * An iterator over the underlying hash set that extends
-         * <tt>remove()</tt> by invoking the graph listeners.
-         */
-        class NotifySetIterator implements Iterator<EL> {
-            @Override
-            public boolean hasNext() {
-                return this.setIterator.hasNext();
-            }
-
-            @Override
-            public EL next() {
-                this.latest = this.setIterator.next();
-                return this.latest;
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public void remove() {
-                this.setIterator.remove();
-                if (this.latest instanceof Node) {
-                    fireRemoveNode((N) this.latest);
-                } else {
-                    fireRemoveEdge((E) this.latest);
-                }
-            }
-
-            private final Iterator<EL> setIterator = superIterator();
-            EL latest;
-        }
-
         /** Constructs an empty set. */
         public NotifySet() {
             // we need an explicit empty constructor
@@ -277,6 +246,37 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
          * set.
          */
         abstract protected void fireRemove(EL elem);
+
+        /**
+         * An iterator over the underlying hash set that extends
+         * <tt>remove()</tt> by invoking the graph listeners.
+         */
+        class NotifySetIterator implements Iterator<EL> {
+            private final Iterator<EL> setIterator = superIterator();
+            EL latest;
+
+            @Override
+            public boolean hasNext() {
+                return this.setIterator.hasNext();
+            }
+
+            @Override
+            public EL next() {
+                this.latest = this.setIterator.next();
+                return this.latest;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public void remove() {
+                this.setIterator.remove();
+                if (this.latest instanceof Node) {
+                    fireRemoveNode((N) this.latest);
+                } else {
+                    fireRemoveEdge((E) this.latest);
+                }
+            }
+        }
     }
 
     /**

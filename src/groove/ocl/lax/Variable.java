@@ -1,12 +1,20 @@
 package groove.ocl.lax;
 
 public class Variable extends Expression{
-    private String className;
-    private String variableName;
+    private final String className;
+    private final String variableName;
 
-    public Variable(String className, String variableName) {
-        this.className = className;
+    protected Variable(String variableName, String className) {
         this.variableName = variableName;
+        this.className = className;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public String getVariableName() {
+        return variableName;
     }
 
     @Override
