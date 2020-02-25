@@ -1,12 +1,13 @@
 package groove.ocl.lax;
 
+import groove.graph.Label;
 import groove.io.Util;
 
-public enum Quantifier {
-    /** Universally quantified pattern. */
-    FORALL(Util.FORALL),
+public enum Quantifier implements Comparable<Quantifier> {
     /** Existentially quantified pattern. */
-    EXISTS(Util.EXISTS);
+    EXISTS(Util.EXISTS),
+    /** Universally quantified pattern. */
+    FORALL(Util.FORALL);
 
     // Unicode hex string
     private String symbol;

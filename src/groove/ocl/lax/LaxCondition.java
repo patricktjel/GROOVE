@@ -53,8 +53,10 @@ public class LaxCondition implements Expression{
             applyE3();
         }
 
-        if (this.condition instanceof LaxCondition && this.expression.equals(((LaxCondition) this.condition).getExpression())) {
-            //E1
+        // If the condition is null, the expressions are the same and the quantification is the same
+        // or the outer quantification is bigger, then they may be merged together
+        if (this.condition instanceof LaxCondition && this.expression.equals(((LaxCondition) this.condition).getExpression())
+                && this.quantifier.compareTo(((LaxCondition) this.condition).getQuantifier()) >= 0) {
             ((LaxCondition) this.condition).moveConToExpr();
         }
         return false;
