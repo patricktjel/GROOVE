@@ -1,6 +1,5 @@
 package groove.ocl.lax;
 
-import groove.graph.Label;
 import groove.io.Util;
 
 public enum Quantifier implements Comparable<Quantifier> {

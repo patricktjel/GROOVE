@@ -9,10 +9,13 @@ import groove.ocl.GrammarStorage;
 import groove.ocl.InvalidOCLException;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.*;
-import groove.ocl.lax.constants.BooleanConstant;
-import groove.ocl.lax.constants.Constant;
-import groove.ocl.lax.constants.IntConstant;
-import groove.ocl.lax.constants.StringConstant;
+import groove.ocl.lax.condition.AndExpression;
+import groove.ocl.lax.condition.LaxCondition;
+import groove.ocl.lax.graph.*;
+import groove.ocl.lax.graph.constants.BooleanConstant;
+import groove.ocl.lax.graph.constants.Constant;
+import groove.ocl.lax.graph.constants.IntConstant;
+import groove.ocl.lax.graph.constants.StringConstant;
 import groove.util.Log;
 import groove.util.Triple;
 
@@ -97,10 +100,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // so its rule17
                 Variable var = VariableFactory.createVariable(e1.two().text());
                 LaxCondition trn = tr_N(expr1, var);
-                AttributedGraph attrGraph = new AttributedGraph(var, e1.three(), op, (Expression) expr2);
+                AttributedGraph attrGraph = new AttributedGraph(var, e1.three(), op, (Graph) expr2);
 
                 // given the values create the right LaxCondition
-                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndExpression(trn, attrGraph)));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndExpression(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
             } else {
                 // its rule 18
                 Triple<String, TypeNode, Variable> e2 = determineTypeAndAttribute(expr2.toString());

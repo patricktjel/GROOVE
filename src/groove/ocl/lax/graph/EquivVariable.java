@@ -1,4 +1,4 @@
-package groove.ocl.lax;
+package groove.ocl.lax.graph;
 
 public class EquivVariable extends Variable {
 

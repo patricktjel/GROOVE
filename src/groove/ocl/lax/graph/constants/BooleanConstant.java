@@ -1,8 +1,8 @@
-package groove.ocl.lax.constants;
+package groove.ocl.lax.graph.constants;
 
-import groove.ocl.lax.Expression;
+import groove.ocl.lax.graph.Graph;
 
-public enum BooleanConstant implements Constant, Expression {
+public enum BooleanConstant implements Constant, Graph {
     TRUE(true),
     FALSE(false);
 

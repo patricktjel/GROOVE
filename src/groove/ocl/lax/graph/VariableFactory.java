@@ -1,4 +1,4 @@
-package groove.ocl.lax;
+package groove.ocl.lax.graph;
 
 import java.util.HashMap;
 import java.util.Map;

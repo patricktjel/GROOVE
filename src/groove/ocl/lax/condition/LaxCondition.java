@@ -1,30 +1,34 @@
-package groove.ocl.lax;
+package groove.ocl.lax.condition;
 
-public class LaxCondition implements Expression{
+import groove.ocl.lax.Quantifier;
+import groove.ocl.lax.graph.EquivVariable;
+import groove.ocl.lax.graph.Graph;
+
+public class LaxCondition implements Condition {
 
     private Quantifier quantifier;
-    private Expression expression;
-    private Expression condition;
+    private Graph graph;
+    private Condition condition;
 
-    public LaxCondition(Quantifier quantifier, Expression expression, Expression condition) {
-        this(quantifier, expression);
+    public LaxCondition(Quantifier quantifier, Graph graph, Condition condition) {
+        this.quantifier = quantifier;
+        this.graph = graph;
         this.condition = condition;
     }
 
-    public LaxCondition(Quantifier quantifier, Expression expression) {
-        this.quantifier = quantifier;
-        this.expression = expression;
+    public LaxCondition(Quantifier quantifier, Graph graph) {
+        this(quantifier, graph, null);
     }
 
     public Quantifier getQuantifier() {
         return quantifier;
     }
 
-    public Expression getExpression() {
-        return expression;
+    public Graph getGraph() {
+        return graph;
     }
 
-    public Expression getCondition() {
+    public Condition getCondition() {
         return condition;
     }
 
@@ -34,16 +38,14 @@ public class LaxCondition implements Expression{
      */
     public boolean simplify() {
         boolean toSimplify = false;
-        if (expression instanceof EquivVariable) {
+        if (graph instanceof EquivVariable) {
             // we have found an equivVariable. The Laxcondition above should start renaming.
             return true;
         }
 
         // Keep simplifying
-        if (condition instanceof LaxCondition) {
-            toSimplify = ((LaxCondition) condition).simplify();
-        } else if (condition instanceof AndExpression && ((AndExpression) condition).getExpr1() instanceof LaxCondition) {
-            toSimplify = ((LaxCondition) ((AndExpression) condition).getExpr1()).simplify();
+        if (condition != null) {
+            toSimplify = condition.simplify();
         }
 
         // apply equivalence rules
@@ -55,9 +57,9 @@ public class LaxCondition implements Expression{
 
         // If the condition is null, the expressions are the same and the quantification is the same
         // or the outer quantification is bigger, then they may be merged together
-        if (this.condition instanceof LaxCondition && this.expression.equals(((LaxCondition) this.condition).getExpression())
+        if (this.condition instanceof LaxCondition && this.graph.equals(((LaxCondition) this.condition).getGraph())
                 && this.quantifier.compareTo(((LaxCondition) this.condition).getQuantifier()) >= 0) {
-            ((LaxCondition) this.condition).moveConToExpr();
+            this.condition = ((LaxCondition) this.condition).getCondition();
         }
         return false;
     }
@@ -69,12 +71,12 @@ public class LaxCondition implements Expression{
         EquivVariable equivVar = null;
 
         if (condition instanceof LaxCondition) {
-            equivVar = (EquivVariable) ((LaxCondition) condition).getExpression();
+            equivVar = (EquivVariable) ((LaxCondition) condition).getGraph();
 
             // remove the equivVar from the condition
             this.condition = null;
         } else if (condition instanceof AndExpression){
-            equivVar = (EquivVariable) ((LaxCondition) ((AndExpression) condition).getExpr1()).getExpression();
+            equivVar = (EquivVariable) ((LaxCondition) ((AndExpression) condition).getExpr1()).getGraph();
 
             // remove the equivVar from the condition
             this.condition = ((AndExpression) condition).getExpr2();
@@ -86,18 +88,9 @@ public class LaxCondition implements Expression{
         this.renameVar(equivVar.getVar2(), equivVar.getVariableName());
     }
 
-    /**
-     * To be able to apply E1, move the condition to the expression
-     * and set condition to null
-     */
-    private void moveConToExpr() {
-        this.expression = condition;
-        this.condition = null;
-    }
-
     @Override
     public void renameVar(String o, String n) {
-        expression.renameVar(o, n);
+        graph.renameVar(o, n);
         if (condition != null) {
             condition.renameVar(o, n);
         }
@@ -106,9 +99,9 @@ public class LaxCondition implements Expression{
     @Override
     public String toString() {
         if (condition == null) {
-            return String.format("%s(%s)", quantifier, expression);
+            return String.format("%s(%s)", quantifier, graph);
         } else {
-            return String.format("%s(%s, %s)", quantifier, expression, condition);
+            return String.format("%s(%s, %s)", quantifier, graph, condition);
         }
     }
 }

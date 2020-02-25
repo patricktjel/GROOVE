@@ -1,13 +1,15 @@
-package groove.ocl.lax;
+package groove.ocl.lax.graph;
 
-public class AttributedGraph implements Expression {
+import groove.ocl.lax.Operator;
+
+public class AttributedGraph implements Graph {
     private final Variable variable;
 
     private final Variable attr1;
     private final Operator operator;
-    private final Expression attr2;
+    private final Graph attr2;
 
-    public AttributedGraph(Variable variable, Variable attr1, Operator operator, Expression attr2) {
+    public AttributedGraph(Variable variable, Variable attr1, Operator operator, Graph attr2) {
         this.variable = variable;
         this.attr1 = attr1;
         this.operator = operator;
@@ -26,7 +28,7 @@ public class AttributedGraph implements Expression {
         return operator;
     }
 
-    public Expression getAttr2() {
+    public Graph getAttr2() {
         return attr2;
     }
 

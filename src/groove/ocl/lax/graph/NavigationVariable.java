@@ -1,6 +1,6 @@
-package groove.ocl.lax;
+package groove.ocl.lax.graph;
 
-public class NavigationVariable implements Expression{
+public class NavigationVariable implements Graph {
 
     private Variable from;
     private String role;

@@ -1,5 +1,5 @@
 import groove.ocl.GraphBuilder;
-import groove.ocl.lax.LaxCondition;
+import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
 import java.io.IOException;

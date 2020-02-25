@@ -1,8 +1,8 @@
-package groove.ocl.lax;
+package groove.ocl.lax.graph;
 
 import java.util.Objects;
 
-public class Variable implements Expression{
+public class Variable implements Graph {
     private final String className;
     private String variableName;
 

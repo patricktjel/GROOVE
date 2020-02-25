@@ -1,8 +1,8 @@
-package groove.ocl.lax.constants;
+package groove.ocl.lax.graph.constants;
 
-import groove.ocl.lax.Expression;
+import groove.ocl.lax.graph.Graph;
 
-public class IntConstant implements Constant, Expression {
+public class IntConstant implements Constant, Graph {
 
     private final int constant;
 

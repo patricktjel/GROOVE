@@ -4,9 +4,13 @@ import groove.grammar.aspect.AspectGraph;
 import groove.grammar.aspect.AspectLabel;
 import groove.grammar.aspect.AspectNode;
 import groove.graph.GraphRole;
-import groove.ocl.lax.*;
-import groove.ocl.lax.constants.BooleanConstant;
-import groove.ocl.lax.constants.Constant;
+import groove.ocl.lax.condition.LaxCondition;
+import groove.ocl.lax.graph.AttributedGraph;
+import groove.ocl.lax.graph.Graph;
+import groove.ocl.lax.graph.Variable;
+import groove.ocl.lax.graph.VariableFactory;
+import groove.ocl.lax.graph.constants.BooleanConstant;
+import groove.ocl.lax.graph.constants.Constant;
 import groove.util.Log;
 
 import java.util.HashMap;
@@ -77,7 +81,7 @@ public class GraphBuilder {
             addEdge(quantLvl, IN, Integer.toString(level-1));
         }
 
-        Expression expr = laxCon.getExpression();
+        Graph expr = laxCon.getGraph();
         if (expr instanceof Variable) {
             Variable var = (Variable) expr;
             // create the variable and connect it with the current quantification level
