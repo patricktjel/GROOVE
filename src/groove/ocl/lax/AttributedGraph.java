@@ -4,14 +4,30 @@ public class AttributedGraph implements Expression {
     private final Variable variable;
 
     private final String attr1;
-    private final String operator;
+    private final Operator operator;
     private final String attr2;
 
-    public AttributedGraph(Variable variable, String attr1, String operator, String attr2) {
+    public AttributedGraph(Variable variable, String attr1, Operator operator, String attr2) {
         this.variable = variable;
         this.attr1 = attr1;
         this.operator = operator;
         this.attr2 = attr2;
+    }
+
+    public Variable getVariable() {
+        return variable;
+    }
+
+    public String getAttr1() {
+        return attr1;
+    }
+
+    public Operator getOperator() {
+        return operator;
+    }
+
+    public String getAttr2() {
+        return attr2;
     }
 
     @Override

@@ -87,7 +87,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         if (node.getComparison() != null){
             String expr1 = getOut(node.getAdditiveExpression()).toString();
             Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
-            String op = getOut(((AComparison) node.getComparison()).getCompareOperator()).toString();
+            Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
 
             Triple<String, TypeNode, String> e1 = determineTypeAndAttribute(expr1);
             expr1 = e1.one();
@@ -117,22 +117,22 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outALtCompareOperator(ALtCompareOperator node) {
-        resetOut(node);
+        resetOut(node, Operator.Lt);
     }
 
     @Override
     public void outALteqCompareOperator(ALteqCompareOperator node) {
-        resetOut(node);
+        resetOut(node, Operator.LTEQ);
     }
 
     @Override
     public void outAGtCompareOperator(AGtCompareOperator node) {
-        resetOut(node);
+        resetOut(node, Operator.GT);
     }
 
     @Override
     public void outAGteqCompareOperator(AGteqCompareOperator node) {
-        resetOut(node);
+        resetOut(node, Operator.GTEQ);
     }
 
     @Override

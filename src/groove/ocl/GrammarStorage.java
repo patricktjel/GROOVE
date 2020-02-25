@@ -37,6 +37,8 @@ public abstract class GrammarStorage {
     public static void saveGraph(AspectGraph graph){
         try {
             reload();
+            //TODO maybe not the best way to set the graph fixed.
+            graph.setFixed();
             store.putGraphs(ResourceKind.RULE, Collections.singleton(graph), false);
             LOGGER.info(String.format("Rule graph: %s is saved", graph.getQualName()));
         } catch (IOException e) {

@@ -1,4 +1,5 @@
 import groove.ocl.GraphBuilder;
+import groove.ocl.lax.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
 import java.io.IOException;
@@ -31,8 +32,13 @@ public class parseOCL {
 //        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
         TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax();
         parseTree.apply(translateOCLToLax);
-        LOGGER.info(translateOCLToLax.getResult().simplify().toString());
 
+        LaxCondition condition = translateOCLToLax.getResult().simplify();
+        LOGGER.info(condition.toString());
+
+        GraphBuilder builder = new GraphBuilder("test");
+        builder.laxToGraph(condition);
+        builder.save();
 //        testGraphBuilder();
     }
 

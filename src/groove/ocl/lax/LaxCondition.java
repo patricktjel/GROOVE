@@ -54,7 +54,6 @@ public class LaxCondition implements Expression{
 
         if (this.condition instanceof LaxCondition && this.expression.equals(((LaxCondition) this.condition).getExpression())) {
             //E1
-            System.out.println(this.toString());
             ((LaxCondition) this.condition).moveConToExpr();
         }
         return this;
