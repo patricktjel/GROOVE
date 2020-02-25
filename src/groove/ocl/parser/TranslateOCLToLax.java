@@ -2,9 +2,11 @@ package groove.ocl.parser;
 
 import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
 import de.tuberlin.cs.cis.ocl.parser.node.*;
+import groove.grammar.type.TypeEdge;
 import groove.grammar.type.TypeGraph;
 import groove.grammar.type.TypeNode;
 import groove.ocl.GrammarStorage;
+import groove.ocl.InvalidOCLException;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.*;
 import groove.ocl.lax.constants.BooleanConstant;
@@ -212,10 +214,17 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 .collect(Collectors.toList())
                 .get(0);
         for (String i: split) {
-            // follow t he edges to the final type node
-            type = typeGraph.outEdgeSet(type).stream()
+            // follow the edges to the final type node
+            List<? extends TypeEdge> typeEdges = typeGraph.outEdgeSet(type).stream()
                     .filter(e -> e.text().equals(i))
-                    .collect(Collectors.toList())
+                    .collect(Collectors.toList());
+
+            if (typeEdges.isEmpty()){
+                // if the edge does not exist in the type graph, the given OCL expression is not correct
+                LOGGER.severe(String.format("The outgoing edge %s does not exist for class %s", i, type));
+                throw new InvalidOCLException();
+            }
+            type = typeEdges
                     .get(0)
                     .target();
         }

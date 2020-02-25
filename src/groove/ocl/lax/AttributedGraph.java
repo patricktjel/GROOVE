@@ -37,6 +37,6 @@ public class AttributedGraph implements Expression {
 
     @Override
     public String toString() {
-        return String.format("%s | %s %s %s", variable, attr1, operator, attr2);
+        return String.format("(%s | %s %s %s)", variable, attr1, operator, attr2);
     }
 }
