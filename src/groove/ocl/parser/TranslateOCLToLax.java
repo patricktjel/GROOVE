@@ -94,7 +94,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Triple<String, TypeNode, Variable> e1 = determineTypeAndAttribute(expr1);
             expr1 = e1.one();
             if (expr2 instanceof Constant) {
-                // so its rule 17
+                // so its rule17
                 Variable var = VariableFactory.createVariable(e1.two().text());
                 LaxCondition trn = tr_N(expr1, var);
                 AttributedGraph attrGraph = new AttributedGraph(var, e1.three(), op, (Expression) expr2);
@@ -238,10 +238,28 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private LaxCondition tr_N(String expr, Variable var) {
         LaxCondition con;
         if (expr.contains(".")) {
-            // rule23/24
-            con = null;
+            //TODO What if the expr contains multiple dots?
+            String[] split = expr.split("\\.");
+
+            String role = split[1];
+            TypeNode roleType = determineType(expr);
+
+            expr = split[0];
+            TypeNode exprType = determineType(expr);
+
+            //TODO figure out which side the clan arrows go
+            if (exprType.getSubtypes().contains(roleType)) {
+                // rule24
+                con = null;
+            } else {
+                // rule23
+                Variable exprVar = VariableFactory.createVariable(exprType.text());
+                NavigationVariable navigationVariable = new NavigationVariable(exprVar, role, var);
+                LaxCondition trn = tr_N(expr, exprVar);
+                con = new LaxCondition(Quantifier.EXISTS, navigationVariable, trn);
+            }
         } else {
-            // rule 22
+            // rule22
             con = new LaxCondition(Quantifier.EXISTS, new EquivVariable(expr, var.getVariableName(), var.getClassName()));
         }
         return con;

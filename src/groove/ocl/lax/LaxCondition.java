@@ -32,31 +32,56 @@ public class LaxCondition implements Expression{
      * Apply the equivalence rules to make the Lax condition simple
      * @return  The final LaxCondition result
      */
-    public LaxCondition simplify() {
-        if (condition instanceof LaxCondition) {
-            // first use recursion to find the deepest LaxCondition
-            ((LaxCondition) condition).simplify();
+    public boolean simplify() {
+        boolean toSimplify = false;
+        if (expression instanceof EquivVariable) {
+            // we have found an equivVariable. The Laxcondition above should start renaming.
+            return true;
         }
 
-        // apply Equivalence rules TODO: fix implementation
-        if (condition instanceof AndExpression
-                    && ((AndExpression) condition).getExpr1() instanceof LaxCondition
-                    && ((LaxCondition) ((AndExpression) condition).getExpr1()).getExpression() instanceof EquivVariable) {
-            //E3
-            EquivVariable equivVar = (EquivVariable) ((LaxCondition) ((AndExpression) condition).getExpr1()).getExpression();
+        // Keep simplifying
+        if (condition instanceof LaxCondition) {
+            toSimplify = ((LaxCondition) condition).simplify();
+        } else if (condition instanceof AndExpression && ((AndExpression) condition).getExpr1() instanceof LaxCondition) {
+            toSimplify = ((LaxCondition) ((AndExpression) condition).getExpr1()).simplify();
+        }
 
-            // apply the equivalence declared in equivVar
-            this.renameVar(equivVar.getVar2(), equivVar.getVariableName());
-
-            // remove the equivVar from the condition
-            this.condition = ((AndExpression) condition).getExpr2();
+        // apply equivalence rules
+        //TODO: fix implementation
+        if (toSimplify) {
+            // if an EquivVariable is found we can apply E3
+            applyE3();
         }
 
         if (this.condition instanceof LaxCondition && this.expression.equals(((LaxCondition) this.condition).getExpression())) {
             //E1
             ((LaxCondition) this.condition).moveConToExpr();
         }
-        return this;
+        return false;
+    }
+
+    /**
+     * Apply Equivalence rule 3
+     */
+    private void applyE3() {
+        EquivVariable equivVar = null;
+
+        if (condition instanceof LaxCondition) {
+            equivVar = (EquivVariable) ((LaxCondition) condition).getExpression();
+
+            // remove the equivVar from the condition
+            this.condition = null;
+        } else if (condition instanceof AndExpression){
+            equivVar = (EquivVariable) ((LaxCondition) ((AndExpression) condition).getExpr1()).getExpression();
+
+            // remove the equivVar from the condition
+            this.condition = ((AndExpression) condition).getExpr2();
+        }
+
+        assert equivVar != null; // If toSimplify is true there has to be an equivVar
+
+        // apply the equivalence declared in equivVar
+        this.renameVar(equivVar.getVar2(), equivVar.getVariableName());
     }
 
     /**

@@ -19,7 +19,8 @@ public class parseOCL {
 
     static public void main(String[] args) throws ParserException, IOException, LexerException {
         String ocl =
-                "context Person inv: self.c.age >= 18" +
+//                "context Person inv: self.c.agee >= 18" +
+                "context Person inv: self.age >= 18" +
 //                "context Person inv: self.age <= self.c.age" +
 //                "context a:Person inv: a.age >= 18" +
 //                "context Person inv: self.age >= 18 and self.age->isEmpty()" +
@@ -31,11 +32,12 @@ public class parseOCL {
 
 //        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
         TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax();
+        LOGGER.info("parsing:        " + ocl);
         parseTree.apply(translateOCLToLax);
 
         LaxCondition condition = translateOCLToLax.getResult();
         LOGGER.info("Before simplify: " + condition.toString());
-        condition = condition.simplify();
+        condition.simplify();
         LOGGER.info("After simplify:  " + condition.toString());
 
         GraphBuilder builder = new GraphBuilder("test");
