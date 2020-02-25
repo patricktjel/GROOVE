@@ -22,4 +22,8 @@ public class VariableFactory {
     public static Variable getVariable(String var) {
         return variables.get(var);
     }
+
+    public static boolean contains(String var) {
+        return variables.containsKey(var);
+    }
 }

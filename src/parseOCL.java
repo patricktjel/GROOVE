@@ -19,7 +19,7 @@ public class parseOCL {
 
     static public void main(String[] args) throws ParserException, IOException, LexerException {
         String ocl =
-                "context Person inv: self.age >= 18" +
+                "context Mother inv: self.age >= 18" +
 //                "context Person inv: self.age <= self.c.age" +
 //                "context a:Person inv: a.age >= 18" +
 //                "context Person inv: self.age >= 18 and self.age->isEmpty()" +

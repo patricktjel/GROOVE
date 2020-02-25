@@ -1,6 +1,8 @@
 package groove.ocl.lax.constants;
 
-public class IntConstant extends Constant {
+import groove.ocl.lax.Expression;
+
+public class IntConstant implements Constant, Expression {
 
     private final int constant;
 
@@ -15,5 +17,15 @@ public class IntConstant extends Constant {
     @Override
     public String toString() {
         return Integer.toString(constant);
+    }
+
+    @Override
+    public void renameVar(String o, String n) {
+        //ignore
+    }
+
+    @Override
+    public String getGrooveString() {
+        return String.format("int:%s", getConstant());
     }
 }

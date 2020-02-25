@@ -5,6 +5,8 @@ import groove.grammar.aspect.AspectLabel;
 import groove.grammar.aspect.AspectNode;
 import groove.graph.GraphRole;
 import groove.ocl.lax.*;
+import groove.ocl.lax.constants.BooleanConstant;
+import groove.ocl.lax.constants.Constant;
 import groove.util.Log;
 
 import java.util.HashMap;
@@ -13,6 +15,10 @@ import java.util.logging.Logger;
 
 public class GraphBuilder {
     private final static Logger LOGGER = Log.getLogger(GraphBuilder.class.getName());
+
+    private final static String AT = "@";
+    private final static String PROD = "prod";
+    private final static String IN = "in";
 
     private AspectGraph graph;
     private int nodeNumber;
@@ -55,41 +61,30 @@ public class GraphBuilder {
         addEdge(nodeMap.get(from), label, nodeMap.get(to));
     }
 
+    /**
+     * Given a LaxCondition generate the corresponding graph in Groove
+     */
     public void laxToGraph(LaxCondition laxCon) {
         laxToGraph(laxCon, 0);
     }
 
-    // TODO: there is no difference in multiple levels of existance/universal quantification
     private void laxToGraph(LaxCondition laxCon, int level){
         String quantLvl = Integer.toString(level);
-        if (laxCon.getQuantifier().equals(Quantifier.FORALL)) {
-            addNode(quantLvl, "forall:");
-        } else { // Quantifier.Exists
-            addNode(quantLvl, "exists:");
-        }
+        addNode(quantLvl, laxCon.getQuantifier().getGrooveString());
 
         // Create connection between the current quantification level and the previous quantification level
         if (level > 0) {
-            addEdge(quantLvl, "in", Integer.toString(level-1));
+            addEdge(quantLvl, IN, Integer.toString(level-1));
         }
 
         Expression expr = laxCon.getExpression();
         if (expr instanceof Variable) {
-            //TODO: make a connection with the previous quantification level
             Variable var = (Variable) expr;
             // create the variable and connect it with the current quantification level
             createVariableNode(var);
-            addEdge(var.getVariableName(), "@", quantLvl);
+            addEdge(var.getVariableName(), AT, quantLvl);
         } else if (expr instanceof AttributedGraph) {
-            AttributedGraph aGraph = (AttributedGraph) expr;
-            String prod = prodLevelString(quantLvl);
-
-            createVariableNode(aGraph.getVariable());
-
-            addNode(prod, "prod:");
-            addNode("bool:true", "bool:true");
-
-            addEdge(prod, aGraph.getOperator().name(), "bool:true");
+            createAttributedGraph((AttributedGraph) expr, quantLvl);
         }
 
         // all nodes from this level are created and connected. Start with the next level if applicable
@@ -99,8 +94,43 @@ public class GraphBuilder {
     }
 
     /**
+     * Given an Attributed Graph create the corresponding Groove graph in the correct quantification level
+     * @param aGraph        The attributed graph
+     * @param quantLvl      The correct quantification level
+     */
+    private void createAttributedGraph(AttributedGraph aGraph, String quantLvl) {
+        // if the variable does not exist yet, create it; in most cases it will exist
+        if (!VariableFactory.contains(aGraph.getVariable().getVariableName())) {
+            createVariableNode(aGraph.getVariable());
+            addEdge(quantLvl, AT, aGraph.getVariable().getVariableName());
+        }
+
+        // create the path from the variable to the attribute and the connection with the quantification
+        createVariableNode(aGraph.getAttr1());
+        addEdge(aGraph.getVariable().getVariableName(), aGraph.getAttr1().getVariableName(), aGraph.getAttr1().getVariableName());
+        addEdge(aGraph.getAttr1().getVariableName(), AT, quantLvl);
+
+        // create the second attribute to compare with
+        //TODO: what if attr2 is not a constant
+        String attr2 = "";
+        if (aGraph.getAttr2() instanceof Constant) {
+            attr2 = createConstant((Constant) aGraph.getAttr2());
+        }
+
+        // create the production rule which compares the two attributes
+        String prod = prodLevelString(quantLvl);
+        String operator = aGraph.getOperator().getGrooveString(aGraph.getAttr1().getClassName());
+        addNode(prod, String.format("%s:", PROD));
+        addNode(BooleanConstant.TRUE.getGrooveString(), BooleanConstant.TRUE.getGrooveString());
+
+        addEdge(prod, AT, quantLvl);
+        addEdge(prod, "arg:0", aGraph.getAttr1().getVariableName());
+        addEdge(prod, "arg:1", attr2);
+        addEdge(prod, operator, BooleanConstant.TRUE.getGrooveString());
+    }
+
+    /**
      * Given a variable create the corresponding node
-     * @param variable
      */
     private void createVariableNode(Variable variable){
         String name = variable.getVariableName();
@@ -109,10 +139,20 @@ public class GraphBuilder {
     }
 
     /**
+     * Given a constant create the corresponding node in Groove
+     * @return the label of the created node.
+     */
+    private String createConstant(Constant constant) {
+        String constantString = constant.getGrooveString();
+        addNode(constantString, constantString);
+        return constantString;
+    }
+
+    /**
      * Helper function that generates the production label for a given quantification level
      */
     private String prodLevelString(String level) {
-        return String.format("prod%s", level);
+        return String.format("%s%s", PROD, level);
     }
 
     /**

@@ -19,6 +19,10 @@ public enum Quantifier {
         this.symbol = symbol;
     }
 
+    public String getGrooveString() {
+        return String.format("%s:", this.name().toLowerCase());
+    }
+
     @Override
     public String toString() {
         return symbol;

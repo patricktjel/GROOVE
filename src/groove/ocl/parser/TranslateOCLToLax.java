@@ -89,19 +89,19 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
             Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
 
-            Triple<String, TypeNode, String> e1 = determineTypeAndAttribute(expr1);
+            Triple<String, TypeNode, Variable> e1 = determineTypeAndAttribute(expr1);
             expr1 = e1.one();
             if (expr2 instanceof Constant) {
                 // so its rule 17
                 Variable var = VariableFactory.createVariable(e1.two().text());
                 LaxCondition trn = tr_N(expr1, var);
-                AttributedGraph attrGraph = new AttributedGraph(var, e1.three(), op, expr2.toString());
+                AttributedGraph attrGraph = new AttributedGraph(var, e1.three(), op, (Expression) expr2);
 
                 // given the values create the right LaxCondition
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndExpression(trn, attrGraph)));
             } else {
                 // its rule 18
-                Triple<String, TypeNode, String> e2 = determineTypeAndAttribute(expr2.toString());
+                Triple<String, TypeNode, Variable> e2 = determineTypeAndAttribute(expr2.toString());
             }
         }
     }
@@ -117,7 +117,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outALtCompareOperator(ALtCompareOperator node) {
-        resetOut(node, Operator.Lt);
+        resetOut(node, Operator.LT);
     }
 
     @Override
@@ -152,7 +152,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outABooleanLiteral(ABooleanLiteral node) {
-        resetOut(node, new BooleanConstant(Boolean.parseBoolean(node.getBooleanLiteral().getText())));
+        Constant c = Boolean.parseBoolean(node.getBooleanLiteral().getText()) ? BooleanConstant.TRUE : BooleanConstant.FALSE;
+        resetOut(node, c);
     }
 
     @Override
@@ -179,14 +180,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      * and the type of the class that the attribute is part of.
      * e.g. "self.age" in the context of Person returns (Person, age)
      * @param expr  The expression
-     * @return      A triple with the expression without attribute, the new expressions type, and the extracted attribute.
+     * @return      A triple with the expression without attribute, the new expressions type,
+     *              and the extracted attribute as a variable such that you also know the type of the attr.
      */
-    private Triple<String, TypeNode, String> determineTypeAndAttribute(String expr) {
+    private Triple<String, TypeNode, Variable> determineTypeAndAttribute(String expr) {
         String[] split = expr.split("\\.");
         String attr = split[split.length-1];
+        TypeNode typeAttr = determineType(expr);
         expr = String.join(".", Arrays.copyOfRange(split, 0, split.length - 1));
         TypeNode type = determineType(expr);
-        return new Triple<>(expr, type, attr);
+        return new Triple<>(expr, type, VariableFactory.createVariable(attr, typeAttr.text()));
     }
 
     /**
