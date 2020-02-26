@@ -32,17 +32,15 @@ public class Morphism<N extends Node,E extends Edge> extends AElementMap<N,E,N,E
     }
 
     /** Specialises the return type. */
-    @SuppressWarnings("unchecked")
     @Override
     public Map<N,N> nodeMap() {
-        return (Map<N,N>) super.nodeMap();
+        return super.nodeMap();
     }
 
     /** Specialises the return type. */
-    @SuppressWarnings("unchecked")
     @Override
     public Map<E,E> edgeMap() {
-        return (Map<E,E>) super.edgeMap();
+        return super.edgeMap();
     }
 
     @Override

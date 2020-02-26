@@ -97,7 +97,7 @@ abstract public class GraphBasedModel<R> extends NamedResourceModel<R> {
     }
 
     /** Convenience method to return the inverse of a given model map. */
-    private final Map<Element,Element> getInverseMap(ElementMap map) {
+    private Map<Element,Element> getInverseMap(ElementMap map) {
         Map<Element,Element> result = new HashMap<>();
         for (Map.Entry<? extends Node,? extends Node> nodeEntry : map.nodeMap()
             .entrySet()) {
@@ -123,17 +123,15 @@ abstract public class GraphBasedModel<R> extends NamedResourceModel<R> {
         }
 
         /** Specialises the return type. */
-        @SuppressWarnings("unchecked")
         @Override
         public Map<AspectNode,N> nodeMap() {
-            return (Map<AspectNode,N>) super.nodeMap();
+            return super.nodeMap();
         }
 
         /** Specialises the return type. */
-        @SuppressWarnings("unchecked")
         @Override
         public Map<AspectEdge,E> edgeMap() {
-            return (Map<AspectEdge,E>) super.edgeMap();
+            return super.edgeMap();
         }
     }
 

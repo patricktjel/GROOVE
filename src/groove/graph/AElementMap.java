@@ -217,7 +217,7 @@ abstract public class AElementMap<SN extends Node,SE extends Edge,TN extends Nod
      * Returns the built-in node map.
      */
     @Override
-    public Map<SN,? extends TN> nodeMap() {
+    public Map<SN, TN> nodeMap() {
         return this.nodeMap;
     }
 
@@ -225,7 +225,7 @@ abstract public class AElementMap<SN extends Node,SE extends Edge,TN extends Nod
      * Returns the built-in edge map.
      */
     @Override
-    public Map<SE,? extends TE> edgeMap() {
+    public Map<SE, TE> edgeMap() {
         return this.edgeMap;
     }
 
