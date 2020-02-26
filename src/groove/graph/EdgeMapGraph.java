@@ -28,8 +28,17 @@ import java.util.Set;
  * @author Arend Rensink
  * @version $Revision: 5787 $ $Date: 2008-01-30 09:32:51 $
  */
-abstract public class EdgeMapGraph<N extends Node,E extends GEdge<N>> extends AGraph<N,E> implements
-    Cloneable {
+abstract public class EdgeMapGraph<N extends Node,E extends GEdge<N>> extends AGraph<N,E> implements Cloneable {
+
+    /**
+     * Map from the nodes of this graph to the corresponding sets of outgoing edges.
+     * @invariant <code>edgeMap: DefaultNode -> 2^DefaultEdge</code>
+     */
+    private final Map<N,Set<E>> edgeMap = new LinkedHashMap<>();
+
+    /** The role of this default graph. */
+    private final GraphRole role;
+
     /**
      * Constructs a new, empty Graph with a given graph role.
      * @param name the (non-{@code null}) name of the graph.
@@ -90,7 +99,7 @@ abstract public class EdgeMapGraph<N extends Node,E extends GEdge<N>> extends AG
         assert !isFixed() : "Trying to add " + node + " to unmodifiable graph";
         boolean added = !containsNode(node);
         if (added) {
-            this.edgeMap.put(node, new LinkedHashSet<E>());
+            this.edgeMap.put(node, new LinkedHashSet<>());
             fireAddNode(node);
         }
         return added;
@@ -138,14 +147,4 @@ abstract public class EdgeMapGraph<N extends Node,E extends GEdge<N>> extends AG
     public final GraphRole getRole() {
         return this.role;
     }
-
-    /**
-     * Map from the nodes of this graph to the corresponding sets of outgoing
-     * edges.
-     * @invariant <tt>edgeMap: DefaultNode -> 2^DefaultEdge</tt>
-     */
-    private final Map<N,Set<E>> edgeMap = new LinkedHashMap<>();
-
-    /** The role of this default graph. */
-    private final GraphRole role;
 }

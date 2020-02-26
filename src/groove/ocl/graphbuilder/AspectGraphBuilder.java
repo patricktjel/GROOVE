@@ -1,9 +1,10 @@
-package groove.ocl;
+package groove.ocl.graphbuilder;
 
 import groove.grammar.aspect.AspectGraph;
 import groove.grammar.aspect.AspectLabel;
 import groove.grammar.aspect.AspectNode;
 import groove.graph.GraphRole;
+import groove.ocl.GrammarStorage;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.AttributedGraph;
 import groove.ocl.lax.graph.Graph;
@@ -17,8 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class GraphBuilder {
-    private final static Logger LOGGER = Log.getLogger(GraphBuilder.class.getName());
+public class AspectGraphBuilder {
+    private final static Logger LOGGER = Log.getLogger(AspectGraphBuilder.class.getName());
 
     private final static String AT = "@";
     private final static String PROD = "prod";
@@ -32,7 +33,7 @@ public class GraphBuilder {
      * Creates or overwrites the graph with the name {@param ruleName}
      * And provides helper methods to make it easier to create graphs of type Rule conditions.
      */
-    public GraphBuilder(String graphName) {
+    public AspectGraphBuilder(String graphName) {
         graph = new AspectGraph(graphName, GraphRole.RULE);
         nodeNumber = 0;
         nodeMap = new HashMap<>();

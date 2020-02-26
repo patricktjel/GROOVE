@@ -1,4 +1,4 @@
-import groove.ocl.GraphBuilder;
+import groove.ocl.graphbuilder.AspectGraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
@@ -40,7 +40,7 @@ public class parseOCL {
         condition.simplify();
         LOGGER.info("After simplify:  " + condition.toString());
 
-        GraphBuilder builder = new GraphBuilder("test");
+        AspectGraphBuilder builder = new AspectGraphBuilder("test");
         builder.laxToGraph(condition);
         builder.save();
 //        testGraphBuilder();
@@ -50,7 +50,7 @@ public class parseOCL {
      * This constructs the graph for "context Person inv: self.age >= 18"
      */
     public static void testGraphBuilder() {
-        GraphBuilder builder = new GraphBuilder("test");
+        AspectGraphBuilder builder = new AspectGraphBuilder("test");
         builder.addNode("forall","forall:");
         builder.addNode("person", "type:Person");
 

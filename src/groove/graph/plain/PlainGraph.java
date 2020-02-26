@@ -44,8 +44,7 @@ public class PlainGraph extends EdgeMapGraph<PlainNode,PlainEdge> implements Clo
 
     @Override
     public PlainGraph clone() {
-        PlainGraph result = new PlainGraph(this);
-        return result;
+        return new PlainGraph(this);
     }
 
     @Override

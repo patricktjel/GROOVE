@@ -185,5 +185,5 @@ public interface Graph {
     GraphRole getRole();
 
     /** Default name for graphs. */
-    public final String NO_NAME = "nameless graph";
+    String NO_NAME = "nameless graph";
 }

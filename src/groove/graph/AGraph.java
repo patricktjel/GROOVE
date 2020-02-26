@@ -32,8 +32,28 @@ import groove.util.cache.AbstractCacheHolder;
  * @author Arend Rensink
  * @version $Revision: 5786 $
  */
-public abstract class AGraph<N extends Node,E extends GEdge<N>>
-    extends AbstractCacheHolder<GraphCache<N,E>>implements GGraph<N,E> {
+public abstract class AGraph<N extends Node,E extends GEdge<N>> extends AbstractCacheHolder<GraphCache<N,E>>implements GGraph<N,E> {
+    /**
+     * Private copy of the static variable to allow compiler optimization.
+     */
+    static private final boolean GATHER_STATISTICS = Groove.GATHER_STATISTICS;
+    /**
+     * Counts the number of graphs that were not fixed. Added for debugging
+     * purposes: observers of modifiable graphs may cause memory leaks.
+     */
+    static private int modifiableGraphCount = 0;
+    /**
+     * The current strategy for computing isomorphism certificates.
+     * @see #getCertifier(boolean)
+     */
+    static private CertificateStrategy certificateFactory = new PartitionRefiner(null);
+
+    private String name;
+    /**
+     * Map in which various kinds of data can be stored.
+     */
+    private GraphInfo graphInfo;
+
     /**
      * Constructs an abstract named graph.
      * @param name the (non-{@code null}) name of the graph.
@@ -43,6 +63,47 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>>
         modifiableGraphCount++;
         assert name != null;
         this.name = name;
+    }
+
+    /**
+     * Returns the number of graphs created and never fixed.
+     * @return the number of graphs created and never fixed
+     */
+    static public int getModifiableGraphCount() {
+        return modifiableGraphCount;
+    }
+
+    /**
+     * Provides a textual description of a given graph. Lists the nodes and
+     * their outgoing edges.
+     * @param graph the graph to be described
+     * @return a textual description of <tt>graph</tt>
+     */
+    public static String toString(Graph graph) {
+        StringBuffer result = new StringBuffer();
+        if (graph.hasInfo()) {
+            result.append(graph.getInfo());
+        }
+        result.append(String.format("Nodes: %s%n", graph.nodeSet()));
+        result.append(String.format("Edges: %s%n", graph.edgeSet()));
+        return "Nodes: " + graph.nodeSet() + "; Edges: " + graph.edgeSet();
+    }
+
+    /**
+     * Returns the strategy for computing isomorphism certificates.
+     * @return the strategy for computing isomorphism certificates
+     */
+    static public CertificateStrategy getCertificateFactory() {
+        return certificateFactory;
+    }
+
+    /**
+     * Changes the strategy for computing isomorphism certificates.
+     * @param certificateFactory the new strategy
+     * @see #getCertifier(boolean)
+     */
+    static public void setCertificateFactory(CertificateStrategy certificateFactory) {
+        AGraph.certificateFactory = certificateFactory;
     }
 
     /*
@@ -62,6 +123,8 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>>
         assert isTypeCorrect(elem) : String.format("Edge %s is not of correct type", elem);
         return edgeSet().contains(elem);
     }
+
+    // -------------------- Graph listener methods ---------------------------
 
     /**
      * This implementation retrieves the node-to-edges mapping from the cache,
@@ -85,12 +148,8 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>>
      */
     @Override
     public Set<? extends E> outEdgeSet(Node node) {
-        assert isTypeCorrect(node) : String.format("Type %s of node %s incorrect for this graph",
-            node.getClass()
-                .getName(),
-            node);
-        Set<? extends E> result = getCache().getNodeOutEdgeMap()
-            .get(node);
+        assert isTypeCorrect(node) : String.format("Type %s of node %s incorrect for this graph", node.getClass().getName(), node);
+        Set<? extends E> result = getCache().getNodeOutEdgeMap().get(node);
         if (result == null) {
             return Collections.emptySet();
         } else {
@@ -164,8 +223,6 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>>
     public String toString() {
         return toString(this);
     }
-
-    // -------------------- Graph listener methods ---------------------------
 
     /**
      * Calls {@link GraphCache#addUpdate(Node)}
@@ -288,6 +345,8 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>>
         }
     }
 
+    // -------------------- REPORTER DEFINITIONS ------------------------
+
     /* Overridden to rule out the CloneNotSupportedException */
     @Override
     public abstract AGraph<N,E> clone();
@@ -329,81 +388,14 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>>
     }
 
     @Override
-    public void setName(String name) {
-        assert!isFixed();
-        assert name != null;
-        this.name = name;
-    }
-
-    @Override
     public String getName() {
         return this.name;
     }
 
-    private String name = NO_NAME;
-
-    /**
-     * Map in which various kinds of data can be stored.
-     */
-    private GraphInfo graphInfo;
-
-    // -------------------- REPORTER DEFINITIONS ------------------------
-
-    /**
-     * Returns the number of graphs created and never fixed.
-     * @return the number of graphs created and never fixed
-     */
-    static public int getModifiableGraphCount() {
-        return modifiableGraphCount;
-    }
-
-    /**
-     * Provides a textual description of a given graph. Lists the nodes and
-     * their outgoing edges.
-     * @param graph the graph to be described
-     * @return a textual description of <tt>graph</tt>
-     */
-    public static String toString(Graph graph) {
-        StringBuffer result = new StringBuffer();
-        if (graph.hasInfo()) {
-            result.append(graph.getInfo());
-        }
-        result.append(String.format("Nodes: %s%n", graph.nodeSet()));
-        result.append(String.format("Edges: %s%n", graph.edgeSet()));
-        return "Nodes: " + graph.nodeSet() + "; Edges: " + graph.edgeSet();
-    }
-
-    /**
-     * Private copy of the static variable to allow compiler optimization.
-     */
-    static private final boolean GATHER_STATISTICS = Groove.GATHER_STATISTICS;
-
-    /**
-     * Counts the number of graphs that were not fixed. Added for debugging
-     * purposes: observers of modifiable graphs may cause memory leaks.
-     */
-    static private int modifiableGraphCount = 0;
-    /**
-     * The current strategy for computing isomorphism certificates.
-     * @see #getCertifier(boolean)
-     */
-    static private CertificateStrategy certificateFactory =
-        new PartitionRefiner((GGraph<Node,GEdge<Node>>) null);
-
-    /**
-     * Changes the strategy for computing isomorphism certificates.
-     * @param certificateFactory the new strategy
-     * @see #getCertifier(boolean)
-     */
-    static public void setCertificateFactory(CertificateStrategy certificateFactory) {
-        AGraph.certificateFactory = certificateFactory;
-    }
-
-    /**
-     * Returns the strategy for computing isomorphism certificates.
-     * @return the strategy for computing isomorphism certificates
-     */
-    static public CertificateStrategy getCertificateFactory() {
-        return certificateFactory;
+    @Override
+    public void setName(String name) {
+        assert!isFixed();
+        assert name != null;
+        this.name = name;
     }
 }
