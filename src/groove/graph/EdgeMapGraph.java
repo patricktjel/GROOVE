@@ -83,12 +83,12 @@ abstract public class EdgeMapGraph<N extends Node,E extends GEdge<N>> extends AG
     }
 
     @Override
-    public Set<? extends E> outEdgeSet(Node node) {
+    public Set<E> outEdgeSet(Node node) {
         return Collections.unmodifiableSet(this.edgeMap.get(node));
     }
 
     @Override
-    public Set<? extends N> nodeSet() {
+    public Set<N> nodeSet() {
         return Collections.unmodifiableSet(this.edgeMap.keySet());
     }
 

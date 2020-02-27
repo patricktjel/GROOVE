@@ -16,30 +16,19 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static groove.ocl.Groove.*;
+
+
 public class GraphBuilder {
     private final static Logger LOGGER = Log.getLogger(GraphBuilder.class.getName());
 
-    private final static String AT = "@";
-    private final static String PROD = "prod:";
-    private final static String IN = "in";
-    private final static String TYPE = "type:";
+    // <Graph, <nodeName, PlainNode>>
+    private static Map<PlainGraph, Map<String, PlainNode>> graphNodeMap = new HashMap<>();
+    private static int uniqueNode = 0;
+    private static int uniqueGraph = 0;
 
-    // <graphName, <nodeName, PlainNode>>
-    private Map<PlainGraph, Map<String, PlainNode>> graphNodeMap;
-    // <varName(nodeName), type>
-    private int unique_name;
-
-    /**
-     * Creates or overwrites the graph with the name {@param ruleName}
-     * And provides helper methods to make it easier to create graphs of type Rule conditions.
-     */
-    public GraphBuilder() {
-        this.graphNodeMap = new HashMap<>();
-        this.unique_name = 0;
-    }
-
-    public PlainGraph createGraph() {
-        PlainGraph graph = new PlainGraph(getUniqueName(), GraphRole.NONE);
+    public static PlainGraph createGraph() {
+        PlainGraph graph = new PlainGraph(getUniqueGraphName(), GraphRole.NONE);
         graphNodeMap.put(graph, new HashMap<>());
         return graph;
     }
@@ -49,11 +38,11 @@ public class GraphBuilder {
      *      The label of a node is implemented as a self loop.
      * @param label     The name of a node
      */
-    public String addNode(PlainGraph graph, String nodeName, String label) {
+    public static String addNode(PlainGraph graph, String nodeName, String label) {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
         if (!nodeMap.containsKey(nodeName)) {
             PlainNode node = graph.addNode();
-            String type = String.format("%s%s", TYPE, label);
+            String type = String.format("%s:%s", TYPE, label);
             graph.addEdge(node, type, node);
 
             nodeMap.put(nodeName, node);
@@ -61,19 +50,55 @@ public class GraphBuilder {
         return nodeName;
     }
 
-    public String addNode(PlainGraph graph, String label) {
-        return this.addNode(graph, getUniqueName(), label);
+    public static String addNode(PlainGraph graph, String label) {
+        return addNode(graph, getUniqueNodeName(), label);
     }
 
     /**
      * Add an edge from {@param from} to {@param to} with the label {@param label}
      */
-    public void addEdge(PlainGraph graph, String from, String label, String to) {
+    public static void addEdge(PlainGraph graph, String from, String label, String to) {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
         graph.addEdge(nodeMap.get(from), label, nodeMap.get(to));
     }
 
-    public void addAttributedGraph(PlainGraph graph, String varName, Tuple2<String, TypeNode> attrType, Operator op, Constant n) {
+    public static void removeEdge(PlainGraph graph, PlainEdge edge) {
+        graph.removeEdge(edge);
+    }
+
+    public static void removeNode(PlainGraph graph, PlainNode node) {
+        graph.removeNode(node);
+        graphNodeMap.get(graph).remove(getVarName(graph, node));
+    }
+
+    public static void removeGraph(PlainGraph graph) {
+        graphNodeMap.remove(graph);
+    }
+
+    /**
+     * Create a clone for the given graph, create a clone of the corresponding nodeMap
+     * and rename the graph to put it as a unique graph in the graphNodeMap
+     * @param graph     The graph to clone
+     * @return          The cloned graph
+     */
+    public static PlainGraph cloneGraph(PlainGraph graph) {
+        PlainGraph g = graph.clone();
+
+        //clone the map
+        Map<String, PlainNode> nodeMap = graphNodeMap.get(graph).entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        g.setName(getUniqueGraphName());
+        graphNodeMap.put(g, nodeMap);
+        return g;
+    }
+
+    /**
+     * Given a graph in which v:T is already defined add the attributed graph components
+     * (rule 17)
+     */
+    public static void addAttributedGraph(PlainGraph graph, String varName, Tuple2<String, TypeNode> attrType, Operator op, Constant n) {
         String aType = attrType.getSecond().text();
         String attr = addNode(graph, aType);
 
@@ -85,7 +110,7 @@ public class GraphBuilder {
 
         // create production nodes
         String operator = op.getGrooveString(aType);
-        String prod = addNode(graph, String.format("%s", PROD));
+        String prod = addNode(graph, String.format("%s:", PROD));
         String bool = addNode(graph, BooleanConstant.TRUE.getGrooveString());
 
         //connect production nodes
@@ -94,7 +119,13 @@ public class GraphBuilder {
         addEdge(graph, prod, operator, bool);
     }
 
-    public String getVariable(String key) {
+    /**
+     * Given a variable Name (exists only in the code), determine its type by looking in the OutEdge set of the given variable name
+     * @param key       The variable name
+     * @return          The type of the variable
+     *                  or null if the variable does not exists
+     */
+    public static String getVariableType(String key) {
         for (Map.Entry<PlainGraph, Map<String, PlainNode>> entry :graphNodeMap.entrySet()) {
             if (entry.getValue().containsKey(key)) {
                 PlainNode node = entry.getValue().get(key);
@@ -102,35 +133,83 @@ public class GraphBuilder {
                         .filter(e -> e.label().toString().contains("type:"))
                         .collect(Collectors.toList())
                         .get(0);
-                return edge.label().toString().replace(TYPE, "");
+                return edge.label().toString().replace(String.format("%s:",TYPE), "");
             }
         }
         // shouldn't happen unless method is called with a key that does not exist
         return null;
     }
 
-    public PlainGraph cloneGraph(PlainGraph graph) {
-        PlainGraph g = graph.clone();
-
-        //clone the map
-        Map<String, PlainNode> nodeMap = graphNodeMap.get(graph).entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        g.setName(getUniqueName());
-        graphNodeMap.put(g, nodeMap);
-        return g;
+    /**
+     * Given a graph in which the v:T does exist,
+     * create a node (nodeName:T) which is equal to v:T
+     * (rule22)
+     */
+    public static void addRule22(PlainGraph graph, String nodeName) {
+        String vp = (String) graphNodeMap.get(graph).keySet().toArray()[0];
+        addNode(graph, nodeName, getVariableType(vp));
+        addEdge(graph, vp, EQ, nodeName);
     }
 
     /**
      * Saves the created graph
      */
-    public void save(PlainGraph graph) {
+    public static void save(PlainGraph graph) {
         //TODO fix the save
 //        GrammarStorage.saveGraph(graph);
     }
 
-    private String getUniqueName() {
-        return String.valueOf(unique_name++);
+    /**
+     * An helper function to generate a Unique Graph Name ("0")
+     */
+    private static String getUniqueGraphName() {
+        return String.valueOf(uniqueGraph++);
+    }
+
+    /**
+     * An helper function to generate a Unique Node name ("n0")
+     */
+    private static String getUniqueNodeName() {
+        return String.format("n%d", uniqueNode++);
+    }
+
+    /**
+     * Static helper function that connects the Groove names within one specific graph with the variable names (and generated names)
+     * Of the different Lax conditions such that not every graph starts with a node n0
+     */
+    public static String graphToString(PlainGraph graph) {
+        String result = graph.edgeSet().toString();
+        for (Map.Entry<String, PlainNode> v : graphNodeMap.get(graph).entrySet()) {
+            result = result.replace(v.getValue().toString(),  v.getKey());
+        }
+        return result;
+    }
+
+    /**
+     * Given a graph, an old graph node name and a new graph node name
+     * Check if the old graph node name exists in the current graph according to the graphNodeMap
+     * If so replace the old graph node name with the new graph node name
+     * @param graph     The graph
+     * @param o         The old graph node name
+     * @param n         The new graph node name
+     */
+    public static void renameVar(PlainGraph graph, String o, String n) {
+        PlainNode node = graphNodeMap.get(graph).get(o);
+        if (node != null) {
+            // if the graph contains the old node, replace that name with the new name
+            graphNodeMap.get(graph).remove(o);
+            graphNodeMap.get(graph).put(n, node);
+        }
+    }
+
+    /**
+     * Given a PlainNode from the graph, return its variable name;
+     */
+    public static String getVarName(PlainGraph graph, PlainNode grooveName) {
+        return graphNodeMap.get(graph).entrySet().stream()
+                .filter(e -> e.getValue().equals(grooveName))
+                .collect(Collectors.toList())
+                .get(0)
+                .getKey();
     }
 }

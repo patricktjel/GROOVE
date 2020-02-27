@@ -11,7 +11,7 @@ import groove.ocl.InvalidOCLException;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
-import groove.ocl.lax.condition.AndExpression;
+import groove.ocl.lax.condition.AndCondition;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
@@ -36,13 +36,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     // The defined type graphs
     private TypeGraph typeGraph;
 
-    private GraphBuilder graphBuilder;
-
     private LaxCondition result;
 
     public TranslateOCLToLax() {
         this.typeGraph = GrammarStorage.getTypeGraphs();
-        this.graphBuilder = new GraphBuilder();
     }
 
     @Override
@@ -77,8 +74,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             var = "self";
         }
 
-        PlainGraph graph = graphBuilder.createGraph();
-        graphBuilder.addNode(graph, var, clazz);
+        PlainGraph graph = GraphBuilder.createGraph();
+        GraphBuilder.addNode(graph, var, clazz);
         resetOut(node, graph);
     }
 
@@ -102,16 +99,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr1 = expr1AttrType.getFirst().getFirst();
             if (expr2 instanceof Constant) {
                 // so its rule17
-                PlainGraph var = graphBuilder.createGraph();
-                String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
+                PlainGraph var = GraphBuilder.createGraph();
+                String varName = GraphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
 
-                LaxCondition trn = tr_N(expr1, graphBuilder.cloneGraph(var));
+                LaxCondition trn = tr_N(expr1, GraphBuilder.cloneGraph(var));
 
-                PlainGraph attrGraph = graphBuilder.cloneGraph(var);
-                graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(),op ,(Constant) expr2);
+                PlainGraph attrGraph = GraphBuilder.cloneGraph(var);
+                GraphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(),op ,(Constant) expr2);
 
                 // given the values create the right LaxCondition
-                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndExpression(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
             } else {
                 // its rule 18
                 Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2.toString());
@@ -221,14 +218,20 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Collections.addAll(split, expr.split("\\."));
 
         // TODO check if an expression could start without a custom variable (e.g. self), if so a nullpointer exists here
-        String curType = graphBuilder.getVariable(split.get(0));
+        String curType = GraphBuilder.getVariableType(split.get(0));
         split.remove(split.get(0));
 
         // find the first node
-        TypeNode type = typeGraph.nodeSet().stream()
+        List<TypeNode> types = typeGraph.nodeSet().stream()
                 .filter(n -> n.text().equals(curType))
-                .collect(Collectors.toList())
-                .get(0);
+                .collect(Collectors.toList());
+
+        if (types.isEmpty()) {
+            LOGGER.severe(String.format("In the type graph is no %s-type defined", curType));
+            throw new InvalidOCLException();
+        }
+
+        TypeNode type = types.get(0);
         for (String i: split) {
             // follow the edges to the final type node
             List<? extends TypeEdge> typeEdges = typeGraph.outEdgeSet(type).stream()
@@ -277,7 +280,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             }
         } else {
             // rule22
-            //TODO: apply rule 22
+            GraphBuilder.addRule22(graph, expr);
             con = new LaxCondition(Quantifier.EXISTS, graph);
         }
         return con;
