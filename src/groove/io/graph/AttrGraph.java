@@ -43,12 +43,9 @@ import groove.graph.plain.PlainLabel;
 /**
  * Intermediate graph format used for loading and saving graphs.
  * Characteristics are:
- * <li> Nodes and edge may have string attributes
- * (corresponding to XML attributes).
- * <li> The graph maintains a
- * mapping from string identifiers to nodes.
- * <li> The graph maintains a set of node tuples, stored as lists of nodes.
- * (This is used to serialise shape equivalence relations.)
+ * <li> Nodes and edge may have string attributes (corresponding to XML attributes).
+ * <li> The graph maintains a mapping from string identifiers to nodes.
+ * <li> The graph maintains a set of node tuples, stored as lists of nodes. (This is used to serialise shape equivalence relations.)
  * @author Arend Rensink
  * @version $Revision $
  */

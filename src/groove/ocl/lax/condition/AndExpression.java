@@ -17,15 +17,15 @@ public class AndExpression implements Condition {
         return expr2;
     }
 
-    public void renameVar(String o, String n) {
-        expr1.renameVar(o, n);
-        expr2.renameVar(o, n);
-    }
-
-    @Override
-    public boolean simplify() {
-        return expr1.simplify() || expr2.simplify();
-    }
+//    public void renameVar(String o, String n) {
+//        expr1.renameVar(o, n);
+//        expr2.renameVar(o, n);
+//    }
+//
+//    @Override
+//    public boolean simplify() {
+//        return expr1.simplify() || expr2.simplify();
+//    }
 
     @Override
     public String toString() {

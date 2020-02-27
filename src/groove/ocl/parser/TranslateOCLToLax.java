@@ -5,24 +5,22 @@ import de.tuberlin.cs.cis.ocl.parser.node.*;
 import groove.grammar.type.TypeEdge;
 import groove.grammar.type.TypeGraph;
 import groove.grammar.type.TypeNode;
+import groove.graph.plain.PlainGraph;
 import groove.ocl.GrammarStorage;
 import groove.ocl.InvalidOCLException;
+import groove.ocl.graphbuilder.GraphBuilder;
+import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
-import groove.ocl.lax.*;
 import groove.ocl.lax.condition.AndExpression;
 import groove.ocl.lax.condition.LaxCondition;
-import groove.ocl.lax.graph.*;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
 import groove.ocl.lax.graph.constants.IntConstant;
 import groove.ocl.lax.graph.constants.StringConstant;
 import groove.util.Log;
-import groove.util.Triple;
+import groovy.lang.Tuple2;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -38,10 +36,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     // The defined type graphs
     private TypeGraph typeGraph;
 
+    private GraphBuilder graphBuilder;
+
     private LaxCondition result;
 
     public TranslateOCLToLax() {
         this.typeGraph = GrammarStorage.getTypeGraphs();
+        this.graphBuilder = new GraphBuilder();
     }
 
     @Override
@@ -51,9 +52,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outAConstraint(AConstraint node) {
-        Variable variable = (Variable) getOut(node.getContextDeclaration());
+        PlainGraph graph = (PlainGraph) getOut(node.getContextDeclaration());
         LaxCondition con = (LaxCondition) getOut(node.getContextBodypart().get(0));
-        resetOut(node, new LaxCondition(Quantifier.FORALL, variable, con));
+        resetOut(node, new LaxCondition(Quantifier.FORALL, graph, con));
     }
 
     /**
@@ -75,7 +76,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             clazz = getOut(node.getName()).toString();
             var = "self";
         }
-        resetOut(node, VariableFactory.createVariable(var,clazz));
+
+        PlainGraph graph = graphBuilder.createGraph();
+        graphBuilder.addNode(graph, var, clazz);
+        resetOut(node, graph);
     }
 
     @Override
@@ -94,19 +98,23 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
             Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
 
-            Triple<String, TypeNode, Variable> e1 = determineTypeAndAttribute(expr1);
-            expr1 = e1.one();
+            Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(expr1);
+            expr1 = expr1AttrType.getFirst().getFirst();
             if (expr2 instanceof Constant) {
                 // so its rule17
-                Variable var = VariableFactory.createVariable(e1.two().text());
-                LaxCondition trn = tr_N(expr1, var);
-                AttributedGraph attrGraph = new AttributedGraph(var, e1.three(), op, (Graph) expr2);
+                PlainGraph var = graphBuilder.createGraph();
+                String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
+
+                LaxCondition trn = tr_N(expr1, graphBuilder.cloneGraph(var));
+
+                PlainGraph attrGraph = graphBuilder.cloneGraph(var);
+                graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(),op ,(Constant) expr2);
 
                 // given the values create the right LaxCondition
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndExpression(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
             } else {
                 // its rule 18
-                Triple<String, TypeNode, Variable> e2 = determineTypeAndAttribute(expr2.toString());
+                Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2.toString());
             }
         }
     }
@@ -181,20 +189,26 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     /**
-     * Given an expression determine the attribute
-     * and the type of the class that the attribute is part of.
-     * e.g. "self.age" in the context of Person returns (Person, age)
-     * @param expr  The expression
-     * @return      A triple with the expression without attribute, the new expressions type,
-     *              and the extracted attribute as a variable such that you also know the type of the attr.
+     * Given an expression determine the new expr and attribute (expr.attr)
+     * and the type of both the new expr and the attr
+     *
+     * e.g. "self.age" in the context of Person returns ((self, Person)(age, Int))
+     * @param expr The expression
+     * @return      A double Tuple with the expression without the attribute and its TypeNode
+     *              and the extracted attribute and its TypeNode.
      */
-    private Triple<String, TypeNode, Variable> determineTypeAndAttribute(String expr) {
+    private Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> determineTypeAndAttribute(String expr) {
         String[] split = expr.split("\\.");
+
         String attr = split[split.length-1];
         TypeNode typeAttr = determineType(expr);
+        Tuple2<String, TypeNode> attrType = new Tuple2<>(attr, typeAttr);
+
         expr = String.join(".", Arrays.copyOfRange(split, 0, split.length - 1));
         TypeNode type = determineType(expr);
-        return new Triple<>(expr, type, VariableFactory.createVariable(attr, typeAttr.text()));
+        Tuple2<String, TypeNode> exprType = new Tuple2<>(expr, type);
+
+        return new Tuple2<>(exprType, attrType);
     }
 
     /**
@@ -207,9 +221,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Collections.addAll(split, expr.split("\\."));
 
         // TODO check if an expression could start without a custom variable (e.g. self), if so a nullpointer exists here
-        Variable variable = VariableFactory.getVariable(split.get(0));
-        split.remove(variable.getVariableName());
-        String curType = variable.getClassName();
+        String curType = graphBuilder.getVariable(split.get(0));
+        split.remove(split.get(0));
 
         // find the first node
         TypeNode type = typeGraph.nodeSet().stream()
@@ -238,7 +251,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     /**
      * The tr_N translation rules
      */
-    private LaxCondition tr_N(String expr, Variable var) {
+    private LaxCondition tr_N(String expr, PlainGraph graph) {
         LaxCondition con;
         if (expr.contains(".")) {
             //TODO What if the expr contains multiple dots?
@@ -256,14 +269,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 con = null;
             } else {
                 // rule23
-                Variable exprVar = VariableFactory.createVariable(exprType.text());
-                NavigationVariable navigationVariable = new NavigationVariable(exprVar, role, var);
-                LaxCondition trn = tr_N(expr, exprVar);
-                con = new LaxCondition(Quantifier.EXISTS, navigationVariable, trn);
+//                Variable exprVar = VariableFactory.createVariable(exprType.text());
+//                NavigationVariable navigationVariable = new NavigationVariable(exprVar, role, var);
+//                LaxCondition trn = tr_N(expr, exprVar);
+//                con = new LaxCondition(Quantifier.EXISTS, navigationVariable, trn);
+                con = null;
             }
         } else {
             // rule22
-            con = new LaxCondition(Quantifier.EXISTS, new EquivVariable(expr, var.getVariableName(), var.getClassName()));
+            //TODO: apply rule 22
+            con = new LaxCondition(Quantifier.EXISTS, graph);
         }
         return con;
     }

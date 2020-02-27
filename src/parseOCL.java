@@ -1,4 +1,4 @@
-import groove.ocl.graphbuilder.AspectGraphBuilder;
+import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
@@ -19,8 +19,8 @@ public class parseOCL {
 
     static public void main(String[] args) throws ParserException, IOException, LexerException {
         String ocl =
-                "context Person inv: self.c.age >= 18" +
-//                "context Person inv: self.age >= 18" +
+//                "context Person inv: self.c.age >= 18" +
+                "context Person inv: self.age >= 18" +
 //                "context Person inv: self.age <= self.c.age" +
 //                "context a:Person inv: a.age >= 18" +
 //                "context Person inv: self.age >= 18 and self.age->isEmpty()" +
@@ -37,41 +37,13 @@ public class parseOCL {
 
         LaxCondition condition = translateOCLToLax.getResult();
         LOGGER.info("Before simplify: " + condition.toString());
-        condition.simplify();
+//        condition.simplify();
         LOGGER.info("After simplify:  " + condition.toString());
 
-        AspectGraphBuilder builder = new AspectGraphBuilder("test");
-        builder.laxToGraph(condition);
-        builder.save();
+//        GraphBuilder builder = new GraphBuilder("test");
+//        builder.laxToGraph(condition);
+//        builder.save();
 //        testGraphBuilder();
-    }
-
-    /**
-     * This constructs the graph for "context Person inv: self.age >= 18"
-     */
-    public static void testGraphBuilder() {
-        AspectGraphBuilder builder = new AspectGraphBuilder("test");
-        builder.addNode("forall","forall:");
-        builder.addNode("person", "type:Person");
-
-        builder.addNode("exists","exists:");
-        builder.addNode("int:","int:");
-
-        builder.addNode("prod","prod:");
-        builder.addNode("bool:true", "bool:true");
-        builder.addNode("int:18","int:18");
-
-        builder.addEdge("person", "@", "forall");
-        builder.addEdge("exists", "in", "forall");
-        builder.addEdge("int:", "@", "exists");
-        builder.addEdge("prod", "@", "exists");
-
-        builder.addEdge("person", "age", "int:");
-        builder.addEdge("prod", "arg:0", "int:");
-        builder.addEdge("prod", "arg:1", "int:18");
-        builder.addEdge("prod", "int:ge", "bool:true");
-
-        builder.save();
     }
 
     public static class TreePrinter extends DepthFirstAdapter {
@@ -84,10 +56,7 @@ public class parseOCL {
 
         public void defaultCase(Node node) {
             indent();
-            out.println(
-//                    node.getClass().getName() +
-//                            "\t" +
-                            node.toString());
+            out.println(node.toString());
         }
 
         public void defaultIn(Node node) {

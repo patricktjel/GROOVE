@@ -36,8 +36,6 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
     /** The set of nodes of this graph. */
     protected final Set<N> graphNodeSet;
 
-    // ------------------------- COMMANDS ------------------------------
-
     /**
      * Creates a new, named empty graph.
      * @param name name of the new graph
@@ -60,8 +58,6 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
         GraphInfo.transfer(graph, this, null);
     }
 
-    // -------------------- PackageGraph methods ---------------------
-
     @Override
     public boolean addNode(N node) {
         assert !isFixed() : "Trying to add " + node + " to unmodifiable graph";
@@ -77,12 +73,8 @@ public class NodeSetEdgeSetGraph<N extends Node,E extends GEdge<N>> extends AGra
     @Override
     public boolean addEdge(E edge) {
         assert isTypeCorrect(edge);
-        boolean result;
-        result = this.graphEdgeSet.add(edge);
-        return result;
+        return this.graphEdgeSet.add(edge);
     }
-
-    // ------------- general methods (see AbstractGraph) ----------
 
     @Override
     public boolean removeNode(N node) {
