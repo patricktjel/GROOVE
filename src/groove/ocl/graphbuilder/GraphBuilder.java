@@ -30,6 +30,9 @@ public class GraphBuilder {
     private static int uniqueNode = 0;
     private static int uniqueGraph = 0;
 
+    /**
+     * Create a new Graph and create its corresponding empty NodeMap
+     */
     public static PlainGraph createGraph() {
         PlainGraph graph = new PlainGraph(getUniqueGraphName(), GraphRole.RULE);
         graphNodeMap.put(graph, new HashMap<>());
@@ -38,18 +41,25 @@ public class GraphBuilder {
 
     /**
      * Create a new node and add the label of the node
-     *      The label of a node is implemented as a self loop.
-     * @param label     The name of a node
+     * The label of a node is implemented as a self loop
+     * @param graph     The graph in which the node is created
+     * @param nodeName  The name of the node
+     * @param label     The label of the node
+     * @return          The name of the node
      */
     public static String addNode(PlainGraph graph, String nodeName, String label) {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
         if (!nodeMap.containsKey(nodeName)) {
             PlainNode node = graph.addNode();
-            if (!label.contains(":")) {
-                // if the label does not contain ":" then 'type:' should be added
-                label = String.format("%s:%s", TYPE, label);
+
+            // if a label is given add it as an edge
+            if (label != null) {
+                if (!label.contains(":")) {
+                    // if the label does not contain ":" then 'type:' should be added
+                    label = String.format("%s:%s", TYPE, label);
+                }
+                graph.addEdge(node, label, node);
             }
-            graph.addEdge(node, label, node);
 
             nodeMap.put(nodeName, node);
         }
@@ -110,6 +120,27 @@ public class GraphBuilder {
     }
 
     /**
+     * Given a variable Name (exists only in the code), determine its type by looking in the OutEdge set of the given variable name
+     * @param key       The variable name
+     * @return          The type of the variable
+     *                  or null if the variable does not exists
+     */
+    public static String getVariableType(String key) {
+        for (Map.Entry<PlainGraph, Map<String, PlainNode>> entry :graphNodeMap.entrySet()) {
+            if (entry.getValue().containsKey(key)) {
+                PlainNode node = entry.getValue().get(key);
+                PlainEdge edge = entry.getKey().outEdgeSet(node).stream()
+                        .filter(e -> e.label().toString().contains("type:"))
+                        .collect(Collectors.toList())
+                        .get(0);
+                return edge.label().toString().replace(String.format("%s:",TYPE), "");
+            }
+        }
+        // shouldn't happen unless method is called with a key that does not exist
+        return null;
+    }
+
+    /**
      * Create a clone for the given graph, create a clone of the corresponding nodeMap
      * and rename the graph to put it as a unique graph in the graphNodeMap
      * @param graph     The graph to clone
@@ -117,15 +148,22 @@ public class GraphBuilder {
      */
     public static PlainGraph cloneGraph(PlainGraph graph) {
         PlainGraph g = graph.clone();
-
-        //clone the map
-        Map<String, PlainNode> nodeMap = graphNodeMap.get(graph).entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, PlainNode> nodeMap = cloneNodeMap(graph);
 
         g.setName(getUniqueGraphName());
         graphNodeMap.put(g, nodeMap);
         return g;
+    }
+
+    /**
+     * Create a clone of the NodeMap of a given Graph
+     * @param graph     The graph
+     * @return          The cloned NodeMap
+     */
+    public static Map<String, PlainNode> cloneNodeMap(PlainGraph graph) {
+        return graphNodeMap.get(graph).entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**
@@ -161,27 +199,6 @@ public class GraphBuilder {
     }
 
     /**
-     * Given a variable Name (exists only in the code), determine its type by looking in the OutEdge set of the given variable name
-     * @param key       The variable name
-     * @return          The type of the variable
-     *                  or null if the variable does not exists
-     */
-    public static String getVariableType(String key) {
-        for (Map.Entry<PlainGraph, Map<String, PlainNode>> entry :graphNodeMap.entrySet()) {
-            if (entry.getValue().containsKey(key)) {
-                PlainNode node = entry.getValue().get(key);
-                PlainEdge edge = entry.getKey().outEdgeSet(node).stream()
-                        .filter(e -> e.label().toString().contains("type:"))
-                        .collect(Collectors.toList())
-                        .get(0);
-                return edge.label().toString().replace(String.format("%s:",TYPE), "");
-            }
-        }
-        // shouldn't happen unless method is called with a key that does not exist
-        return null;
-    }
-
-    /**
      * Given a graph in which the v:T does exist,
      * create a node (nodeName:T) which is equal to v:T
      * (rule22)
@@ -192,34 +209,67 @@ public class GraphBuilder {
         addEdge(graph, vp, EQ, nodeName);
     }
 
+    /**
+     * Given a LaxCondition merge the recursive laxConditions into one graph including the quantification
+     * @param c     The LaxCondition
+     * @return      The resulting graph
+     */
     public static PlainGraph laxToGraph(LaxCondition c) {
         return laxToGraph(c.getGraph(), c, 0);
     }
 
     private static PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level) {
+        Map<String, PlainNode> nodeMap = new HashMap<>();
+        // add the graph to the existing graph
+        if (level > 0 ) {
+            nodeMap = cloneNodeMap(graph);
+            mergeGraphs(graph, c.getGraph());
+        }
+
+        // create the quantification of this laxCondition
         String quantLvl = Integer.toString(level);
         addNode(graph, quantLvl, c.getQuantifier().getGrooveString());
-
         // create connection between the current quantification level and the previous quantification level
-        // and add this graph
         if (level > 0) {
             addEdge(graph, quantLvl, IN, Integer.toString(level-1));
         }
 
         // connect the nodes of the graph with its quantifier
         for (Map.Entry<String, PlainNode> entry : graphNodeMap.get(c.getGraph()).entrySet()) {
-            if (!entry.getKey().equals(quantLvl)) {
-                //the quantifier shouldn't connect with itself
+            if (!entry.getKey().equals(quantLvl) && !nodeMap.containsKey(entry.getKey())) {
+                //the quantifier shouldn't connect with itself and check if the node didn't exist already in the previous quantlevel
                 addEdge(graph, entry.getKey(), AT, quantLvl);
             }
         }
 
         // all nodes from this level are created and connected. Start with the next level if applicable
-//        if (c.getCondition() instanceof LaxCondition) {
-//            return laxToGraph(graph, (LaxCondition) c.getCondition(), level + 1);
-//        } else {
+        if (c.getCondition() instanceof LaxCondition) {
+            return laxToGraph(graph, (LaxCondition) c.getCondition(), level + 1);
+        } else {
             return graph;
-//        }
+        }
+    }
+
+    /**
+     * Given two graphs merge the second graph <code>g2</code> into the first graph <code>g1</code>
+     * By adding all nodes of g2, not existing in g1 to g1
+     * and connect all edges existing in g2, not existing in g1 to g1
+     * @param g1    The first graph
+     * @param g2    The second graph
+     */
+    private static void mergeGraphs(PlainGraph g1, PlainGraph g2) {
+        // Create all nodes of g2 in g1
+        // AddNode does check if the node does exist already, if so it doesn't create a new one
+        for (Map.Entry<String, PlainNode> entry: graphNodeMap.get(g2).entrySet()){
+            addNode(g1, entry.getKey(), null);
+        }
+
+        // create all edges of g2 in g1
+        for (PlainEdge edge: g2.edgeSet()) {
+            if (!g1.containsEdge(edge)) {
+                addEdge(g1, getVarName(g2, edge.source()), edge.label().text(), getVarName(g2, edge.target()));
+            }
+        }
     }
 
     /**
@@ -237,7 +287,7 @@ public class GraphBuilder {
     }
 
     /**
-     * Static helper function that connects the Groove names within one specific graph with the variable names (and generated names)
+     * An helper function that connects the Groove names within one specific graph with the variable names (and generated names)
      * Of the different Lax conditions such that not every graph starts with a node n0
      */
     public static String graphToString(PlainGraph graph) {
