@@ -41,6 +41,7 @@ public class LaxCondition implements Condition {
      * Apply the equivalence rules to make the Lax condition simple
      * @return  The final LaxCondition result
      */
+    @SuppressWarnings("DanglingJavadoc") // Necessary for method reference in Javadoc
     public Map<String, String> simplify() {
         Map<String, String> eqEdges;
         if (condition != null) {
@@ -69,6 +70,14 @@ public class LaxCondition implements Condition {
         // Apply E3 replacement
         for (Map.Entry<String, String> entry :eqEdges.entrySet()) {
             renameVar(entry.getKey(), entry.getValue());
+        }
+
+        /** If the condition is null && the graphs are the same (according to {@link GraphBuilder#graphToString(PlainGraph graph)}) && the quantification is the same
+         * or the outer quantification is bigger, then they may be merged together */
+        if (this.condition instanceof LaxCondition
+                && GraphBuilder.graphToString(this.graph).equals(GraphBuilder.graphToString(((LaxCondition) this.condition).getGraph()))
+                && this.quantifier.compareTo(((LaxCondition) this.condition).getQuantifier()) >= 0) {
+            this.condition = ((LaxCondition) this.condition).getCondition();
         }
 
         return eqEdges;
