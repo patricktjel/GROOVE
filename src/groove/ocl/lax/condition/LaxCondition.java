@@ -49,7 +49,7 @@ public class LaxCondition implements Condition {
 
             if (condition instanceof LaxCondition && ((LaxCondition) condition).getGraph().edgeSet().isEmpty()) {
                 // if condition was an equivalence graph remove it
-                this.condition = null;
+                condition = null;
             }
         } else {
             // no condition below us anymore so check if there are equivalence edges
@@ -67,7 +67,7 @@ public class LaxCondition implements Condition {
             return eqEdges;
         }
 
-        // replace AndCondition if possible
+        // replace AndCondition if possible (part of E3)
         if (condition instanceof AndCondition) {
             replaceAndCondition();
         }
@@ -77,12 +77,25 @@ public class LaxCondition implements Condition {
             renameVar(entry.getKey(), entry.getValue());
         }
 
+        // if the condition is an AndCondition Let it simplify according to E2
+        if (condition instanceof AndCondition) {
+            condition = ((AndCondition) condition).simplifyE2();
+        }
+
+        // If condition (and this) are LaxConditions and the quantifiers bot existential, try to apply E1 rules
+        if (condition instanceof LaxCondition && quantifier.equals(Quantifier.EXISTS)
+                && ((LaxCondition) condition).getQuantifier().equals(Quantifier.EXISTS)){
+            LaxCondition laxCon = (LaxCondition) condition;
+            graph = GraphBuilder.mergeGraphs(graph, laxCon.getGraph());
+            condition = laxCon.getCondition();
+        }
+
         /** If the condition is null && the graphs are the same (according to {@link GraphBuilder#graphToString(PlainGraph graph)}) && the quantification is the same
          * or the outer quantification is bigger, then they may be merged together */
-        if (this.condition instanceof LaxCondition
-                && GraphBuilder.graphToString(this.graph).equals(GraphBuilder.graphToString(((LaxCondition) this.condition).getGraph()))
-                && this.quantifier.compareTo(((LaxCondition) this.condition).getQuantifier()) >= 0) {
-            this.condition = ((LaxCondition) this.condition).getCondition();
+        if (condition instanceof LaxCondition
+                && GraphBuilder.graphToString(graph).equals(GraphBuilder.graphToString(((LaxCondition) condition).getGraph()))
+                && quantifier.compareTo(((LaxCondition) condition).getQuantifier()) >= 0) {
+            condition = ((LaxCondition) condition).getCondition();
         }
 
         return eqEdges;
@@ -94,11 +107,11 @@ public class LaxCondition implements Condition {
     private void replaceAndCondition(){
         AndCondition c = (AndCondition) condition;
         if (c.getExpr1() == null && c.getExpr2() == null){
-            this.condition = null;
+            condition = null;
         } else if (c.getExpr1() == null) {
-            this.condition = c.getExpr2();
+            condition = c.getExpr2();
         } else if (c.getExpr2() == null) {
-            this.condition = c.getExpr1();
+            condition = c.getExpr1();
         }
         // else both != null ,the and condition will stay
     }

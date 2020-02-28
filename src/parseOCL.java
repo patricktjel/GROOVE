@@ -1,18 +1,21 @@
+import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
+import de.tuberlin.cs.cis.ocl.parser.lexer.Lexer;
+import de.tuberlin.cs.cis.ocl.parser.lexer.LexerException;
+import de.tuberlin.cs.cis.ocl.parser.node.Node;
+import de.tuberlin.cs.cis.ocl.parser.node.Start;
+import de.tuberlin.cs.cis.ocl.parser.parser.Parser;
+import de.tuberlin.cs.cis.ocl.parser.parser.ParserException;
 import groove.graph.plain.PlainGraph;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.logging.Logger;
-
-import de.tuberlin.cs.cis.ocl.parser.lexer.*;
-import de.tuberlin.cs.cis.ocl.parser.node.*;
-import de.tuberlin.cs.cis.ocl.parser.parser.*;
-import de.tuberlin.cs.cis.ocl.parser.analysis.*;
 
 public class parseOCL {
 

@@ -1,5 +1,9 @@
 package groove.ocl.lax.condition;
 
+import groove.graph.plain.PlainGraph;
+import groove.ocl.graphbuilder.GraphBuilder;
+import groove.ocl.lax.Quantifier;
+
 import java.util.Map;
 
 public class AndCondition implements Condition {
@@ -41,6 +45,26 @@ public class AndCondition implements Condition {
 
         eqEdges1.putAll(eqEdges2);
         return eqEdges1;
+    }
+
+    public Condition simplifyE2() {
+        // First try to simplify the existing AndConditions according to E2
+        if (expr1 instanceof AndCondition){
+            expr1 = ((AndCondition) expr1).simplifyE2();
+        }
+        if (expr2 instanceof AndCondition){
+            expr2 = ((AndCondition) expr2).simplifyE2();
+        }
+        // so now we are sure that both expr1 and expr 2 are LaxConditions
+        LaxCondition expr1L = (LaxCondition) expr1;
+        LaxCondition expr2L = (LaxCondition) expr2;
+        if (expr1L.getQuantifier().equals(Quantifier.EXISTS)
+                && expr2L.getQuantifier().equals(Quantifier.EXISTS)) {
+            PlainGraph graph = GraphBuilder.mergeGraphs(expr1L.getGraph(), expr2L.getGraph());
+            return new LaxCondition(Quantifier.EXISTS, graph);
+        }
+        // we can't simplify according to E2 so return the current AndCondition
+        return this;
     }
 
     @Override

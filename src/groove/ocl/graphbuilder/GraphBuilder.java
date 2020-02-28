@@ -13,20 +13,18 @@ import groove.ocl.lax.condition.Condition;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
-import groove.util.Log;
 import groovy.lang.Tuple2;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static groove.ocl.Groove.*;
 
-
+/**
+ * A singleton class based on the static principle instead of using the GraphBuilder.getInstance() principle
+ */
 public class GraphBuilder {
-    private final static Logger LOGGER = Log.getLogger(GraphBuilder.class.getName());
-
     // <Graph, <nodeName, PlainNode>>
     private static Map<PlainGraph, Map<String, PlainNode>> graphNodeMap = new HashMap<>();
     private static int uniqueNode = 0;
@@ -222,7 +220,7 @@ public class GraphBuilder {
         // add the graph to the existing graph
         if (level > 0 ) {
             nodeMap = cloneNodeMap(graph);
-            mergeGraphs(graph, c.getGraph());
+            graph = mergeGraphs(graph, c.getGraph());
         }
 
         // create the quantification of this laxCondition
@@ -271,13 +269,30 @@ public class GraphBuilder {
     }
 
     /**
+     * check if g1 subset g2 or g2 subset g1
+     * only in the first case g1 should be replaced with g2
+     * else glue the two graphs together
+     */
+    public static PlainGraph mergeGraphs(PlainGraph g1, PlainGraph g2){
+        // check if g1 subset g2 or g2 subset g1
+        // only in the first case g1 should be replaced with g2
+        // else glue the two graphs together
+        if (GraphBuilder.subsetGraphs(g1, g2)) {
+            return g2;
+        } else if (!GraphBuilder.subsetGraphs(g2, g1)) {
+            return GraphBuilder.mergeGraphsInternal(g1, g2);
+        }
+        return g1;
+    }
+
+    /**
      * Given two graphs merge the second graph <code>g2</code> into the first graph <code>g1</code>
      * By adding all nodes of g2, not existing in g1 to g1
      * and connect all edges existing in g2, not existing in g1 to g1
      * @param g1    The first graph
      * @param g2    The second graph
      */
-    private static void mergeGraphs(PlainGraph g1, PlainGraph g2) {
+    public static PlainGraph mergeGraphsInternal(PlainGraph g1, PlainGraph g2) {
         // Create all nodes of g2 in g1
         // AddNode does check if the node does exist already, if so it doesn't create a new one
         for (Map.Entry<String, PlainNode> entry: graphNodeMap.get(g2).entrySet()){
@@ -290,6 +305,30 @@ public class GraphBuilder {
                 addEdge(g1, getVarName(g2, edge.source()), edge.label().text(), getVarName(g2, edge.target()));
             }
         }
+        return g1;
+    }
+
+    /**
+     * Determines if g1 is a subset of g2
+     * @param g1    The first graph
+     * @param g2    The second graph
+     * @return      True if g1 is a subset of g2
+     *              False else
+     */
+    public static boolean subsetGraphs(PlainGraph g1, PlainGraph g2) {
+        for (PlainNode node : g1.nodeSet()) {
+            String nodeName = getVarName(g1, node);
+            if (!graphNodeMap.get(g2).containsKey(nodeName)) {
+                return false;
+            }
+        }
+
+        for (PlainEdge edge: g1.edgeSet()) {
+            if (!g2.containsEdge(edge)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
