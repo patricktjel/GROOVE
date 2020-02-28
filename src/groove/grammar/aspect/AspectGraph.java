@@ -80,17 +80,193 @@ import groove.util.parse.FormatException;
  * @version $Revision $
  */
 public class AspectGraph extends NodeSetEdgeSetGraph<AspectNode,AspectEdge> {
+    /** The singleton aspect parser instance. */
+    private static final AspectParser parser = AspectParser.getInstance();
+    /** The graph role of the aspect graph. */
+    private final GraphRole role;
+    private QualName qualName;
+    /** Flag indicating whether the graph is normal. */
+    private boolean normal;
+    /** Mapping from node identifiers to nodes. */
+    private Map<String,AspectNode> nodeIdMap;
+
     /**
      * Creates an empty graph, with a given qualified name and graph role.
      */
     public AspectGraph(String name, GraphRole graphRole) {
-        super(name.toString());
+        super(name);
         this.qualName = QualName.parse(name);
         assert graphRole.inGrammar() : String.format("Cannot create aspect graph for %s", graphRole.toString());
         this.role = graphRole;
         this.normal = true;
         // make sure the properties object is initialised
         GraphInfo.addErrors(this, this.qualName.getErrors());
+    }
+
+    /**
+     * Creates an aspect graph from a given (plain) graph.
+     * @param graph the plain graph to convert; non-null
+     * @return the resulting aspect graph; non-null
+     */
+    public static AspectGraph newInstance(Graph graph) {
+        // map from original graph elements to aspect graph elements
+        GraphToAspectMap elementMap = new GraphToAspectMap(graph.getRole());
+        GraphRole role = graph.getRole();
+        AspectGraph result = new AspectGraph(graph.getName(), role);
+        FormatErrorSet errors = new FormatErrorSet();
+        assert elementMap.isEmpty();
+        // first do the nodes;
+        for (Node node : graph.nodeSet()) {
+            AspectNode nodeImage = result.addNode(node.getNumber());
+            // update the maps
+            elementMap.putNode(node, nodeImage);
+        }
+        // look for node aspect indicators
+        // and put all correct aspect vales in a map
+        Map<Edge,AspectLabel> edgeDataMap = new HashMap<>();
+        for (Edge edge : graph.edgeSet()) {
+            AspectLabel label = parser.parse(edge.label()
+                .text(), role);
+            if (label.isNodeOnly()) {
+                AspectNode sourceImage = elementMap.getNode(edge.source());
+                sourceImage.setAspects(label);
+            } else {
+                edgeDataMap.put(edge, label);
+            }
+        }
+        // Now iterate over the remaining edges
+        for (Map.Entry<Edge,AspectLabel> entry : edgeDataMap.entrySet()) {
+            Edge edge = entry.getKey();
+            AspectLabel label = entry.getValue();
+            AspectEdge edgeImage = result.addEdge(elementMap.getNode(edge.source()), label, elementMap.getNode(edge.target()));
+            elementMap.putEdge(edge, edgeImage);
+            if (!edge.source().equals(edge.target()) && edgeImage.getRole() != EdgeRole.BINARY) {
+                errors.add("%s %s must be a node label", label.getRole().getDescription(true), label, edgeImage);
+            }
+        }
+        GraphInfo.transfer(graph, result, elementMap);
+        result.addErrors(errors);
+        result.setFixed();
+        return result;
+    }
+
+    /** Creates an empty, fixed, named aspect graph, with a given graph role. */
+    public static AspectGraph emptyGraph(String name, GraphRole role) {
+        AspectGraph result = new AspectGraph(name, role);
+        result.setFixed();
+        return result;
+    }
+
+    /** Creates an empty, fixed aspect graph, with a given graph role. */
+    public static AspectGraph emptyGraph(GraphRole role) {
+        return emptyGraph("", role);
+    }
+
+    /**
+     * Merges a given set of graphs into a single graph.
+     * Nodes with the same {@link AspectKind#ID} value are merged,
+     * all other nodes are kept distinct.
+     * The merged graph is layed out by placing the original graphs next to one another.
+     * @return a merged aspect graph or {@code null} if the set of input graphs is empty
+     */
+    public static AspectGraph mergeGraphs(Collection<AspectGraph> graphs) {
+        if (graphs.size() == 0) {
+            return null;
+        }
+        // Compute name and layout boundaries
+        StringBuilder name = new StringBuilder();
+        List<Point.Double> dimensions = new ArrayList<>();
+        double globalMaxX = 0;
+        double globalMaxY = 0;
+        for (AspectGraph graph : graphs) {
+            assert graph.getRole() == HOST;
+            if (name.length() != 0) {
+                name.append("_");
+            }
+            name.append(graph.getName());
+            // compute dimensions of this graph
+            double maxX = 0;
+            double maxY = 0;
+            LayoutMap layoutMap = GraphInfo.getLayoutMap(graph);
+            if (layoutMap != null) {
+                for (AspectNode node : graph.nodeSet()) {
+                    JVertexLayout layout = layoutMap.nodeMap()
+                        .get(node);
+                    if (layout != null) {
+                        Rectangle2D b = layout.getBounds();
+                        maxX = Math.max(maxX, b.getX() + b.getWidth());
+                        maxY = Math.max(maxY, b.getY() + b.getHeight());
+                    }
+                }
+            }
+            dimensions.add(new Point.Double(maxX, maxY));
+            globalMaxX = Math.max(globalMaxX, maxX);
+            globalMaxY = Math.max(globalMaxY, maxY);
+        }
+        // construct the result graph
+        AspectGraph result = new AspectGraph(name.toString(), HOST);
+        LayoutMap newLayoutMap = new LayoutMap();
+        FormatErrorSet newErrors = new FormatErrorSet();
+        // Local bookkeeping.
+        int nodeNr = 0;
+        int index = 0;
+        double offsetX = 0;
+        double offsetY = 0;
+        Map<AspectNode,AspectNode> nodeMap = new HashMap<>();
+        Map<String,AspectNode> sharedNodes = new HashMap<>();
+
+        // Copy the graphs one by one into the combined graph
+        for (AspectGraph graph : graphs) {
+            nodeMap.clear();
+            LayoutMap oldLayoutMap = GraphInfo.getLayoutMap(graph);
+            // Copy the nodes
+            for (AspectNode node : graph.nodeSet()) {
+                AspectNode fresh = null;
+                if (node.getId() != null) {
+                    String id = node.getId()
+                        .getContentString();
+                    if (sharedNodes.containsKey(id)) {
+                        nodeMap.put(node, sharedNodes.get(id));
+                    } else {
+                        fresh = node.clone(nodeNr++);
+                        sharedNodes.put(id, fresh);
+                    }
+                } else {
+                    fresh = node.clone(nodeNr++);
+                }
+                if (fresh != null) {
+                    newLayoutMap.copyNodeWithOffset(fresh, node, oldLayoutMap, offsetX, offsetY);
+                    nodeMap.put(node, fresh);
+                    result.addNode(fresh);
+                }
+            }
+            // Copy the edges
+            for (AspectEdge edge : graph.edgeSet()) {
+                AspectEdge fresh = new AspectEdge(nodeMap.get(edge.source()), edge.label(),
+                    nodeMap.get(edge.target()), edge.getNumber());
+                newLayoutMap.copyEdgeWithOffset(fresh, edge, oldLayoutMap, offsetX, offsetY);
+                result.addEdgeContext(fresh);
+            }
+            // Copy the errors
+            for (FormatError oldError : GraphInfo.getErrors(graph)) {
+                newErrors.add("Error in start graph '%s': %s", name, oldError);
+            }
+            // Move the offsets
+            if (globalMaxX > globalMaxY) {
+                offsetY = offsetY + dimensions.get(index)
+                    .getY() + 50;
+            } else {
+                offsetX = offsetX + dimensions.get(index)
+                    .getX() + 50;
+            }
+            index++;
+        }
+
+        // Finalise combined graph.
+        GraphInfo.setLayoutMap(result, newLayoutMap);
+        GraphInfo.setErrors(result, newErrors);
+        result.setFixed();
+        return result;
     }
 
     /* Also sets the qualified name. */
@@ -111,8 +287,6 @@ public class AspectGraph extends NodeSetEdgeSetGraph<AspectNode,AspectEdge> {
         this.qualName = qualName;
         super.setName(qualName.toString());
     }
-
-    private QualName qualName;
 
     /** Adds a given list of errors to the errors already stored in this graph. */
     private void addErrors(Collection<FormatError> errors) {
@@ -232,8 +406,7 @@ public class AspectGraph extends NodeSetEdgeSetGraph<AspectNode,AspectEdge> {
      * @see #toPlainGraph()
      */
     private PlainGraph createPlainGraph() {
-        PlainGraph result = new PlainGraph(getName(), getRole());
-        return result;
+        return new PlainGraph(getName(), getRole());
     }
 
     /**
@@ -860,191 +1033,30 @@ public class AspectGraph extends NodeSetEdgeSetGraph<AspectNode,AspectEdge> {
         return AspectFactory.instance(getRole());
     }
 
-    /** The graph role of the aspect graph. */
-    private final GraphRole role;
-    /** Flag indicating whether the graph is normal. */
-    private boolean normal;
-    /** Mapping from node identifiers to nodes. */
-    private Map<String,AspectNode> nodeIdMap;
-
-    /**
-     * Creates an aspect graph from a given (plain) graph.
-     * @param graph the plain graph to convert; non-null
-     * @return the resulting aspect graph; non-null
-     */
-    public static AspectGraph newInstance(Graph graph) {
-        // map from original graph elements to aspect graph elements
-        GraphToAspectMap elementMap = new GraphToAspectMap(graph.getRole());
-        GraphRole role = graph.getRole();
-        AspectGraph result = new AspectGraph(graph.getName(), role);
-        FormatErrorSet errors = new FormatErrorSet();
-        assert elementMap != null && elementMap.isEmpty();
-        // first do the nodes;
-        for (Node node : graph.nodeSet()) {
-            AspectNode nodeImage = result.addNode(node.getNumber());
-            // update the maps
-            elementMap.putNode(node, nodeImage);
-        }
-        // look for node aspect indicators
-        // and put all correct aspect vales in a map
-        Map<Edge,AspectLabel> edgeDataMap = new HashMap<>();
-        for (Edge edge : graph.edgeSet()) {
-            AspectLabel label = parser.parse(edge.label()
-                .text(), role);
-            if (label.isNodeOnly()) {
-                AspectNode sourceImage = elementMap.getNode(edge.source());
-                sourceImage.setAspects(label);
-            } else {
-                edgeDataMap.put(edge, label);
-            }
-        }
-        // Now iterate over the remaining edges
-        for (Map.Entry<Edge,AspectLabel> entry : edgeDataMap.entrySet()) {
-            Edge edge = entry.getKey();
-            AspectLabel label = entry.getValue();
-            AspectEdge edgeImage = result.addEdge(elementMap.getNode(edge.source()),
-                label,
-                elementMap.getNode(edge.target()));
-            elementMap.putEdge(edge, edgeImage);
-            if (!edge.source()
-                .equals(edge.target()) && edgeImage.getRole() != EdgeRole.BINARY) {
-                errors.add("%s %s must be a node label", label.getRole()
-                    .getDescription(true), label, edgeImage);
-            }
-        }
-        GraphInfo.transfer(graph, result, elementMap);
-        result.addErrors(errors);
-        result.setFixed();
-        return result;
-    }
-
-    /** Creates an empty, fixed, named aspect graph, with a given graph role. */
-    public static AspectGraph emptyGraph(String name, GraphRole role) {
-        AspectGraph result = new AspectGraph(name, role);
-        result.setFixed();
-        return result;
-    }
-
-    /** Creates an empty, fixed aspect graph, with a given graph role. */
-    public static AspectGraph emptyGraph(GraphRole role) {
-        return emptyGraph("", role);
-    }
-
-    /**
-     * Merges a given set of graphs into a single graph.
-     * Nodes with the same {@link AspectKind#ID} value are merged,
-     * all other nodes are kept distinct.
-     * The merged graph is layed out by placing the original graphs next to one another.
-     * @return a merged aspect graph or {@code null} if the set of input graphs is empty
-     */
-    public static AspectGraph mergeGraphs(Collection<AspectGraph> graphs) {
-        if (graphs.size() == 0) {
-            return null;
-        }
-        // Compute name and layout boundaries
-        StringBuilder name = new StringBuilder();
-        List<Point.Double> dimensions = new ArrayList<>();
-        double globalMaxX = 0;
-        double globalMaxY = 0;
-        for (AspectGraph graph : graphs) {
-            assert graph.getRole() == HOST;
-            if (name.length() != 0) {
-                name.append("_");
-            }
-            name.append(graph.getName());
-            // compute dimensions of this graph
-            double maxX = 0;
-            double maxY = 0;
-            LayoutMap layoutMap = GraphInfo.getLayoutMap(graph);
-            if (layoutMap != null) {
-                for (AspectNode node : graph.nodeSet()) {
-                    JVertexLayout layout = layoutMap.nodeMap()
-                        .get(node);
-                    if (layout != null) {
-                        Rectangle2D b = layout.getBounds();
-                        maxX = Math.max(maxX, b.getX() + b.getWidth());
-                        maxY = Math.max(maxY, b.getY() + b.getHeight());
-                    }
-                }
-            }
-            dimensions.add(new Point.Double(maxX, maxY));
-            globalMaxX = Math.max(globalMaxX, maxX);
-            globalMaxY = Math.max(globalMaxY, maxY);
-        }
-        // construct the result graph
-        AspectGraph result = new AspectGraph(name.toString(), HOST);
-        LayoutMap newLayoutMap = new LayoutMap();
-        FormatErrorSet newErrors = new FormatErrorSet();
-        // Local bookkeeping.
-        int nodeNr = 0;
-        int index = 0;
-        double offsetX = 0;
-        double offsetY = 0;
-        Map<AspectNode,AspectNode> nodeMap = new HashMap<>();
-        Map<String,AspectNode> sharedNodes = new HashMap<>();
-
-        // Copy the graphs one by one into the combined graph
-        for (AspectGraph graph : graphs) {
-            nodeMap.clear();
-            LayoutMap oldLayoutMap = GraphInfo.getLayoutMap(graph);
-            // Copy the nodes
-            for (AspectNode node : graph.nodeSet()) {
-                AspectNode fresh = null;
-                if (node.getId() != null) {
-                    String id = node.getId()
-                        .getContentString();
-                    if (sharedNodes.containsKey(id)) {
-                        nodeMap.put(node, sharedNodes.get(id));
-                    } else {
-                        fresh = node.clone(nodeNr++);
-                        sharedNodes.put(id, fresh);
-                    }
-                } else {
-                    fresh = node.clone(nodeNr++);
-                }
-                if (fresh != null) {
-                    newLayoutMap.copyNodeWithOffset(fresh, node, oldLayoutMap, offsetX, offsetY);
-                    nodeMap.put(node, fresh);
-                    result.addNode(fresh);
-                }
-            }
-            // Copy the edges
-            for (AspectEdge edge : graph.edgeSet()) {
-                AspectEdge fresh = new AspectEdge(nodeMap.get(edge.source()), edge.label(),
-                    nodeMap.get(edge.target()), edge.getNumber());
-                newLayoutMap.copyEdgeWithOffset(fresh, edge, oldLayoutMap, offsetX, offsetY);
-                result.addEdgeContext(fresh);
-            }
-            // Copy the errors
-            for (FormatError oldError : GraphInfo.getErrors(graph)) {
-                newErrors.add("Error in start graph '%s': %s", name, oldError);
-            }
-            // Move the offsets
-            if (globalMaxX > globalMaxY) {
-                offsetY = offsetY + dimensions.get(index)
-                    .getY() + 50;
-            } else {
-                offsetX = offsetX + dimensions.get(index)
-                    .getX() + 50;
-            }
-            index++;
-        }
-
-        // Finalise combined graph.
-        GraphInfo.setLayoutMap(result, newLayoutMap);
-        GraphInfo.setErrors(result, newErrors);
-        result.setFixed();
-        return result;
-    }
-
-    /** The singleton aspect parser instance. */
-    private static final AspectParser parser = AspectParser.getInstance();
-
     /** Factory for AspectGraph elements. */
     public static class AspectFactory extends ElementFactory<AspectNode,AspectEdge> {
+        /** Mapping from graph rules to element-producing factories. */
+        static private Map<GraphRole,AspectFactory> factoryMap = new EnumMap<>(GraphRole.class);
+
+        static {
+            factoryMap.put(RULE, new AspectFactory(RULE));
+            factoryMap.put(HOST, new AspectFactory(HOST));
+            factoryMap.put(TYPE, new AspectFactory(TYPE));
+        }
+
+        /** The graph role of the created elements. */
+        private final GraphRole graphRole;
+        /** Number of remark edges encountered thus far. */
+        private int remarkCount;
+
         /** Private constructor to ensure singleton usage. */
         protected AspectFactory(GraphRole graphRole) {
             this.graphRole = graphRole;
+        }
+
+        /** Returns the singleton instance of this class. */
+        static public AspectFactory instance(GraphRole graphRole) {
+            return factoryMap.get(graphRole);
         }
 
         @Override
@@ -1069,34 +1081,17 @@ public class AspectGraph extends NodeSetEdgeSetGraph<AspectNode,AspectEdge> {
             return new AspectEdge(source, (AspectLabel) label, target, nr);
         }
 
-        /** Number of remark edges encountered thus far. */
-        private int remarkCount;
-
         @Override
         public AspectGraphMorphism createMorphism() {
             return new AspectGraphMorphism(this.graphRole);
-        }
-
-        /** The graph role of the created elements. */
-        private final GraphRole graphRole;
-
-        /** Returns the singleton instance of this class. */
-        static public AspectFactory instance(GraphRole graphRole) {
-            return factoryMap.get(graphRole);
-        }
-
-        /** Mapping from graph rules to element-producing factories. */
-        static private Map<GraphRole,AspectFactory> factoryMap = new EnumMap<>(GraphRole.class);
-
-        static {
-            factoryMap.put(RULE, new AspectFactory(RULE));
-            factoryMap.put(HOST, new AspectFactory(HOST));
-            factoryMap.put(TYPE, new AspectFactory(TYPE));
         }
     }
 
     /** Mapping from one aspect graph to another. */
     public static class AspectGraphMorphism extends Morphism<AspectNode,AspectEdge> {
+        /** The graph role of the created elements. */
+        private final GraphRole graphRole;
+
         /** Constructs a new, empty map. */
         public AspectGraphMorphism(GraphRole graphRole) {
             super(AspectFactory.instance(graphRole));
@@ -1108,9 +1103,6 @@ public class AspectGraph extends NodeSetEdgeSetGraph<AspectNode,AspectEdge> {
         public AspectGraphMorphism newMap() {
             return new AspectGraphMorphism(this.graphRole);
         }
-
-        /** The graph role of the created elements. */
-        private final GraphRole graphRole;
     }
 
     /** Mapping from one aspect graph to another. */

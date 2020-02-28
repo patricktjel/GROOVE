@@ -1,8 +1,6 @@
 package groove.ocl.lax.graph.constants;
 
-import groove.ocl.lax.graph.Graph;
-
-public enum BooleanConstant implements Constant, Graph {
+public enum BooleanConstant implements Constant {
     TRUE(true),
     FALSE(false);
 
@@ -19,11 +17,6 @@ public enum BooleanConstant implements Constant, Graph {
     @Override
     public String toString() {
         return Boolean.toString(constant);
-    }
-
-    @Override
-    public void renameVar(String o, String n) {
-        //ignore
     }
 
     @Override

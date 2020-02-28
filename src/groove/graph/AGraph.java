@@ -80,12 +80,6 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>> extends Abstract
      * @return a textual description of <tt>graph</tt>
      */
     public static String toString(Graph graph) {
-        StringBuffer result = new StringBuffer();
-        if (graph.hasInfo()) {
-            result.append(graph.getInfo());
-        }
-        result.append(String.format("Nodes: %s%n", graph.nodeSet()));
-        result.append(String.format("Edges: %s%n", graph.edgeSet()));
         return "Nodes: " + graph.nodeSet() + "; Edges: " + graph.edgeSet();
     }
 
@@ -299,9 +293,7 @@ public abstract class AGraph<N extends Node,E extends GEdge<N>> extends Abstract
     @Override
     public N addNode() {
         N freshNode = getFactory().createNode(getNodeCounter());
-        assert!nodeSet().contains(freshNode) : String.format("Fresh node %s already in node set %s",
-            freshNode,
-            nodeSet());
+        assert!nodeSet().contains(freshNode) : String.format("Fresh node %s already in node set %s", freshNode, nodeSet());
         addNode(freshNode);
         return freshNode;
     }

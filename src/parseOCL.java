@@ -1,17 +1,21 @@
-import groove.ocl.graphbuilder.AspectGraphBuilder;
+import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
+import de.tuberlin.cs.cis.ocl.parser.lexer.Lexer;
+import de.tuberlin.cs.cis.ocl.parser.lexer.LexerException;
+import de.tuberlin.cs.cis.ocl.parser.node.Node;
+import de.tuberlin.cs.cis.ocl.parser.node.Start;
+import de.tuberlin.cs.cis.ocl.parser.parser.Parser;
+import de.tuberlin.cs.cis.ocl.parser.parser.ParserException;
+import groove.graph.plain.PlainGraph;
+import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.logging.Logger;
-
-import de.tuberlin.cs.cis.ocl.parser.lexer.*;
-import de.tuberlin.cs.cis.ocl.parser.node.*;
-import de.tuberlin.cs.cis.ocl.parser.parser.*;
-import de.tuberlin.cs.cis.ocl.parser.analysis.*;
 
 public class parseOCL {
 
@@ -32,7 +36,7 @@ public class parseOCL {
 
 //        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
         TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax();
-        LOGGER.info("parsing:        " + ocl);
+        LOGGER.info("parsing:         " + ocl);
         parseTree.apply(translateOCLToLax);
 
         LaxCondition condition = translateOCLToLax.getResult();
@@ -40,38 +44,8 @@ public class parseOCL {
         condition.simplify();
         LOGGER.info("After simplify:  " + condition.toString());
 
-        AspectGraphBuilder builder = new AspectGraphBuilder("test");
-        builder.laxToGraph(condition);
-        builder.save();
-//        testGraphBuilder();
-    }
-
-    /**
-     * This constructs the graph for "context Person inv: self.age >= 18"
-     */
-    public static void testGraphBuilder() {
-        AspectGraphBuilder builder = new AspectGraphBuilder("test");
-        builder.addNode("forall","forall:");
-        builder.addNode("person", "type:Person");
-
-        builder.addNode("exists","exists:");
-        builder.addNode("int:","int:");
-
-        builder.addNode("prod","prod:");
-        builder.addNode("bool:true", "bool:true");
-        builder.addNode("int:18","int:18");
-
-        builder.addEdge("person", "@", "forall");
-        builder.addEdge("exists", "in", "forall");
-        builder.addEdge("int:", "@", "exists");
-        builder.addEdge("prod", "@", "exists");
-
-        builder.addEdge("person", "age", "int:");
-        builder.addEdge("prod", "arg:0", "int:");
-        builder.addEdge("prod", "arg:1", "int:18");
-        builder.addEdge("prod", "int:ge", "bool:true");
-
-        builder.save();
+        PlainGraph graph = GraphBuilder.laxToGraph(condition);
+        GraphBuilder.save(graph);
     }
 
     public static class TreePrinter extends DepthFirstAdapter {
@@ -84,10 +58,7 @@ public class parseOCL {
 
         public void defaultCase(Node node) {
             indent();
-            out.println(
-//                    node.getClass().getName() +
-//                            "\t" +
-                            node.toString());
+            out.println(node.toString());
         }
 
         public void defaultIn(Node node) {
