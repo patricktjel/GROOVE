@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static groove.ocl.Groove.EQ;
+
 /**
  * recursive tree visitor that uses the {@link de.tuberlin.cs.cis.ocl.parser.analysis.AnalysisAdapter#getOut(Node)} for the recursive return values
  * Therefore the defaultOut method is overriden such that it will give through the value to its parent.
@@ -272,15 +274,21 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 con = null;
             } else {
                 // rule23
-//                Variable exprVar = VariableFactory.createVariable(exprType.text());
-//                NavigationVariable navigationVariable = new NavigationVariable(exprVar, role, var);
-//                LaxCondition trn = tr_N(expr, exprVar);
-//                con = new LaxCondition(Quantifier.EXISTS, navigationVariable, trn);
-                con = null;
+                PlainGraph varPrime = GraphBuilder.createGraph();
+                String vp = GraphBuilder.addNode(varPrime, exprType.text());
+                LaxCondition trn = tr_N(expr, varPrime);
+
+                GraphBuilder.addNode(graph, vp, exprType.text());
+                GraphBuilder.addEdge(graph, vp, role, GraphBuilder.getVarName(graph));
+
+                con = new LaxCondition(Quantifier.EXISTS, graph, trn);
             }
         } else {
             // rule22
-            GraphBuilder.addRule22(graph, expr);
+            String vp = GraphBuilder.getVarName(graph);
+            GraphBuilder.addNode(graph, expr, GraphBuilder.getVariableType(vp));
+            GraphBuilder.addEdge(graph, vp, EQ, expr);
+
             con = new LaxCondition(Quantifier.EXISTS, graph);
         }
         return con;

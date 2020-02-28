@@ -29,11 +29,13 @@ public class AndCondition implements Condition {
     public Map<String, String> simplify() {
         Map<String, String> eqEdges1 = expr1.simplify();
         if(expr1 instanceof LaxCondition && ((LaxCondition) expr1).getGraph().edgeSet().isEmpty()) {
+            // if expr1 was an equivalence graph remove it
             expr1 = null;
         }
 
         Map<String, String> eqEdges2 = expr2.simplify();
         if(expr2 instanceof LaxCondition && ((LaxCondition) expr2).getGraph().edgeSet().isEmpty()) {
+            // if expr2 was an equivalence graph remove it
             expr2 = null;
         }
 

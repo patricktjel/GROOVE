@@ -8,6 +8,8 @@ import groove.graph.plain.PlainGraph;
 import groove.graph.plain.PlainNode;
 import groove.ocl.GrammarStorage;
 import groove.ocl.lax.Operator;
+import groove.ocl.lax.condition.AndCondition;
+import groove.ocl.lax.condition.Condition;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
@@ -120,6 +122,14 @@ public class GraphBuilder {
     }
 
     /**
+     * Used to get the name of the variable of a variableGraph (v:T)
+     * These graphs contain only one node
+     */
+    public static String getVarName(PlainGraph graph) {
+        return (String) graphNodeMap.get(graph).keySet().toArray()[0];
+    }
+
+    /**
      * Given a variable Name (exists only in the code), determine its type by looking in the OutEdge set of the given variable name
      * @param key       The variable name
      * @return          The type of the variable
@@ -199,17 +209,6 @@ public class GraphBuilder {
     }
 
     /**
-     * Given a graph in which the v:T does exist,
-     * create a node (nodeName:T) which is equal to v:T
-     * (rule22)
-     */
-    public static void addRule22(PlainGraph graph, String nodeName) {
-        String vp = (String) graphNodeMap.get(graph).keySet().toArray()[0];
-        addNode(graph, nodeName, getVariableType(vp));
-        addEdge(graph, vp, EQ, nodeName);
-    }
-
-    /**
      * Given a LaxCondition merge the recursive laxConditions into one graph including the quantification
      * @param c     The LaxCondition
      * @return      The resulting graph
@@ -243,10 +242,31 @@ public class GraphBuilder {
         }
 
         // all nodes from this level are created and connected. Start with the next level if applicable
-        if (c.getCondition() instanceof LaxCondition) {
-            return laxToGraph(graph, (LaxCondition) c.getCondition(), level + 1);
+        if (c.getCondition() != null) {
+            return laxToGraphCondition(graph, c.getCondition(), level + 1);
         } else {
             return graph;
+        }
+    }
+
+    /**
+     * For an and condition both conditions should be handled
+     */
+    private static PlainGraph laxToGraph(PlainGraph graph, AndCondition c, int level) {
+        laxToGraphCondition(graph, c.getExpr1(), level);
+        laxToGraphCondition(graph, c.getExpr2(), level);
+        return graph;
+    }
+
+    /**
+     * Determine if the Condition is an LaxCondition or an AndCondition
+     * Cast the condition to the right type and call the right method
+     */
+    private static PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level) {
+        if (c instanceof LaxCondition) {
+            return laxToGraph(graph, (LaxCondition) c, level);
+        } else {
+            return laxToGraph(graph, (AndCondition) c, level);
         }
     }
 

@@ -46,6 +46,11 @@ public class LaxCondition implements Condition {
         Map<String, String> eqEdges;
         if (condition != null) {
             eqEdges = condition.simplify();
+
+            if (condition instanceof LaxCondition && ((LaxCondition) condition).getGraph().edgeSet().isEmpty()) {
+                // if condition was an equivalence graph remove it
+                this.condition = null;
+            }
         } else {
             // no condition below us anymore so check if there are equivalence edges
             eqEdges = graph.edgeSet().stream()
