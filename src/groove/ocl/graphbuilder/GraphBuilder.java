@@ -1,11 +1,14 @@
 package groove.ocl.graphbuilder;
 
+import groove.grammar.aspect.AspectGraph;
 import groove.grammar.type.TypeNode;
 import groove.graph.GraphRole;
 import groove.graph.plain.PlainEdge;
 import groove.graph.plain.PlainGraph;
 import groove.graph.plain.PlainNode;
+import groove.ocl.GrammarStorage;
 import groove.ocl.lax.Operator;
+import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
 import groove.util.Log;
@@ -28,7 +31,7 @@ public class GraphBuilder {
     private static int uniqueGraph = 0;
 
     public static PlainGraph createGraph() {
-        PlainGraph graph = new PlainGraph(getUniqueGraphName(), GraphRole.NONE);
+        PlainGraph graph = new PlainGraph(getUniqueGraphName(), GraphRole.RULE);
         graphNodeMap.put(graph, new HashMap<>());
         return graph;
     }
@@ -42,8 +45,11 @@ public class GraphBuilder {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
         if (!nodeMap.containsKey(nodeName)) {
             PlainNode node = graph.addNode();
-            String type = String.format("%s:%s", TYPE, label);
-            graph.addEdge(node, type, node);
+            if (!label.contains(":")) {
+                // if the label does not contain ":" then 'type:' should be added
+                label = String.format("%s:%s", TYPE, label);
+            }
+            graph.addEdge(node, label, node);
 
             nodeMap.put(nodeName, node);
         }
@@ -76,6 +82,34 @@ public class GraphBuilder {
     }
 
     /**
+     * Given a graph, an old graph node name and a new graph node name
+     * Check if the old graph node name exists in the current graph according to the graphNodeMap
+     * If so replace the old graph node name with the new graph node name
+     * @param graph     The graph
+     * @param o         The old graph node name
+     * @param n         The new graph node name
+     */
+    public static void renameVar(PlainGraph graph, String o, String n) {
+        PlainNode node = graphNodeMap.get(graph).get(o);
+        if (node != null) {
+            // if the graph contains the old node, replace that name with the new name
+            graphNodeMap.get(graph).remove(o);
+            graphNodeMap.get(graph).put(n, node);
+        }
+    }
+
+    /**
+     * Given a PlainNode from the graph, return its variable name;
+     */
+    public static String getVarName(PlainGraph graph, PlainNode grooveName) {
+        return graphNodeMap.get(graph).entrySet().stream()
+                .filter(e -> e.getValue().equals(grooveName))
+                .collect(Collectors.toList())
+                .get(0)
+                .getKey();
+    }
+
+    /**
      * Create a clone for the given graph, create a clone of the corresponding nodeMap
      * and rename the graph to put it as a unique graph in the graphNodeMap
      * @param graph     The graph to clone
@@ -92,6 +126,13 @@ public class GraphBuilder {
         g.setName(getUniqueGraphName());
         graphNodeMap.put(g, nodeMap);
         return g;
+    }
+
+    /**
+     * Saves the created graph
+     */
+    public static void save(PlainGraph graph) {
+        GrammarStorage.saveGraph(AspectGraph.newInstance(graph));
     }
 
     /**
@@ -151,19 +192,41 @@ public class GraphBuilder {
         addEdge(graph, vp, EQ, nodeName);
     }
 
-    /**
-     * Saves the created graph
-     */
-    public static void save(PlainGraph graph) {
-        //TODO fix the save
-//        GrammarStorage.saveGraph(graph);
+    public static PlainGraph laxToGraph(LaxCondition c) {
+        return laxToGraph(c.getGraph(), c, 0);
+    }
+
+    private static PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level) {
+        String quantLvl = Integer.toString(level);
+        addNode(graph, quantLvl, c.getQuantifier().getGrooveString());
+
+        // create connection between the current quantification level and the previous quantification level
+        // and add this graph
+        if (level > 0) {
+            addEdge(graph, quantLvl, IN, Integer.toString(level-1));
+        }
+
+        // connect the nodes of the graph with its quantifier
+        for (Map.Entry<String, PlainNode> entry : graphNodeMap.get(c.getGraph()).entrySet()) {
+            if (!entry.getKey().equals(quantLvl)) {
+                //the quantifier shouldn't connect with itself
+                addEdge(graph, entry.getKey(), AT, quantLvl);
+            }
+        }
+
+        // all nodes from this level are created and connected. Start with the next level if applicable
+//        if (c.getCondition() instanceof LaxCondition) {
+//            return laxToGraph(graph, (LaxCondition) c.getCondition(), level + 1);
+//        } else {
+            return graph;
+//        }
     }
 
     /**
      * An helper function to generate a Unique Graph Name ("0")
      */
     private static String getUniqueGraphName() {
-        return String.valueOf(uniqueGraph++);
+        return String.format("g%d", uniqueGraph++);
     }
 
     /**
@@ -183,33 +246,5 @@ public class GraphBuilder {
             result = result.replace(v.getValue().toString(),  v.getKey());
         }
         return result;
-    }
-
-    /**
-     * Given a graph, an old graph node name and a new graph node name
-     * Check if the old graph node name exists in the current graph according to the graphNodeMap
-     * If so replace the old graph node name with the new graph node name
-     * @param graph     The graph
-     * @param o         The old graph node name
-     * @param n         The new graph node name
-     */
-    public static void renameVar(PlainGraph graph, String o, String n) {
-        PlainNode node = graphNodeMap.get(graph).get(o);
-        if (node != null) {
-            // if the graph contains the old node, replace that name with the new name
-            graphNodeMap.get(graph).remove(o);
-            graphNodeMap.get(graph).put(n, node);
-        }
-    }
-
-    /**
-     * Given a PlainNode from the graph, return its variable name;
-     */
-    public static String getVarName(PlainGraph graph, PlainNode grooveName) {
-        return graphNodeMap.get(graph).entrySet().stream()
-                .filter(e -> e.getValue().equals(grooveName))
-                .collect(Collectors.toList())
-                .get(0)
-                .getKey();
     }
 }

@@ -1,3 +1,4 @@
+import groove.graph.plain.PlainGraph;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
@@ -32,7 +33,7 @@ public class parseOCL {
 
 //        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
         TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax();
-        LOGGER.info("parsing:        " + ocl);
+        LOGGER.info("parsing:         " + ocl);
         parseTree.apply(translateOCLToLax);
 
         LaxCondition condition = translateOCLToLax.getResult();
@@ -40,10 +41,8 @@ public class parseOCL {
         condition.simplify();
         LOGGER.info("After simplify:  " + condition.toString());
 
-//        GraphBuilder builder = new GraphBuilder("test");
-//        builder.laxToGraph(condition);
-//        builder.save();
-//        testGraphBuilder();
+        PlainGraph graph = GraphBuilder.laxToGraph(condition);
+        GraphBuilder.save(graph);
     }
 
     public static class TreePrinter extends DepthFirstAdapter {
