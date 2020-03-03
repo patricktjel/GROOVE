@@ -6,6 +6,7 @@ import de.tuberlin.cs.cis.ocl.parser.node.Start;
 import de.tuberlin.cs.cis.ocl.parser.parser.Parser;
 import de.tuberlin.cs.cis.ocl.parser.parser.ParserException;
 import groove.graph.plain.PlainGraph;
+import groove.ocl.GrammarStorage;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
@@ -21,21 +22,20 @@ public class parseOCL {
 
     private final static Logger LOGGER = Log.getLogger(parseOCL.class.getName());
 
+    private static final String GRAPH_LOCATION = "C:\\Users\\patri\\Google Drive\\UT\\afstuderen\\groove\\test.gps";
+
     static public void main(String[] args) throws ParserException, IOException, LexerException {
         String ocl =
-                "context Person inv: self.c.age >= 18" +
-//                "context Person inv: self.age >= 18" +
-//                "context Person inv: self.age <= self.c.age" +
-//                "context a:Person inv: a.age >= 18" +
-//                "context Person inv: self.age >= 18 and self.age->isEmpty()" +
-//                "context Person inv: self.age->isEmpty()" +
-//                "context Person inv: self.age.oclAsType(Person)" +
-                "";
+//                "context Person inv: self.c.age >= 18" +
+                "context Person inv: self.age >= 18"
+                ;
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
         Start parseTree = parser.parse();
 
-//        parseTree.getPOclFile().apply(new TreePrinter(new PrintWriter(System.out)));
-        TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax();
+        // set GROOVE project
+        GrammarStorage grammarStorage = new GrammarStorage(GRAPH_LOCATION);
+
+        TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax(grammarStorage.getTypeGraphs());
         LOGGER.info("parsing:         " + ocl);
         parseTree.apply(translateOCLToLax);
 
@@ -45,7 +45,7 @@ public class parseOCL {
         LOGGER.info("After simplify:  " + condition.toString());
 
         PlainGraph graph = GraphBuilder.laxToGraph(condition);
-        GraphBuilder.save(graph);
+        grammarStorage.saveGraph(graph);
     }
 
     public static class TreePrinter extends DepthFirstAdapter {

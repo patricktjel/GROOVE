@@ -1,12 +1,10 @@
 package groove.ocl.graphbuilder;
 
-import groove.grammar.aspect.AspectGraph;
 import groove.grammar.type.TypeNode;
 import groove.graph.GraphRole;
 import groove.graph.plain.PlainEdge;
 import groove.graph.plain.PlainGraph;
 import groove.graph.plain.PlainNode;
-import groove.ocl.GrammarStorage;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.condition.AndCondition;
 import groove.ocl.lax.condition.Condition;
@@ -133,6 +131,8 @@ public class GraphBuilder {
      * @return          The type of the variable
      *                  or null if the variable does not exists
      */
+    // TODO static getVariableType is broken for translating multiple OCL constraints (with different context)
+    //  self appears multiple times in the map and it is not deterministic which type it will return
     public static String getVariableType(String key) {
         for (Map.Entry<PlainGraph, Map<String, PlainNode>> entry :graphNodeMap.entrySet()) {
             if (entry.getValue().containsKey(key)) {
@@ -172,13 +172,6 @@ public class GraphBuilder {
         return graphNodeMap.get(graph).entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    /**
-     * Saves the created graph
-     */
-    public static void save(PlainGraph graph) {
-        GrammarStorage.saveGraph(AspectGraph.newInstance(graph));
     }
 
     /**

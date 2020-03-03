@@ -40,8 +40,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     private LaxCondition result;
 
-    public TranslateOCLToLax() {
-        this.typeGraph = GrammarStorage.getTypeGraphs();
+    public TranslateOCLToLax(TypeGraph typeGraph) {
+        this.typeGraph = typeGraph;
     }
 
     @Override
@@ -220,6 +220,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Collections.addAll(split, expr.split("\\."));
 
         // TODO check if an expression could start without a custom variable (e.g. self), if so a nullpointer exists here
+        // TODO fix this (USE case study inv 3) shows that this is possible
         String curType = GraphBuilder.getVariableType(split.get(0));
         split.remove(split.get(0));
 

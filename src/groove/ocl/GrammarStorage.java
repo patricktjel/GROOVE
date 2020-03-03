@@ -3,6 +3,7 @@ package groove.ocl;
 import groove.grammar.aspect.AspectGraph;
 import groove.grammar.model.ResourceKind;
 import groove.grammar.type.TypeGraph;
+import groove.graph.plain.PlainGraph;
 import groove.io.store.SystemStore;
 import groove.util.Log;
 
@@ -15,13 +16,12 @@ import java.util.logging.Logger;
  * An helper class that regulates the connection with the grammar files
  * An instance is not allowed therefore the class is abstract
  */
-public abstract class GrammarStorage {
+public class GrammarStorage {
     private final static Logger LOGGER = Log.getLogger(GrammarStorage.class.getName());
 
-    private static final String graphLocation = "C:\\Users\\patri\\Google Drive\\UT\\afstuderen\\groove\\test.gps";
-    private static SystemStore store;
+    private SystemStore store;
 
-    static {
+    public GrammarStorage(String graphLocation) {
         try {
             store = SystemStore.newStore(new File(graphLocation), false);
         } catch (IOException e) {
@@ -29,12 +29,14 @@ public abstract class GrammarStorage {
         }
     }
 
-    public static TypeGraph getTypeGraphs() {
+    public TypeGraph getTypeGraphs() {
         reload();
         return store.toGrammarModel().getTypeGraph();
     }
 
-    public static void saveGraph(AspectGraph graph){
+    public void saveGraph(PlainGraph plainGraph){
+        // first transform it to an AspectGraph
+        AspectGraph graph = AspectGraph.newInstance(plainGraph);
         try {
             reload();
             //TODO maybe not the best way to set the graph fixed.
@@ -46,7 +48,7 @@ public abstract class GrammarStorage {
         }
     }
 
-    private static void reload() {
+    private void reload() {
         try {
             store.reload();
         } catch (IOException e) {
