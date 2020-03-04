@@ -1,8 +1,11 @@
 package cases.USE_case_study;
 
 import cases.TranslateHelper;
+import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.LaxCondition;
 import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -15,8 +18,9 @@ public class USECaseStudy {
 
     @Test
     public void inv_i1a() throws Exception {
-        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Department inv i1a: self.budget >= 0", GRAPH_LOCATION).get(0);
-        assertEquals(condition.toString(),
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Department inv i1a: self.budget >= 0", GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        assertEquals(map.get(condition).conToString(condition),
                 "∀([self--type:Department-->self], " +
                         "∃([self--type:Department-->self, self--budget-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
         );
@@ -30,8 +34,9 @@ public class USECaseStudy {
 
     @Test
     public void inv_i1b() throws Exception {
-        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Employee inv i1b: self.salary >= 0", GRAPH_LOCATION).get(0);
-        assertEquals(condition.toString(),
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Employee inv i1b: self.salary >= 0", GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        assertEquals(map.get(condition).conToString(condition),
                 "∀([self--type:Employee-->self], " +
                         "∃([self--type:Employee-->self, self--salary-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
         );
@@ -45,8 +50,9 @@ public class USECaseStudy {
 
     @Test
     public void inv_i1c() throws Exception {
-        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Project inv i1c: self.budget >= 0", GRAPH_LOCATION).get(0);
-        assertEquals(condition.toString(),
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv i1c: self.budget >= 0", GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        assertEquals(map.get(condition).conToString(condition),
                 "∀([self--type:Project-->self], " +
                         "∃([self--type:Project-->self, self--budget-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
         );

@@ -13,8 +13,6 @@ import groove.util.Log;
 
 import java.io.PushbackReader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -22,7 +20,7 @@ public class TranslateHelper {
 
     private final static Logger LOGGER = Log.getLogger(TranslateHelper.class.getName());
 
-    public static List<LaxCondition> translateOCLToGraph(String ocl, String graphLocation) throws Exception {
+    public static Map<LaxCondition, GraphBuilder> translateOCLToGraph(String ocl, String graphLocation) throws Exception {
         GrammarStorage grammarStorage = new GrammarStorage(graphLocation);
 
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
@@ -43,7 +41,7 @@ public class TranslateHelper {
             LOGGER.info("After simplify:  " + graphBuilder.conToString(condition));
         }
 
-        return new ArrayList<>(conditions.keySet());
+        return conditions;
     }
 
     public static void createGraph(LaxCondition condition, GraphBuilder graphBuilder, String graphLocation){
