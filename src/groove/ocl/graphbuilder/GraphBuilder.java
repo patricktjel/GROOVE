@@ -23,15 +23,16 @@ import static groove.ocl.Groove.*;
  * A singleton class based on the static principle instead of using the GraphBuilder.getInstance() principle
  */
 public class GraphBuilder {
-    // <Graph, <nodeName, PlainNode>>
-    private static Map<PlainGraph, Map<String, PlainNode>> graphNodeMap = new HashMap<>();
-    private static int uniqueNode = 0;
     private static int uniqueGraph = 0;
+
+    // <Graph, <nodeName, PlainNode>>
+    private Map<PlainGraph, Map<String, PlainNode>> graphNodeMap = new HashMap<>();
+    private int uniqueNode = 0;
 
     /**
      * Create a new Graph and create its corresponding empty NodeMap
      */
-    public static PlainGraph createGraph() {
+    public PlainGraph createGraph() {
         PlainGraph graph = new PlainGraph(getUniqueGraphName(), GraphRole.RULE);
         graphNodeMap.put(graph, new HashMap<>());
         return graph;
@@ -45,7 +46,7 @@ public class GraphBuilder {
      * @param label     The label of the node
      * @return          The name of the node
      */
-    public static String addNode(PlainGraph graph, String nodeName, String label) {
+    public String addNode(PlainGraph graph, String nodeName, String label) {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
         if (!nodeMap.containsKey(nodeName)) {
             PlainNode node = graph.addNode();
@@ -64,28 +65,28 @@ public class GraphBuilder {
         return nodeName;
     }
 
-    public static String addNode(PlainGraph graph, String label) {
+    public String addNode(PlainGraph graph, String label) {
         return addNode(graph, getUniqueNodeName(), label);
     }
 
     /**
      * Add an edge from {@param from} to {@param to} with the label {@param label}
      */
-    public static void addEdge(PlainGraph graph, String from, String label, String to) {
+    public void addEdge(PlainGraph graph, String from, String label, String to) {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
         graph.addEdge(nodeMap.get(from), label, nodeMap.get(to));
     }
 
-    public static void removeEdge(PlainGraph graph, PlainEdge edge) {
+    public void removeEdge(PlainGraph graph, PlainEdge edge) {
         graph.removeEdge(edge);
     }
 
-    public static void removeNode(PlainGraph graph, PlainNode node) {
+    public void removeNode(PlainGraph graph, PlainNode node) {
         graph.removeNode(node);
         graphNodeMap.get(graph).remove(getVarName(graph, node));
     }
 
-    public static void removeGraph(PlainGraph graph) {
+    public void removeGraph(PlainGraph graph) {
         graphNodeMap.remove(graph);
     }
 
@@ -97,7 +98,7 @@ public class GraphBuilder {
      * @param o         The old graph node name
      * @param n         The new graph node name
      */
-    public static void renameVar(PlainGraph graph, String o, String n) {
+    public void renameVar(PlainGraph graph, String o, String n) {
         PlainNode node = graphNodeMap.get(graph).get(o);
         if (node != null) {
             // if the graph contains the old node, replace that name with the new name
@@ -109,7 +110,7 @@ public class GraphBuilder {
     /**
      * Given a PlainNode from the graph, return its variable name;
      */
-    public static String getVarName(PlainGraph graph, PlainNode grooveName) {
+    public String getVarName(PlainGraph graph, PlainNode grooveName) {
         return graphNodeMap.get(graph).entrySet().stream()
                 .filter(e -> e.getValue().equals(grooveName))
                 .collect(Collectors.toList())
@@ -121,7 +122,7 @@ public class GraphBuilder {
      * Used to get the name of the variable of a variableGraph (v:T)
      * These graphs contain only one node
      */
-    public static String getVarName(PlainGraph graph) {
+    public String getVarName(PlainGraph graph) {
         return (String) graphNodeMap.get(graph).keySet().toArray()[0];
     }
 
@@ -133,7 +134,7 @@ public class GraphBuilder {
      */
     // TODO static getVariableType is broken for translating multiple OCL constraints (with different context)
     //  self appears multiple times in the map and it is not deterministic which type it will return
-    public static String getVariableType(String key) {
+    public String getVariableType(String key) {
         for (Map.Entry<PlainGraph, Map<String, PlainNode>> entry :graphNodeMap.entrySet()) {
             if (entry.getValue().containsKey(key)) {
                 PlainNode node = entry.getValue().get(key);
@@ -154,7 +155,7 @@ public class GraphBuilder {
      * @param graph     The graph to clone
      * @return          The cloned graph
      */
-    public static PlainGraph cloneGraph(PlainGraph graph) {
+    public PlainGraph cloneGraph(PlainGraph graph) {
         PlainGraph g = graph.clone();
         Map<String, PlainNode> nodeMap = cloneNodeMap(graph);
 
@@ -168,7 +169,7 @@ public class GraphBuilder {
      * @param graph     The graph
      * @return          The cloned NodeMap
      */
-    public static Map<String, PlainNode> cloneNodeMap(PlainGraph graph) {
+    public Map<String, PlainNode> cloneNodeMap(PlainGraph graph) {
         return graphNodeMap.get(graph).entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -178,7 +179,7 @@ public class GraphBuilder {
      * Given a graph in which v:T is already defined add the attributed graph components
      * (rule 17)
      */
-    public static void addAttributedGraph(PlainGraph graph, String varName, Tuple2<String, TypeNode> attrType, Operator op, Constant n) {
+    public void addAttributedGraph(PlainGraph graph, String varName, Tuple2<String, TypeNode> attrType, Operator op, Constant n) {
         String aType = attrType.getSecond().text();
         String attr = addNode(graph, aType);
 
@@ -204,11 +205,11 @@ public class GraphBuilder {
      * @param c     The LaxCondition
      * @return      The resulting graph
      */
-    public static PlainGraph laxToGraph(LaxCondition c) {
+    public PlainGraph laxToGraph(LaxCondition c) {
         return laxToGraph(c.getGraph(), c, 0);
     }
 
-    private static PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level) {
+    private PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level) {
         Map<String, PlainNode> nodeMap = new HashMap<>();
         // add the graph to the existing graph
         if (level > 0 ) {
@@ -243,7 +244,7 @@ public class GraphBuilder {
     /**
      * For an and condition both conditions should be handled
      */
-    private static PlainGraph laxToGraph(PlainGraph graph, AndCondition c, int level) {
+    private PlainGraph laxToGraph(PlainGraph graph, AndCondition c, int level) {
         laxToGraphCondition(graph, c.getExpr1(), level);
         laxToGraphCondition(graph, c.getExpr2(), level);
         return graph;
@@ -253,7 +254,7 @@ public class GraphBuilder {
      * Determine if the Condition is an LaxCondition or an AndCondition
      * Cast the condition to the right type and call the right method
      */
-    private static PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level) {
+    private PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level) {
         if (c instanceof LaxCondition) {
             return laxToGraph(graph, (LaxCondition) c, level);
         } else {
@@ -266,14 +267,14 @@ public class GraphBuilder {
      * only in the first case g1 should be replaced with g2
      * else glue the two graphs together
      */
-    public static PlainGraph mergeGraphs(PlainGraph g1, PlainGraph g2){
+    public PlainGraph mergeGraphs(PlainGraph g1, PlainGraph g2){
         // check if g1 subset g2 or g2 subset g1
         // only in the first case g1 should be replaced with g2
         // else glue the two graphs together
-        if (GraphBuilder.subsetGraphs(g1, g2)) {
+        if (subsetGraphs(g1, g2)) {
             return g2;
-        } else if (!GraphBuilder.subsetGraphs(g2, g1)) {
-            return GraphBuilder.mergeGraphsInternal(g1, g2);
+        } else if (!subsetGraphs(g2, g1)) {
+            return mergeGraphsInternal(g1, g2);
         }
         return g1;
     }
@@ -285,7 +286,7 @@ public class GraphBuilder {
      * @param g1    The first graph
      * @param g2    The second graph
      */
-    public static PlainGraph mergeGraphsInternal(PlainGraph g1, PlainGraph g2) {
+    public PlainGraph mergeGraphsInternal(PlainGraph g1, PlainGraph g2) {
         // Create all nodes of g2 in g1
         // AddNode does check if the node does exist already, if so it doesn't create a new one
         for (Map.Entry<String, PlainNode> entry: graphNodeMap.get(g2).entrySet()){
@@ -308,7 +309,7 @@ public class GraphBuilder {
      * @return      True if g1 is a subset of g2
      *              False else
      */
-    public static boolean subsetGraphs(PlainGraph g1, PlainGraph g2) {
+    public boolean subsetGraphs(PlainGraph g1, PlainGraph g2) {
         for (PlainNode node : g1.nodeSet()) {
             String nodeName = getVarName(g1, node);
             if (!graphNodeMap.get(g2).containsKey(nodeName)) {
@@ -334,7 +335,7 @@ public class GraphBuilder {
     /**
      * An helper function to generate a Unique Node name ("n0")
      */
-    private static String getUniqueNodeName() {
+    private String getUniqueNodeName() {
         return String.format("n%d", uniqueNode++);
     }
 
@@ -342,11 +343,41 @@ public class GraphBuilder {
      * An helper function that connects the Groove names within one specific graph with the variable names (and generated names)
      * Of the different Lax conditions such that not every graph starts with a node n0
      */
-    public static String graphToString(PlainGraph graph) {
+    public String graphToString(PlainGraph graph) {
         String result = graph.edgeSet().toString();
         for (Map.Entry<String, PlainNode> v : graphNodeMap.get(graph).entrySet()) {
             result = result.replace(v.getValue().toString(),  v.getKey());
         }
         return result;
+    }
+
+    /**
+     * A method that makes sure that the correct conToString method is called
+     *
+     * This method is responsible for the Condition toString method, overriding the default toString was not possible
+     * because of the connection with the GraphBuilder
+     */
+    public String conToString(Condition condition) {
+        if (condition instanceof LaxCondition) {
+            return conToString((LaxCondition) condition);
+        } else if (condition instanceof AndCondition) {
+            return conToString((AndCondition) condition);
+        }
+        //shouldn't happen
+        assert false;
+        return "";
+    }
+
+    private String conToString(LaxCondition laxCon) {
+        String g = graphToString(laxCon.getGraph());
+        if (laxCon.getCondition() == null) {
+            return String.format("%s(%s)", laxCon.getQuantifier(), g);
+        } else {
+            return String.format("%s(%s, %s)", laxCon.getQuantifier(), g, conToString(laxCon.getCondition()));
+        }
+    }
+
+    private String conToString(AndCondition andCon) {
+        return String.format("%s \u2227 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
     }
 }

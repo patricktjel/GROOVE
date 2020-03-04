@@ -1,6 +1,7 @@
 import groove.graph.plain.PlainGraph;
 import groove.ocl.Groove;
 import groove.ocl.graphbuilder.GraphBuilder;
+import groove.ocl.lax.LaxSimplifier;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.AndCondition;
 import groove.ocl.lax.condition.LaxCondition;
@@ -8,117 +9,113 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@SuppressWarnings("RedundantThrows")
 public class EquivalenceTests {
 
+    private GraphBuilder graphBuilder = new GraphBuilder();
+    private LaxSimplifier laxSimplifier = new LaxSimplifier(graphBuilder);
 
     // E1
     @Test
     public void simplifyDoubleExistential_g1EQg2() throws Exception {
-        PlainGraph g1 = GraphBuilder.createGraph();
-        g1.setName("g1");
-        GraphBuilder.addNode(g1, "p", "person");
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "p", "person");
 
-        PlainGraph g2 = GraphBuilder.cloneGraph(g1);
-        g2.setName("g2");
+        PlainGraph g2 = graphBuilder.cloneGraph(g1);
 
         LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, g2);
         LaxCondition condition = new LaxCondition(Quantifier.EXISTS, g1, l1);
 
-        condition.simplify();
+        laxSimplifier.simplify(condition);
 
-        assertEquals(new LaxCondition(Quantifier.EXISTS, g1).toString(), condition.toString());
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.EXISTS, g1));
+        assertEquals(expected, graphBuilder.conToString(condition));
     }
 
     // E1C
     @Test
     public void simplify2Existential_g1subg2() throws Exception {
-        PlainGraph g1 = GraphBuilder.createGraph();
-        g1.setName("g1");
-        GraphBuilder.addNode(g1, "p", "person");
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "p", "person");
 
-        PlainGraph g2 = GraphBuilder.cloneGraph(g1);
-        g2.setName("g2");
-        GraphBuilder.addNode(g2, "m", "mother");
-        GraphBuilder.addEdge(g2, "p", "c","m");
+        PlainGraph g2 = graphBuilder.cloneGraph(g1);
+        graphBuilder.addNode(g2, "m", "mother");
+        graphBuilder.addEdge(g2, "p", "c","m");
 
         LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, g2);
         LaxCondition condition = new LaxCondition(Quantifier.EXISTS, g1, l1);
 
-        condition.simplify();
+        laxSimplifier.simplify(condition);
 
-        assertEquals(new LaxCondition(Quantifier.EXISTS, g2).toString(), condition.toString());
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.EXISTS, g2));
+        assertEquals(expected, graphBuilder.conToString(condition));
     }
 
     // E1C
     @Test
     public void simplify2Existential_g2subg1() throws Exception {
-        PlainGraph g1 = GraphBuilder.createGraph();
-        g1.setName("g1");
-        GraphBuilder.addNode(g1, "p", "person");
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "p", "person");
 
-        PlainGraph g2 = GraphBuilder.cloneGraph(g1);
-        g2.setName("g2");
-        GraphBuilder.addNode(g2, "m", "mother");
-        GraphBuilder.addEdge(g2, "p", "c","m");
+        PlainGraph g2 = graphBuilder.cloneGraph(g1);
+        graphBuilder.addNode(g2, "m", "mother");
+        graphBuilder.addEdge(g2, "p", "c","m");
 
         LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, g1);
         LaxCondition condition = new LaxCondition(Quantifier.EXISTS, g2, l1);
 
-        condition.simplify();
+        laxSimplifier.simplify(condition);
 
-        assertEquals(new LaxCondition(Quantifier.EXISTS, g2).toString(), condition.toString());
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.EXISTS, g2));
+        assertEquals(expected, graphBuilder.conToString(condition));
     }
 
     //E1B
     @Test
     public void simplify2Existential_g1capg2() throws Exception {
-        PlainGraph g1 = GraphBuilder.createGraph();
-        g1.setName("g1");
-        GraphBuilder.addNode(g1, "p", "person");
-        GraphBuilder.addNode(g1, "f", "father");
-        GraphBuilder.addEdge(g1, "p", "f","f");
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "p", "person");
+        graphBuilder.addNode(g1, "f", "father");
+        graphBuilder.addEdge(g1, "p", "f","f");
 
-        PlainGraph g2 = GraphBuilder.createGraph();
-        g2.setName("g2");
-        GraphBuilder.addNode(g2, "p", "person");
-        GraphBuilder.addNode(g2, "m", "mother");
-        GraphBuilder.addEdge(g2, "p", "c","m");
+        PlainGraph g2 = graphBuilder.createGraph();
+        graphBuilder.addNode(g2, "p", "person");
+        graphBuilder.addNode(g2, "m", "mother");
+        graphBuilder.addEdge(g2, "p", "c","m");
 
         LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, g1);
         LaxCondition condition = new LaxCondition(Quantifier.EXISTS, g2, l1);
 
-        condition.simplify();
+        laxSimplifier.simplify(condition);
 
-        PlainGraph graph = GraphBuilder.createGraph();
-        GraphBuilder.addNode(graph, "p", "person");
+        PlainGraph graph = graphBuilder.createGraph();
+        graphBuilder.addNode(graph, "p", "person");
 
-        GraphBuilder.addNode(graph, "m", "mother");
-        GraphBuilder.addEdge(graph, "p", "c", "m");
+        graphBuilder.addNode(graph, "m", "mother");
+        graphBuilder.addEdge(graph, "p", "c", "m");
 
-        GraphBuilder.addNode(graph, "f", "father");
-        GraphBuilder.addEdge(graph, "p", "f","f");
+        graphBuilder.addNode(graph, "f", "father");
+        graphBuilder.addEdge(graph, "p", "f","f");
 
-        assertEquals(new LaxCondition(Quantifier.EXISTS, graph).toString(), condition.toString());
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.EXISTS, graph));
+        assertEquals(expected, graphBuilder.conToString(condition));
     }
 
-    //E2
+    //E2 (and E1 to merge it with the first existential)
     @Test
     public void simplifyAndCondition() throws Exception {
-        PlainGraph g = GraphBuilder.createGraph();
-        g.setName("g");
-        GraphBuilder.addNode(g, "p", "person");
+        PlainGraph g = graphBuilder.createGraph();
+        graphBuilder.addNode(g, "p", "person");
 
-        PlainGraph g1 = GraphBuilder.createGraph();
-        g1.setName("g1");
-        GraphBuilder.addNode(g1, "p", "person");
-        GraphBuilder.addNode(g1, "f", "father");
-        GraphBuilder.addEdge(g1, "p", "f","f");
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "p", "person");
+        graphBuilder.addNode(g1, "f", "father");
+        graphBuilder.addEdge(g1, "p", "f","f");
 
-        PlainGraph g2 = GraphBuilder.createGraph();
-        g2.setName("g2");
-        GraphBuilder.addNode(g2, "p", "person");
-        GraphBuilder.addNode(g2, "m", "mother");
-        GraphBuilder.addEdge(g2, "p", "c","m");
+        PlainGraph g2 = graphBuilder.createGraph();
+        graphBuilder.addNode(g2, "p", "person");
+        graphBuilder.addNode(g2, "m", "mother");
+        graphBuilder.addEdge(g2, "p", "c","m");
 
         LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, g1);
         LaxCondition l2 = new LaxCondition(Quantifier.EXISTS, g2);
@@ -126,43 +123,45 @@ public class EquivalenceTests {
         AndCondition and = new AndCondition(l1, l2);
         LaxCondition condition = new LaxCondition(Quantifier.EXISTS, g, and);
 
-        condition.simplify();
+        laxSimplifier.simplify(condition);
 
-        PlainGraph graph = GraphBuilder.createGraph();
-        GraphBuilder.addNode(graph, "p", "person");
+        PlainGraph graph = graphBuilder.createGraph();
+        graphBuilder.addNode(graph, "p", "person");
 
-        GraphBuilder.addNode(graph, "f", "father");
-        GraphBuilder.addEdge(graph, "p", "f","f");
+        graphBuilder.addNode(graph, "f", "father");
+        graphBuilder.addEdge(graph, "p", "f","f");
 
-        GraphBuilder.addNode(graph, "m", "mother");
-        GraphBuilder.addEdge(graph, "p", "c", "m");
+        graphBuilder.addNode(graph, "m", "mother");
+        graphBuilder.addEdge(graph, "p", "c", "m");
 
-        assertEquals(new LaxCondition(Quantifier.EXISTS, graph).toString(), condition.toString());
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.EXISTS, graph));
+        assertEquals(expected, graphBuilder.conToString(condition));
     }
 
     // E3
     @Test
     public void test() throws Exception {
-        PlainGraph g1 = GraphBuilder.createGraph();
-        GraphBuilder.addNode(g1, "self", "person");
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "self", "person");
 
-        PlainGraph g2 = GraphBuilder.createGraph();
-        GraphBuilder.addNode(g2, "n0", "person");
+        PlainGraph g2 = graphBuilder.createGraph();
+        graphBuilder.addNode(g2, "n0", "person");
 
-        PlainGraph g3 = GraphBuilder.createGraph();
-        GraphBuilder.addNode(g3, "self", "person");
-        GraphBuilder.addNode(g3, "n0", "person");
-        GraphBuilder.addEdge(g3, "n0", Groove.EQ, "self");
+        PlainGraph g3 = graphBuilder.createGraph();
+        graphBuilder.addNode(g3, "self", "person");
+        graphBuilder.addNode(g3, "n0", "person");
+        graphBuilder.addEdge(g3, "n0", Groove.EQ, "self");
 
         LaxCondition l3 = new LaxCondition(Quantifier.EXISTS, g3);
         LaxCondition l2 = new LaxCondition(Quantifier.EXISTS, g2, l3);
         LaxCondition condition = new LaxCondition(Quantifier.FORALL, g1, l2);
 
-        condition.simplify();
+        laxSimplifier.simplify(condition);
 
-        PlainGraph graph = GraphBuilder.createGraph();
-        GraphBuilder.addNode(graph, "self", "person");
+        PlainGraph graph = graphBuilder.createGraph();
+        graphBuilder.addNode(graph, "self", "person");
 
-        assertEquals(new LaxCondition(Quantifier.FORALL, graph).toString(), condition.toString());
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.FORALL, graph));
+        assertEquals(expected, graphBuilder.conToString(condition));
     }
 }

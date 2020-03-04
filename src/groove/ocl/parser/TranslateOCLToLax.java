@@ -6,7 +6,6 @@ import groove.grammar.type.TypeEdge;
 import groove.grammar.type.TypeGraph;
 import groove.grammar.type.TypeNode;
 import groove.graph.plain.PlainGraph;
-import groove.ocl.GrammarStorage;
 import groove.ocl.InvalidOCLException;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.Operator;
@@ -37,23 +36,32 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     // The defined type graphs
     private TypeGraph typeGraph;
+    
+    private GraphBuilder graphBuilder;
 
-    private LaxCondition result;
+    private Map<LaxCondition, GraphBuilder> results;
 
     public TranslateOCLToLax(TypeGraph typeGraph) {
         this.typeGraph = typeGraph;
+        this.results = new HashMap<>();
+        this.graphBuilder = new GraphBuilder();
     }
 
     @Override
     public void outStart(Start node) {
-        result = (LaxCondition) getOut(node);
+        // nothing yet, but the start node doesn't have a parent
     }
 
     @Override
     public void outAConstraint(AConstraint node) {
         PlainGraph graph = (PlainGraph) getOut(node.getContextDeclaration());
         LaxCondition con = (LaxCondition) getOut(node.getContextBodypart().get(0));
-        resetOut(node, new LaxCondition(Quantifier.FORALL, graph, con));
+        LaxCondition result = new LaxCondition(Quantifier.FORALL, graph, con);
+        resetOut(node, result);
+
+        // save the LaxCondition together with its graphbuilder such that the connection between the label names and node names isn't lost
+        results.put(result, graphBuilder);
+        this.graphBuilder = new GraphBuilder();
     }
 
     /**
@@ -76,8 +84,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             var = "self";
         }
 
-        PlainGraph graph = GraphBuilder.createGraph();
-        GraphBuilder.addNode(graph, var, clazz);
+        PlainGraph graph = graphBuilder.createGraph();
+        graphBuilder.addNode(graph, var, clazz);
         resetOut(node, graph);
     }
 
@@ -101,13 +109,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr1 = expr1AttrType.getFirst().getFirst();
             if (expr2 instanceof Constant) {
                 // so its rule17
-                PlainGraph var = GraphBuilder.createGraph();
-                String varName = GraphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
+                PlainGraph var = graphBuilder.createGraph();
+                String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
 
-                LaxCondition trn = tr_N(expr1, GraphBuilder.cloneGraph(var));
+                LaxCondition trn = tr_N(expr1, graphBuilder.cloneGraph(var));
 
-                PlainGraph attrGraph = GraphBuilder.cloneGraph(var);
-                GraphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(),op ,(Constant) expr2);
+                PlainGraph attrGraph = graphBuilder.cloneGraph(var);
+                graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(),op ,(Constant) expr2);
 
                 // given the values create the right LaxCondition
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
@@ -221,7 +229,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
         // TODO check if an expression could start without a custom variable (e.g. self), if so a nullpointer exists here
         // TODO fix this (USE case study inv 3) shows that this is possible
-        String curType = GraphBuilder.getVariableType(split.get(0));
+        String curType = graphBuilder.getVariableType(split.get(0));
         split.remove(split.get(0));
 
         // find the first node
@@ -275,27 +283,27 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 con = null;
             } else {
                 // rule23
-                PlainGraph varPrime = GraphBuilder.createGraph();
-                String vp = GraphBuilder.addNode(varPrime, exprType.text());
+                PlainGraph varPrime = graphBuilder.createGraph();
+                String vp = graphBuilder.addNode(varPrime, exprType.text());
                 LaxCondition trn = tr_N(expr, varPrime);
 
-                GraphBuilder.addNode(graph, vp, exprType.text());
-                GraphBuilder.addEdge(graph, vp, role, GraphBuilder.getVarName(graph));
+                graphBuilder.addNode(graph, vp, exprType.text());
+                graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarName(graph));
 
                 con = new LaxCondition(Quantifier.EXISTS, graph, trn);
             }
         } else {
             // rule22
-            String vp = GraphBuilder.getVarName(graph);
-            GraphBuilder.addNode(graph, expr, GraphBuilder.getVariableType(vp));
-            GraphBuilder.addEdge(graph, vp, EQ, expr);
+            String vp = graphBuilder.getVarName(graph);
+            graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
+            graphBuilder.addEdge(graph, vp, EQ, expr);
 
             con = new LaxCondition(Quantifier.EXISTS, graph);
         }
         return con;
     }
 
-    public LaxCondition getResult() {
-        return result;
+    public Map<LaxCondition, GraphBuilder> getResults() {
+        return results;
     }
 }

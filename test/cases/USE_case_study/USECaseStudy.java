@@ -15,7 +15,7 @@ public class USECaseStudy {
 
     @Test
     public void inv_i1a() throws Exception {
-        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Department inv i1a: self.budget >= 0", GRAPH_LOCATION);
+        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Department inv i1a: self.budget >= 0", GRAPH_LOCATION).get(0);
         assertEquals(condition.toString(),
                 "∀([self--type:Department-->self], " +
                         "∃([self--type:Department-->self, self--budget-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
@@ -24,13 +24,13 @@ public class USECaseStudy {
 
     @Test
     public void inv_i2() throws Exception {
-        TranslateHelper.translateOCLToGraph("context Department inv i2: self.employee->size() >= self.project->size()", GRAPH_LOCATION);
         assert false;
+        TranslateHelper.translateOCLToGraph("context Department inv i2: self.employee->size() >= self.project->size()", GRAPH_LOCATION);
     }
 
     @Test
     public void inv_i1b() throws Exception {
-        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Employee inv i1b: self.salary >= 0", GRAPH_LOCATION);
+        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Employee inv i1b: self.salary >= 0", GRAPH_LOCATION).get(0);
         assertEquals(condition.toString(),
                 "∀([self--type:Employee-->self], " +
                         "∃([self--type:Employee-->self, self--salary-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
@@ -39,13 +39,13 @@ public class USECaseStudy {
 
     @Test
     public void inv_i3() throws Exception {
-        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
         assert false;
+        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
     }
 
     @Test
     public void inv_i1c() throws Exception {
-        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Project inv i1c: self.budget >= 0", GRAPH_LOCATION);
+        LaxCondition condition = TranslateHelper.translateOCLToGraph("context Project inv i1c: self.budget >= 0", GRAPH_LOCATION).get(0);
         assertEquals(condition.toString(),
                 "∀([self--type:Project-->self], " +
                         "∃([self--type:Project-->self, self--budget-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
@@ -54,18 +54,19 @@ public class USECaseStudy {
 
     @Test
     public void inv_i4() throws Exception {
-        TranslateHelper.translateOCLToGraph("context Project inv i4: self.budget <= self.department.budget", GRAPH_LOCATION);
         assert false;
+        TranslateHelper.translateOCLToGraph("context Project inv i4: self.budget <= self.department.budget", GRAPH_LOCATION);
     }
 
     @Test
     public void inv_i5() throws Exception {
-        TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includesAll(self.employee)", GRAPH_LOCATION);
         assert false;
+        TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includesAll(self.employee)", GRAPH_LOCATION);
     }
 
     @Test
     public void inv_all() throws Exception {
+        assert false;
         String ocl =
                 "context Department "
                     + "inv i1a: self.budget >= 0"
@@ -79,6 +80,5 @@ public class USECaseStudy {
                     + "inv i5: self.department.employee->includesAll(self.employee)"
                 ;
         TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
-        assert false;
     }
 }

@@ -8,6 +8,7 @@ import de.tuberlin.cs.cis.ocl.parser.parser.ParserException;
 import groove.graph.plain.PlainGraph;
 import groove.ocl.GrammarStorage;
 import groove.ocl.graphbuilder.GraphBuilder;
+import groove.ocl.lax.LaxSimplifier;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.PushbackReader;
 import java.io.StringReader;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class parseOCL {
@@ -26,8 +28,8 @@ public class parseOCL {
 
     static public void main(String[] args) throws ParserException, IOException, LexerException {
         String ocl =
-//                "context Person inv: self.c.age >= 18" +
-                "context Person inv: self.age >= 18"
+                "context Person inv: self.age >= 18 " +
+                "context Person inv: self.c.age >= 18"
                 ;
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
         Start parseTree = parser.parse();
@@ -39,13 +41,21 @@ public class parseOCL {
         LOGGER.info("parsing:         " + ocl);
         parseTree.apply(translateOCLToLax);
 
-        LaxCondition condition = translateOCLToLax.getResult();
-        LOGGER.info("Before simplify: " + condition.toString());
-        condition.simplify();
-        LOGGER.info("After simplify:  " + condition.toString());
+        Map<LaxCondition, GraphBuilder> conditions = translateOCLToLax.getResults();
+        for (Map.Entry<LaxCondition, GraphBuilder> entry : conditions.entrySet()) {
+            LaxCondition condition = entry.getKey();
+            GraphBuilder graphBuilder = entry.getValue();
 
-        PlainGraph graph = GraphBuilder.laxToGraph(condition);
-        grammarStorage.saveGraph(graph);
+            LaxSimplifier laxSimplifier = new LaxSimplifier(graphBuilder);
+            LOGGER.info("Before simplify: " + graphBuilder.conToString(condition));
+            laxSimplifier.simplify(condition);
+            LOGGER.info("After simplify:  " + graphBuilder.conToString(condition));
+
+            PlainGraph graph = graphBuilder.laxToGraph(condition);
+            grammarStorage.saveGraph(graph);
+        }
+
+//        parseTree.apply(new TreePrinter(new PrintWriter(System.out)));
     }
 
     public static class TreePrinter extends DepthFirstAdapter {
