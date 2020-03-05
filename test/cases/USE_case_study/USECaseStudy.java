@@ -20,10 +20,10 @@ public class USECaseStudy {
     public void inv_i1a() throws Exception {
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Department inv i1a: self.budget >= 0", GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
-        assertEquals(map.get(condition).conToString(condition),
-                "∀([self--type:Department-->self], " +
-                        "∃([self--type:Department-->self, self--budget-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
-        );
+
+        String expected = "∀([self--type:Department-->self], " +
+                "∃([self--type:Department-->self, self--budget-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
@@ -36,10 +36,10 @@ public class USECaseStudy {
     public void inv_i1b() throws Exception {
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Employee inv i1b: self.salary >= 0", GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
-        assertEquals(map.get(condition).conToString(condition),
-                "∀([self--type:Employee-->self], " +
-                        "∃([self--type:Employee-->self, self--salary-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
-        );
+
+        String expected = "∀([self--type:Employee-->self], " +
+                "∃([self--type:Employee-->self, self--salary-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
@@ -52,16 +52,20 @@ public class USECaseStudy {
     public void inv_i1c() throws Exception {
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv i1c: self.budget >= 0", GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
-        assertEquals(map.get(condition).conToString(condition),
-                "∀([self--type:Project-->self], " +
-                        "∃([self--type:Project-->self, self--budget-->n1, n1--type:int-->n1, n2--int:0-->n2, n3--prod:-->n3, n3--arg:0-->n1, n3--arg:1-->n2, n3--int:ge-->n4, n4--bool:true-->n4]))"
-        );
+
+        String expected = "∀([self--type:Project-->self], " +
+                "∃([self--type:Project-->self, self--budget-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
     public void inv_i4() throws Exception {
-        assert false;
-        TranslateHelper.translateOCLToGraph("context Project inv i4: self.budget <= self.department.budget", GRAPH_LOCATION);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv i4: self.budget <= self.department.budget", GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Project-->self], " +
+                            "∃([self--type:Project-->self, self--budget-->N1, self--department-->N2, N1--type:int-->N1, N2--type:Department-->N2, N2--budget-->N3, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:le-->N5, N5--bool:true-->N5]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

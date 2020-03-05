@@ -82,7 +82,7 @@ public class LaxSimplifier {
             laxCon.setCondition(simplifyE2((AndCondition) laxCon.getCondition()));
         }
 
-        // If condition (and this) are LaxConditions and the quantifiers bot existential, try to apply E1 rules
+        // If condition (and this) are LaxConditions and the quantifiers are both existential, try to apply E1 rules
         if (laxCon.getCondition() instanceof LaxCondition && laxCon.getQuantifier().equals(Quantifier.EXISTS)
                 && ((LaxCondition) laxCon.getCondition()).getQuantifier().equals(Quantifier.EXISTS)){
             LaxCondition laxCon2 = (LaxCondition) laxCon.getCondition();

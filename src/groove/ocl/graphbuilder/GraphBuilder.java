@@ -14,6 +14,7 @@ import groove.ocl.lax.graph.constants.Constant;
 import groovy.lang.Tuple2;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -120,10 +121,18 @@ public class GraphBuilder {
 
     /**
      * Used to get the name of the variable of a variableGraph (v:T)
-     * These graphs contain only one node
+     * In which the variable should be placed at the node with nodenumber 0
+     * @param graph     The variable graph, which may contain multiple nodes
+     * @return          The name of the node with nodenumber 0
      */
-    public String getVarName(PlainGraph graph) {
-        return (String) graphNodeMap.get(graph).keySet().toArray()[0];
+    public String getVarNameOfNoden0(PlainGraph graph) {
+        List<String> varNames = graphNodeMap.get(graph).entrySet()
+                .stream()
+                .filter(e -> e.getValue().getNumber() == 0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        assert  varNames.size() == 1;
+        return varNames.get(0);
     }
 
     /**
@@ -177,7 +186,7 @@ public class GraphBuilder {
 
     /**
      * Given a graph in which v:T is already defined add the attributed graph components
-     * (rule 17)
+     * (rule15)
      */
     public void addAttributedGraph(PlainGraph graph, String varName, Tuple2<String, TypeNode> attrType, Operator op, Constant n) {
         String aType = attrType.getSecond().text();
@@ -190,14 +199,36 @@ public class GraphBuilder {
         String attr2 = addNode(graph, n.getGrooveString());
 
         // create production nodes
-        String operator = op.getGrooveString(aType);
+        addProductionRule(graph, attr, aType, op, attr2);
+    }
+
+    /**
+     * Create the production component according to GROOVE notation
+     */
+    public void addProductionRule(PlainGraph graph, String attr1, String attrType, Operator op, String attr2) {
+        // create production nodes
+        String operator = op.getGrooveString(attrType);
         String prod = addNode(graph, String.format("%s:", PROD));
         String bool = addNode(graph, BooleanConstant.TRUE.getGrooveString());
 
         //connect production nodes
-        addEdge(graph, prod, "arg:0", attr);
+        addEdge(graph, prod, "arg:0", attr1);
         addEdge(graph, prod, "arg:1", attr2);
         addEdge(graph, prod, operator, bool);
+    }
+
+    /**
+     * Given an empty graph, create a Node with its Attribute,
+     * given the double tuple which contains <code><<String, TypeNode>, <String, TypeNode>>></code>
+     * And creates 2 nodes, given the 2 typeNodes as type and the association given the name in the second String
+     *
+     * @return The name of the created attribute node.
+     */
+    public String addNodeWithAttribute(PlainGraph graph, Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> exprAttrType) {
+        String varName = addNode(graph, exprAttrType.getFirst().getSecond().text());
+        String attrName = addNode(graph, exprAttrType.getSecond().getSecond().text());
+        addEdge(graph, varName, exprAttrType.getSecond().getFirst(), attrName);
+        return attrName;
     }
 
     /**
@@ -295,7 +326,10 @@ public class GraphBuilder {
 
         // create all edges of g2 in g1
         for (PlainEdge edge: g2.edgeSet()) {
-            if (!g1.containsEdge(edge)) {
+            // check if the edge exists in g1, if so check if the variable names of the source and the target are also the same and not just the node names
+            // Since the node names are numbered in each graph starting with 0, collisions could exists without the 2nd and 3rd check
+            // Inverse the whole such that if this edge doesn't exist create it in g1
+            if (! (g1.containsEdge(edge) && getVarName(g2, edge.source()).equals(getVarName(g1, edge.source())) && getVarName(g2, edge.target()).equals(getVarName(g1, edge.target())))) {
                 addEdge(g1, getVarName(g2, edge.source()), edge.label().text(), getVarName(g2, edge.target()));
             }
         }
@@ -336,7 +370,7 @@ public class GraphBuilder {
      * An helper function to generate a Unique Node name ("n0")
      */
     private String getUniqueNodeName() {
-        return String.format("n%d", uniqueNode++);
+        return String.format("N%d", uniqueNode++);
     }
 
     /**

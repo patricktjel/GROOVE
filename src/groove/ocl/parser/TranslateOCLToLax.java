@@ -92,14 +92,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     @Override
     public void outARelationalExpression(ARelationalExpression node) {
         // operators are {=, <>}
-        // rules that could apply are 15,16,17,18
+        // rules that could apply are 15,16,17,18 (Research topics)
         defaultOut(node);
     }
 
     @Override
     public void outACompareableExpression(ACompareableExpression node) {
         // operators are {<, <=, =>, >}
-        // rules that could apply are 17,18
+        // rules that could apply are 15, 16, 17
         if (node.getComparison() != null){
             String expr1 = getOut(node.getAdditiveExpression()).toString();
             Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
@@ -108,20 +108,48 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(expr1);
             expr1 = expr1AttrType.getFirst().getFirst();
             if (expr2 instanceof Constant) {
-                // so its rule17
+                // so its rule15
                 PlainGraph var = graphBuilder.createGraph();
                 String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
 
                 LaxCondition trn = tr_N(expr1, graphBuilder.cloneGraph(var));
 
                 PlainGraph attrGraph = graphBuilder.cloneGraph(var);
-                graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(),op ,(Constant) expr2);
+                graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, (Constant) expr2);
 
                 // given the values create the right LaxCondition
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
             } else {
-                // its rule 18
+                // its rule16 or rule17
                 Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2.toString());
+                expr2 = expr2AttrType.getFirst().getFirst();
+
+                // checks if expr1 == expr2
+                if (expr1AttrType.getFirst().getSecond().equals(expr2AttrType.getFirst().getSecond())) {
+                    // rule16
+
+                } else {
+                    // rule17
+                    PlainGraph var = graphBuilder.createGraph();
+                    String attr1Name = graphBuilder.addNodeWithAttribute(var, expr1AttrType);
+
+                    PlainGraph attrGraph1 = graphBuilder.cloneGraph(var);
+
+                    PlainGraph varp = graphBuilder.createGraph();
+                    String attr2Name = graphBuilder.addNodeWithAttribute(varp, expr2AttrType);
+
+                    PlainGraph attrGraph2 = graphBuilder.cloneGraph(varp);
+
+                    // instead of using a variable x, just connect with attr1Name
+                    graphBuilder.addNode(attrGraph2, attr1Name, expr1AttrType.getSecond().getSecond().text());
+                    graphBuilder.addProductionRule(attrGraph2, attr1Name, expr2AttrType.getSecond().getSecond().text(), op, attr2Name);
+
+                    LaxCondition trn1 = tr_N(expr1, attrGraph1);
+                    LaxCondition trn2 = tr_N((String) expr2, attrGraph2);
+                    AndCondition andCon = new AndCondition(trn1, trn2);
+
+                    resetOut(node, new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon));
+                }
             }
         }
     }
@@ -279,22 +307,22 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             //TODO figure out which side the clan arrows go
             if (exprType.getSubtypes().contains(roleType)) {
-                // rule24
+                // rule43
                 con = null;
             } else {
-                // rule23
+                // rule42
                 PlainGraph varPrime = graphBuilder.createGraph();
                 String vp = graphBuilder.addNode(varPrime, exprType.text());
                 LaxCondition trn = tr_N(expr, varPrime);
 
                 graphBuilder.addNode(graph, vp, exprType.text());
-                graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarName(graph));
+                graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
 
                 con = new LaxCondition(Quantifier.EXISTS, graph, trn);
             }
         } else {
-            // rule22
-            String vp = graphBuilder.getVarName(graph);
+            // rule41
+            String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQ, expr);
 
