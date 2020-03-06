@@ -26,11 +26,11 @@ public class USECaseStudy {
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
-    @Test
-    public void inv_i2() throws Exception {
-        assert false;
-        TranslateHelper.translateOCLToGraph("context Department inv i2: self.employee->size() >= self.project->size()", GRAPH_LOCATION);
-    }
+//    @Test
+//    public void inv_i2() throws Exception {
+//        assert false;
+//        TranslateHelper.translateOCLToGraph("context Department inv i2: self.employee->size() >= self.project->size()", GRAPH_LOCATION);
+//    }
 
     @Test
     public void inv_i1b() throws Exception {
@@ -42,11 +42,11 @@ public class USECaseStudy {
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
-    @Test
-    public void inv_i3() throws Exception {
-        assert false;
-        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
-    }
+//    @Test
+//    public void inv_i3() throws Exception {
+//        assert false;
+//        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
+//    }
 
     @Test
     public void inv_i1c() throws Exception {
@@ -70,7 +70,12 @@ public class USECaseStudy {
 
     @Test
     public void inv_i5() throws Exception {
-        TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includesAll(self.employee)", GRAPH_LOCATION);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includesAll(self.employee)", GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Project-->self, N0--type:Employee-->N0], " +
+                            "∃([N0--type:Employee-->N0, self--type:Project-->self, self--employee-->N0, self--department-->N1, N1--type:Department-->N1, N1--employee-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

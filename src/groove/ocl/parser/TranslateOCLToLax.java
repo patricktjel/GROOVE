@@ -1,5 +1,6 @@
 package groove.ocl.parser;
 
+import com.sun.deploy.util.StringUtils;
 import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
 import de.tuberlin.cs.cis.ocl.parser.node.*;
 import groove.grammar.type.TypeEdge;
@@ -7,6 +8,7 @@ import groove.grammar.type.TypeGraph;
 import groove.grammar.type.TypeNode;
 import groove.graph.plain.PlainGraph;
 import groove.ocl.InvalidOCLException;
+import groove.ocl.OCL;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
@@ -158,6 +160,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     resetOut(node, new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon));
                 }
             }
+        } else {
+            defaultOut(node);
         }
     }
 
@@ -165,6 +169,34 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     public void outAPostfixExpression(APostfixExpression node) {
         if (getOut(node) instanceof Constant) {
             super.outAPostfixExpression(node);
+        } else if (!node.getPropertyInvocation().isEmpty()
+                && node.getPropertyInvocation().getLast() instanceof ACollectionPropertyInvocation
+                && ((ACollectionPropertyInvocation) node.getPropertyInvocation().getLast()).getPropertyCall() instanceof APropertyCall) {
+            // if there is a collectionPropertyCall get the name of the operation and determine which rule to apply
+            APropertyCall propertyCall = (APropertyCall) ((ACollectionPropertyInvocation) node.getPropertyInvocation().getLast()).getPropertyCall();
+            String operation = (String) getOut(propertyCall.getPathName());
+            String expr1 = (String) getOut(node.getPrimaryExpression());
+            String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+
+            @SuppressWarnings("unchecked") // it's a clone so this can't go wrong
+            LinkedList<PPropertyInvocation> clone = (LinkedList<PPropertyInvocation>) node.getPropertyInvocation().clone();
+            clone.removeLast(); // we want to remove the last therefore we needed the clone
+            for (PPropertyInvocation p : clone) {
+                expr1 = expr1.concat(String.format(".%s", getOut(p)));
+            }
+
+            PlainGraph var = graphBuilder.createGraph();
+            graphBuilder.addNode(var, determineType(expr1).text());
+
+            if (OCL.INCLUDES_ALL.equals(operation)){
+                // rule20
+                LaxCondition trn1 = tr_N(expr1, graphBuilder.cloneGraph(var));
+                LaxCondition trn2 = tr_N(expr2, graphBuilder.cloneGraph(var));
+
+                //TODO: trn2 implies trn1 = not(trn2) and trn1 although the And seems to work?
+                AndCondition condition = new AndCondition(trn2, trn1);
+                resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
+            }
         } else {
             resetOut(node);
         }
@@ -303,13 +335,12 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private LaxCondition tr_N(String expr, PlainGraph graph) {
         LaxCondition con;
         if (expr.contains(".")) {
-            //TODO What if the expr contains multiple dots?
-            String[] split = expr.split("\\.");
+            List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
 
-            String role = split[1];
+            String role = split.remove(split.size() - 1);
             TypeNode roleType = determineType(expr);
 
-            expr = split[0];
+            expr = StringUtils.join(split, ".");
             TypeNode exprType = determineType(expr);
 
             //TODO figure out which side the clan arrows go

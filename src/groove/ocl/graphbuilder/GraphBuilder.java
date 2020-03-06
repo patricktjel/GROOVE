@@ -288,9 +288,11 @@ public class GraphBuilder {
     private PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level) {
         if (c instanceof LaxCondition) {
             return laxToGraph(graph, (LaxCondition) c, level);
-        } else {
+        } else if (c instanceof AndCondition) {
             return laxToGraph(graph, (AndCondition) c, level);
         }
+        assert false; // shouldn't happen
+        return null;
     }
 
     /**
@@ -399,7 +401,7 @@ public class GraphBuilder {
         }
         //shouldn't happen
         assert false;
-        return "";
+        return null;
     }
 
     private String conToString(LaxCondition laxCon) {

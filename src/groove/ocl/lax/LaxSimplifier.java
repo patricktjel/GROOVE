@@ -82,9 +82,9 @@ public class LaxSimplifier {
             laxCon.setCondition(simplifyE2((AndCondition) laxCon.getCondition()));
         }
 
-        // If condition (and this) are LaxConditions and the quantifiers are both existential, try to apply E1 rules
-        if (laxCon.getCondition() instanceof LaxCondition && laxCon.getQuantifier().equals(Quantifier.EXISTS)
-                && ((LaxCondition) laxCon.getCondition()).getQuantifier().equals(Quantifier.EXISTS)){
+        // If condition (and this) are LaxConditions and the quantifiers are the same, try to apply E1 rules
+        if (laxCon.getCondition() instanceof LaxCondition
+                && laxCon.getQuantifier().equals(((LaxCondition) laxCon.getCondition()).getQuantifier())){
             LaxCondition laxCon2 = (LaxCondition) laxCon.getCondition();
             laxCon.setGraph(graphBuilder.mergeGraphs(laxCon.getGraph(), laxCon2.getGraph()));
             laxCon.setCondition(laxCon2.getCondition());
@@ -120,9 +120,8 @@ public class LaxSimplifier {
         eqEdges1.putAll(eqEdges2);
         return eqEdges1;
     }
-
     /**
-     * Given an AndCondition apply the Equivalences E2 and return the resul
+     * Given an AndCondition apply the Equivalences E2 and return the result
      * @param   andCon  AndCondition
      * @return          The result of applying E2 rules
      */
@@ -137,10 +136,10 @@ public class LaxSimplifier {
         // so now we are sure that both expr1 and expr 2 are LaxConditions
         LaxCondition expr1L = (LaxCondition) andCon.getExpr1();
         LaxCondition expr2L = (LaxCondition) andCon.getExpr2();
-        if (expr1L.getQuantifier().equals(Quantifier.EXISTS)
-                && expr2L.getQuantifier().equals(Quantifier.EXISTS)) {
+        // if the quantifiers are the same, merge the graphs
+        if (expr1L.getQuantifier().equals(expr2L.getQuantifier())) {
             PlainGraph graph = graphBuilder.mergeGraphs(expr1L.getGraph(), expr2L.getGraph());
-            return new LaxCondition(Quantifier.EXISTS, graph);
+            return new LaxCondition(expr1L.getQuantifier(), graph);
         }
         // we can't simplify according to E2 so return the current AndCondition
         return andCon;
