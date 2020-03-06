@@ -56,20 +56,24 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outAConstraint(AConstraint node) {
-        PlainGraph graph = (PlainGraph) getOut(node.getContextDeclaration());
-        //TODO .get(0) works too for multiple constraints?
-        LaxCondition con = (LaxCondition) getOut(node.getContextBodypart().get(0));
-        LaxCondition result = new LaxCondition(Quantifier.FORALL, graph, con);
-        resetOut(node, result);
+        PlainGraph contextGraph = (PlainGraph) getOut(node.getContextDeclaration());
 
-        // if the invariant has a name, give this graph that name
-        PName invName = ((AConstraintContextBodypart) node.getContextBodypart().get(0)).getName();
-        if (invName != null){
-            result.getGraph().setName(invName.toString().trim());
+        // Every contextDeclaration may have multiple contextBodyParts, each stands for an invariant
+        for (PContextBodypart inv: node.getContextBodypart()) {
+            PlainGraph graph = graphBuilder.cloneGraph(contextGraph);
+            LaxCondition con = (LaxCondition) getOut(inv);
+            LaxCondition result = new LaxCondition(Quantifier.FORALL, graph, con);
+
+            // if the invariant has a name, give this graph that name
+            PName invName = ((AConstraintContextBodypart) inv).getName();
+            if (invName != null){
+                result.getGraph().setName(invName.toString().trim());
+            }
+
+            // save the LaxCondition together with its graphbuilder such that the connection between the label names and node names isn't lost
+            results.put(result, graphBuilder);
         }
-
-        // save the LaxCondition together with its graphbuilder such that the connection between the label names and node names isn't lost
-        results.put(result, graphBuilder);
+        // be ready for a new constraint
         this.graphBuilder = new GraphBuilder();
     }
 

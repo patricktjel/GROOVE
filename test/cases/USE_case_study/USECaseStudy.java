@@ -80,18 +80,17 @@ public class USECaseStudy {
 
     @Test
     public void inv_all() throws Exception {
-        assert false;
         String ocl =
                 "context Department "
-                    + "inv i1a: self.budget >= 0"
+                    + "inv i1a: self.budget >= 0 "
 //                    + "inv i2: self.employee->size() >= self.project->size()"
                 + "context Employee "
-                    + "inv i1b: self.salary >= 0"
+                    + "inv i1b: self.salary >= 0 "
 //                    + "inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)"
-                + "context Project "
-                    + "inv i1c: self.budget >= 0"
-                    + "inv i4: self.budget <= self.department.budget"
-                    + "inv i5: self.department.employee->includesAll(self.employee)"
+                 + "context Project "
+                    + "inv i1c: self.budget >= 0 "
+                    + "inv i4: self.budget <= self.department.budget "
+                    + "inv i5: self.department.employee->includesAll(self.employee) "
                 ;
         TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
     }
