@@ -1,6 +1,8 @@
 package cases;
 
+import de.tuberlin.cs.cis.ocl.parser.analysis.DepthFirstAdapter;
 import de.tuberlin.cs.cis.ocl.parser.lexer.Lexer;
+import de.tuberlin.cs.cis.ocl.parser.node.Node;
 import de.tuberlin.cs.cis.ocl.parser.node.Start;
 import de.tuberlin.cs.cis.ocl.parser.parser.Parser;
 import groove.graph.plain.PlainGraph;
@@ -11,6 +13,7 @@ import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.parser.TranslateOCLToLax;
 import groove.util.Log;
 
+import java.io.PrintWriter;
 import java.io.PushbackReader;
 import java.io.StringReader;
 import java.util.Map;
@@ -25,6 +28,9 @@ public class TranslateHelper {
 
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
         Start parseTree = parser.parse();
+
+//        parseTree.apply(new TreePrinter(new PrintWriter(System.out)));
+
         TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax(grammarStorage.getTypeGraphs());
 
         LOGGER.info("parsing:         " + ocl);
@@ -39,6 +45,8 @@ public class TranslateHelper {
             LOGGER.info("Before simplify: " + graphBuilder.conToString(condition));
             laxSimplifier.simplify(condition);
             LOGGER.info("After simplify:  " + graphBuilder.conToString(condition));
+
+//            createGraph(condition, graphBuilder, graphLocation);
         }
 
         return conditions;
@@ -50,5 +58,34 @@ public class TranslateHelper {
         PlainGraph graph = graphBuilder.laxToGraph(condition);
         grammarStorage.saveGraph(graph);
 
+    }
+
+    public static class TreePrinter extends DepthFirstAdapter {
+        private int depth = 0;
+        private PrintWriter out;
+
+        public TreePrinter(PrintWriter out) {
+            this.out = out;
+        }
+
+        public void defaultCase(Node node) {
+            indent();
+            out.println(node.toString());
+        }
+
+        public void defaultIn(Node node) {
+            indent();
+            out.println(node.getClass().getSimpleName());
+            depth = depth + 1;
+        }
+
+        public void defaultOut(Node node) {
+            depth = depth - 1;
+            out.flush();
+        }
+
+        private void indent() {
+            for (int i = 0; i < depth; i++) out.write("\t");
+        }
     }
 }

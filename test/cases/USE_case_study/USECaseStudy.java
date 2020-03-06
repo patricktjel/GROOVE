@@ -70,7 +70,6 @@ public class USECaseStudy {
 
     @Test
     public void inv_i5() throws Exception {
-        assert false;
         TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includesAll(self.employee)", GRAPH_LOCATION);
     }
 
@@ -80,10 +79,10 @@ public class USECaseStudy {
         String ocl =
                 "context Department "
                     + "inv i1a: self.budget >= 0"
-                    + "inv i2: self.employee->size() >= self.project->size()"
+//                    + "inv i2: self.employee->size() >= self.project->size()"
                 + "context Employee "
                     + "inv i1b: self.salary >= 0"
-                    + "inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)"
+//                    + "inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)"
                 + "context Project "
                     + "inv i1c: self.budget >= 0"
                     + "inv i4: self.budget <= self.department.budget"
