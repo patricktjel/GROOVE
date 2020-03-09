@@ -125,7 +125,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 PlainGraph var = graphBuilder.createGraph();
                 String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
 
-                LaxCondition trn = tr_N(expr1, graphBuilder.cloneGraph(var));
+                LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
 
                 PlainGraph attrGraph = graphBuilder.cloneGraph(var);
                 graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, (Constant) expr2);
@@ -157,8 +157,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     graphBuilder.addNode(attrGraph2, attr1Name, expr1AttrType.getSecond().getSecond().text());
                     graphBuilder.addProductionRule(attrGraph2, attr1Name, expr2AttrType.getSecond().getSecond().text(), op, attr2Name);
 
-                    LaxCondition trn1 = tr_N(expr1, attrGraph1);
-                    LaxCondition trn2 = tr_N((String) expr2, attrGraph2);
+                    LaxCondition trn1 = tr_NS(expr1, attrGraph1);
+                    LaxCondition trn2 = tr_NS((String) expr2, attrGraph2);
                     AndCondition andCon = new AndCondition(trn1, trn2);
 
                     resetOut(node, new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon));
@@ -180,7 +180,6 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             APropertyCall propertyCall = (APropertyCall) ((ACollectionPropertyInvocation) node.getPropertyInvocation().getLast()).getPropertyCall();
             String operation = (String) getOut(propertyCall.getPathName());
             String expr1 = (String) getOut(node.getPrimaryExpression());
-            String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
 
             @SuppressWarnings("unchecked") // it's a clone so this can't go wrong
             LinkedList<PPropertyInvocation> clone = (LinkedList<PPropertyInvocation>) node.getPropertyInvocation().clone();
@@ -193,13 +192,18 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             graphBuilder.addNode(var, determineType(expr1).text());
 
             if (OCL.INCLUDES_ALL.equals(operation)){
+                String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
                 // rule20
-                LaxCondition trn1 = tr_N(expr1, graphBuilder.cloneGraph(var));
-                LaxCondition trn2 = tr_N(expr2, graphBuilder.cloneGraph(var));
+                LaxCondition trn1 = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                LaxCondition trn2 = tr_NS(expr2, graphBuilder.cloneGraph(var));
 
                 //TODO: trn2 implies trn1 = not(trn2) and trn1 although the And seems to work?
                 AndCondition condition = new AndCondition(trn2, trn1);
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
+            } else if (OCL.NOT_EMPTY.equals(operation)) {
+                // rule24
+                LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             }
         } else {
             resetOut(node);
@@ -336,7 +340,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     /**
      * The tr_N translation rules
      */
-    private LaxCondition tr_N(String expr, PlainGraph graph) {
+    private LaxCondition tr_NS(String expr, PlainGraph graph) {
         LaxCondition con;
         if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
@@ -355,7 +359,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule42
                 PlainGraph varPrime = graphBuilder.createGraph();
                 String vp = graphBuilder.addNode(varPrime, exprType.text());
-                LaxCondition trn = tr_N(expr, varPrime);
+                LaxCondition trn = tr_NS(expr, varPrime);
 
                 graphBuilder.addNode(graph, vp, exprType.text());
                 graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
