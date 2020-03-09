@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    name="example" nsURI="http://www.example.org/examples/example.ecore" nsPrefix="ex">
+  <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+    <details key="invocationDelegates" value="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot"/>
+    <details key="settingDelegates" value="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot"/>
+    <details key="validationDelegates" value="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot"/>
+  </eAnnotations>
+  <eClassifiers xsi:type="ecore:EClass" name="StationComputer">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="bounderies civilSpeedSafety closedGateSafety crashSafety"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
+      <details key="bounderies" value="self.sb.nextPlus()->includes(self.se)"/>
+      <details key="civilSpeedSafety" value="self.trains()->forAll(t | t.v &lt;= t.currentSeg().civilSpeed)"/>
+      <details key="closedGateSafety" value="self.trains()->forAll(t | t.nextClosedGate() &lt;> null implies t.nose + self.wcsd(t) &lt; t.nextClosedGate().segment.segEnd)"/>
+      <details key="crashSafety" value="self.trains()->forAll(t | t.nextTrain() &lt;> null implies t.nose + self.wcsd(t) &lt; t.nextTrain().nose - t.nextTrain().length)"/>
+    </eAnnotations>
+    <eOperations name="trains" ordered="false" upperBound="-1" eType="#//Train"/>
+    <eOperations name="wcsd" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal">
+      <eParameters name="t" eType="#//Train"/>
+    </eOperations>
+    <eOperations name="wcsd2" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal">
+      <eParameters name="t" eType="#//Train"/>
+    </eOperations>
+    <eOperations name="control">
+      <eParameters name="t" eType="#//Train"/>
+    </eOperations>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sb" eType="#//Segment" eOpposite="#//Segment/scb"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="se" eType="#//Segment" eOpposite="#//Segment/sce"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Segment">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="fitting correctLength track"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
+      <details key="fitting" value="self.next &lt;> null implies self.next.segBegin = self.segEnd"/>
+      <details key="correctLength" value="self.segEnd - self.segBegin = self.length"/>
+      <details key="track" value="self.next &lt;> null implies self.track = self.next.track"/>
+    </eAnnotations>
+    <eOperations name="currentTrains" ordered="false" upperBound="-1" eType="#//Train"/>
+    <eOperations name="nextPlus" ordered="false" upperBound="-1" eType="#//Segment"/>
+    <eOperations name="previousPlus" ordered="false" upperBound="-1" eType="#//Segment"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="segBegin" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="segEnd" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="length" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="civilSpeed" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="grade" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="exposure" eType="#//Exposure"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="scb" eType="#//StationComputer" eOpposite="#//StationComputer/sb"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="sce" eType="#//StationComputer" eOpposite="#//StationComputer/se"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="previous" eType="#//Segment" eOpposite="#//Segment/next"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="next" eType="#//Segment" eOpposite="#//Segment/previous"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="gate" eType="#//Gate" eOpposite="#//Gate/segment"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="track" lowerBound="1" eType="#//Track" eOpposite="#//Track/segment"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Gate">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="open" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBooleanObject"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="segment" lowerBound="1" eType="#//Segment" eOpposite="#//Segment/gate"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="StationPlatform" eSuperTypes="#//Segment">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="stationName" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arriving" upperBound="-1" eType="#//Train" eOpposite="#//Train/dest"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="departing" upperBound="-1" eType="#//Train" eOpposite="#//Train/orig"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Track">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="segment" upperBound="-1" eType="#//Segment" eOpposite="#//Segment/track"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Train">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
+      <details key="constraints" value="line"/>
+    </eAnnotations>
+    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
+      <details key="line" value="self.orig.nextPlus()->includes(self.dest)"/>
+    </eAnnotations>
+    <eOperations name="currentSeg" eType="#//Segment"/>
+    <eOperations name="nextTrain" eType="#//Train"/>
+    <eOperations name="nextClosedGate" eType="#//Gate"/>
+    <eOperations name="nextStop" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eOperations name="stationComputer" eType="#//StationComputer"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="nose" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="v" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="a" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="vcm" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="acm" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="length" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigDecimal"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dest" lowerBound="1" eType="#//StationPlatform" eOpposite="#//StationPlatform/arriving"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="orig" lowerBound="1" eType="#//StationPlatform" eOpposite="#//StationPlatform/departing"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="On" lowerBound="1" eType="#//Track"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="Exposure">
+    <eLiterals name="open"/>
+    <eLiterals name="tunnel" value="1"/>
+  </eClassifiers>
+</ecore:EPackage>
