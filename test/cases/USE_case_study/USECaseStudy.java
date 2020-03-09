@@ -45,7 +45,7 @@ public class USECaseStudy {
 //    @Test
 //    public void inv_i3() throws Exception {
 //        assert false;
-//        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
+//        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances()->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
 //    }
 
     @Test
@@ -86,7 +86,7 @@ public class USECaseStudy {
 //                    + "inv i2: self.employee->size() >= self.project->size()"
                 + "context Employee "
                     + "inv i1b: self.salary >= 0 "
-//                    + "inv i3: Employee.allInstances->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)"
+//                    + "inv i3: Employee.allInstances()->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)"
                  + "context Project "
                     + "inv i1c: self.budget >= 0 "
                     + "inv i4: self.budget <= self.department.budget "
