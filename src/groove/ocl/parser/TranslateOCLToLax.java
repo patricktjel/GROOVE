@@ -211,6 +211,26 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     @Override
+    public void outAMultMultiplyOperator(AMultMultiplyOperator node) {
+        resetOut(node, Operator.MUL);
+    }
+
+    @Override
+    public void outADivMultiplyOperator(ADivMultiplyOperator node) {
+        resetOut(node, Operator.DIV);
+    }
+
+    @Override
+    public void outAPlusAddOperator(APlusAddOperator node) {
+        resetOut(node, Operator.PLUS);
+    }
+
+    @Override
+    public void outAMinusAddOperator(AMinusAddOperator node) {
+        resetOut(node, Operator.SUB);
+    }
+
+    @Override
     public void outALtCompareOperator(ALtCompareOperator node) {
         resetOut(node, Operator.LT);
     }

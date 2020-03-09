@@ -1,13 +1,19 @@
 package groove.ocl.lax;
 
 public enum Operator {
-
+    // compare operators
     GT(">", "gt"),
     GTEQ(">=", "ge"),
     LT("<", "lt"),
     LTEQ("<=", "le"),
     EQ("=", "eq"),
-    NEQ("<>", "neq");
+    NEQ("<>", "neq"),
+
+    // math operators
+    PLUS("+", "add"),
+    SUB("-", "sub"),
+    MUL("*", "mul"),
+    DIV("/", "div");
 
     private final String symbol;
     private final String groovename;
