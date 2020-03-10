@@ -13,6 +13,7 @@ import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.AndCondition;
+import groove.ocl.lax.condition.Condition;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
@@ -61,7 +62,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         // Every contextDeclaration may have multiple contextBodyParts, each stands for an invariant
         for (PContextBodypart inv: node.getContextBodypart()) {
             PlainGraph graph = graphBuilder.cloneGraph(contextGraph);
-            LaxCondition con = (LaxCondition) getOut(inv);
+            Condition con = (Condition) getOut(inv);
             LaxCondition result = new LaxCondition(Quantifier.FORALL, graph, con);
 
             // if the invariant has a name, give this graph that name
@@ -107,6 +108,18 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         // operators are {=, <>}
         // rules that could apply are 15,16,17,18 (Research topics)
         defaultOut(node);
+    }
+
+    @Override
+    public void outALogicalExpression(ALogicalExpression node) {
+        //TODO fix implication
+        if (!node.getImplication().isEmpty()) {
+            Condition con1 = (Condition) getOut(node.getBooleanExpression());
+            Condition con2 = (Condition) getOut(node.getImplication().get(0));
+            resetOut(node, new AndCondition(con1, con2));
+        } else {
+            defaultOut(node);
+        }
     }
 
     @Override
@@ -206,10 +219,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                //rule24
+                //rule24    applying the morgan's law -E(c) = A(-c)
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 graphBuilder.applyNot(trn.getGraph());
-                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
+                resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
             }
         } else {
             resetOut(node);
@@ -324,16 +337,23 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
 
         TypeNode type = types.get(0);
-        for (String i: split) {
+        for (String path: split) {
             // follow the edges to the final type node
-            List<? extends TypeEdge> typeEdges = typeGraph.outEdgeSet(type).stream()
-                    .filter(e -> e.text().equals(i))
-                    .collect(Collectors.toList());
+            List<TypeEdge> typeEdges = getTypeNodeOfAttribute(type, path);
 
             if (typeEdges.isEmpty()){
-                // if the edge does not exist in the type graph, the given OCL expression is not correct
-                LOGGER.severe(String.format("The outgoing edge %s does not exist for class %s", i, type));
-                throw new InvalidOCLException();
+                // the type does not have the path edge, does one of its super types contain the path edge?
+                for (TypeNode superType: type.getSupertypes()) {
+                    typeEdges = getTypeNodeOfAttribute(superType, path);
+                    if (!typeEdges.isEmpty()){
+                        break;
+                    }
+                }
+                // if the edge does not exist in the type graph and neither in the supertypes, the given OCL expression is not correct
+                if (typeEdges.isEmpty()){
+                    LOGGER.severe(String.format("The outgoing edge %s does not exist for class %s", path, type));
+                    throw new InvalidOCLException();
+                }
             }
             type = typeEdges
                     .get(0)
@@ -341,6 +361,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
 
         return type;
+    }
+
+    /**
+     * Given a node return the edges in which the label equals attribute
+     * according to the TypeGraph
+     */
+    private List<TypeEdge> getTypeNodeOfAttribute (TypeNode type, String attribute) {
+        return typeGraph.outEdgeSet(type).stream()
+                .filter(e -> e.text().equals(attribute))
+                .collect(Collectors.toList());
     }
 
     /**

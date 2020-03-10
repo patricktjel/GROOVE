@@ -24,6 +24,10 @@ public class TranslateHelper {
     private final static Logger LOGGER = Log.getLogger(TranslateHelper.class.getName());
 
     public static Map<LaxCondition, GraphBuilder> translateOCLToGraph(String ocl, String graphLocation) throws Exception {
+        return translateOCLToGraph(ocl, graphLocation, false);
+    }
+
+    public static Map<LaxCondition, GraphBuilder> translateOCLToGraph(String ocl, String graphLocation, boolean createGraph) throws Exception {
         GrammarStorage grammarStorage = new GrammarStorage(graphLocation);
 
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
@@ -46,7 +50,9 @@ public class TranslateHelper {
             laxSimplifier.simplify(condition);
             LOGGER.info("After simplify:  " + graphBuilder.conToString(condition));
 
-//            createGraph(condition, graphBuilder, graphLocation);
+            if (createGraph){
+                createGraph(condition, graphBuilder, graphLocation);
+            }
         }
 
         return conditions;
