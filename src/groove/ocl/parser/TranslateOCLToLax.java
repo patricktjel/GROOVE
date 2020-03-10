@@ -133,7 +133,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // given the values create the right LaxCondition
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
             } else {
-                // its rule16 or rule17
+                // its rule16
                 Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2.toString());
                 expr2 = expr2AttrType.getFirst().getFirst();
 
@@ -143,7 +143,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     // rule16
 
                 } else {
-                    // rule17
+                    // rule16 (part after the v)
                     PlainGraph var = graphBuilder.createGraph();
                     String attr1Name = graphBuilder.addNodeWithAttribute(var, expr1AttrType);
 
@@ -194,7 +194,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             if (OCL.INCLUDES_ALL.equals(operation)){
                 String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
-                // rule20
+                // rule19
                 LaxCondition trn1 = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 LaxCondition trn2 = tr_NS(expr2, graphBuilder.cloneGraph(var));
 
@@ -202,11 +202,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 AndCondition condition = new AndCondition(trn2, trn1);
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
             } else if (OCL.NOT_EMPTY.equals(operation)) {
-                // rule24
+                // rule23
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                //rule25
+                //rule24
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 graphBuilder.applyNot(trn.getGraph());
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
@@ -359,10 +359,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             //TODO figure out which side the clan arrows go
             if (exprType.getSubtypes().contains(roleType)) {
-                // rule43
+                // rule42
                 con = null;
             } else {
-                // rule42
+                // rule41
                 PlainGraph varPrime = graphBuilder.createGraph();
                 String vp = graphBuilder.addNode(varPrime, exprType.text());
                 LaxCondition trn = tr_NS(expr, varPrime);
@@ -373,7 +373,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 con = new LaxCondition(Quantifier.EXISTS, graph, trn);
             }
         } else {
-            // rule41
+            // rule40
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQ, expr);
