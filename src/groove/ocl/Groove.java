@@ -6,4 +6,5 @@ public class Groove {
     public final static String PROD = "prod";
     public final static String IN = "in";
     public final static String TYPE = "type";
+    public final static String NOT = "not";
 }

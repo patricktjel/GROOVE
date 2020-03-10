@@ -416,4 +416,18 @@ public class GraphBuilder {
     private String conToString(AndCondition andCon) {
         return String.format("%s \u2227 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
     }
+
+    public void applyNot(PlainGraph graph) {
+        for (PlainEdge e : graph.edgeSet()) {
+            if (!labelContainsType(e.label().text())) {
+                // replace the the label l of the edge e with 'not:l'
+                addEdge(graph, getVarName(graph, e.source()), String.format("%s:%s", NOT, e.label().text()), getVarName(graph, e.target()));
+                removeEdge(graph, e);
+            }
+        }
+    }
+
+    private boolean labelContainsType(String label) {
+        return label.startsWith(String.format("%s:", TYPE));
+    }
 }

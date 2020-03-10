@@ -138,6 +138,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 expr2 = expr2AttrType.getFirst().getFirst();
 
                 // checks if expr1 == expr2
+                // TODO: this hard split is not allowed since subtyping is possible in GROOVE
                 if (expr1AttrType.getFirst().getSecond().equals(expr2AttrType.getFirst().getSecond())) {
                     // rule16
 
@@ -203,6 +204,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             } else if (OCL.NOT_EMPTY.equals(operation)) {
                 // rule24
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
+            } else if (OCL.IS_EMPTY.equals(operation)) {
+                //rule25
+                LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                graphBuilder.applyNot(trn.getGraph());
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             }
         } else {
