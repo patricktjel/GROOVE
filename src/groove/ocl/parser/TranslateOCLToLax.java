@@ -150,37 +150,84 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2.toString());
                 expr2 = expr2AttrType.getFirst().getFirst();
 
-                // checks if expr1 == expr2
-                // TODO: this hard split is not allowed since subtyping is possible in GROOVE
-                if (expr1AttrType.getFirst().getSecond().equals(expr2AttrType.getFirst().getSecond())) {
-                    // rule16
-
+                Set<TypeNode> supertypes1 = typeGraph.getSupertypes(expr1AttrType.getFirst().getSecond());
+                Set<TypeNode> supertypes2 = typeGraph.getSupertypes(expr2AttrType.getFirst().getSecond());
+                if (expr1.equals(expr2)) {
+                    // if expr1 == expr 2 only the first part is needed
+                    resetOut(node, rule16Part1(expr1AttrType, expr2AttrType, op, expr1, (String) expr2));
+                } else if (intersect(supertypes1, supertypes2).isEmpty()) {
+                    // if clan(expr1) ∩ clan(expr2) is empty then only the second part is needed
+                    resetOut(node, rule16Part2(expr1AttrType, expr2AttrType, op, expr1, (String) expr2));
                 } else {
-                    // rule16 (part after the v)
-                    PlainGraph var = graphBuilder.createGraph();
-                    String attr1Name = graphBuilder.addNodeWithAttribute(var, expr1AttrType);
-
-                    PlainGraph attrGraph1 = graphBuilder.cloneGraph(var);
-
-                    PlainGraph varp = graphBuilder.createGraph();
-                    String attr2Name = graphBuilder.addNodeWithAttribute(varp, expr2AttrType);
-
-                    PlainGraph attrGraph2 = graphBuilder.cloneGraph(varp);
-
-                    // instead of using a variable x, just connect with attr1Name
-                    graphBuilder.addNode(attrGraph2, attr1Name, expr1AttrType.getSecond().getSecond().text());
-                    graphBuilder.addProductionRule(attrGraph2, attr1Name, expr2AttrType.getSecond().getSecond().text(), op, attr2Name);
-
-                    LaxCondition trn1 = tr_NS(expr1, attrGraph1);
-                    LaxCondition trn2 = tr_NS((String) expr2, attrGraph2);
-                    AndCondition andCon = new AndCondition(trn1, trn2);
-
-                    resetOut(node, new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon));
+                    // else both parts are necessary
+                    LaxCondition p1 = rule16Part1(expr1AttrType, expr2AttrType, op, expr1, (String) expr2);
+                    LaxCondition p2 = rule16Part2(expr1AttrType, expr2AttrType, op, expr1, (String) expr2);
+                    //TODO p1 OR p2 instead of AND
+                    resetOut(node, new AndCondition(p1, p2));
                 }
             }
         } else {
             defaultOut(node);
         }
+    }
+
+    /**
+     * rule16 (part before the v)
+     */
+    private LaxCondition rule16Part1(Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType,
+                                     Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType,
+                                     Operator op, String expr1, String expr2) {
+        // rule16 (part before the v)
+        PlainGraph var = graphBuilder.createGraph();
+        String className = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
+        String attr1Name = graphBuilder.addNode(var, expr1AttrType.getSecond().getSecond().text());
+        String attr2Name = graphBuilder.addNode(var, expr2AttrType.getSecond().getSecond().text());
+        graphBuilder.addEdge(var, className, expr1AttrType.getSecond().getFirst(), attr1Name);
+        graphBuilder.addEdge(var, className, expr2AttrType.getSecond().getFirst(), attr2Name);
+        // instead of using a variable x, just connect with attr1Name
+        graphBuilder.addProductionRule(var, attr1Name, expr2AttrType.getSecond().getSecond().text(), op, attr2Name);
+
+        PlainGraph attrGraph1 = graphBuilder.cloneGraph(var);
+        PlainGraph attrGraph2 = graphBuilder.cloneGraph(var);
+
+        LaxCondition trn1 = tr_NS(expr1, attrGraph1);
+        LaxCondition trn2 = tr_NS(expr2, attrGraph2);
+        AndCondition andCon = new AndCondition(trn1, trn2);
+
+        return new LaxCondition(Quantifier.EXISTS, var, andCon);
+    }
+
+    /**
+     * rule16 (part after the v)
+     */
+    private LaxCondition rule16Part2(Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType,
+                                     Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType,
+                                     Operator op, String expr1, String expr2) {
+        PlainGraph var = graphBuilder.createGraph();
+        String attr1Name = graphBuilder.addNodeWithAttribute(var, expr1AttrType);
+
+        PlainGraph attrGraph1 = graphBuilder.cloneGraph(var);
+
+        PlainGraph varp = graphBuilder.createGraph();
+        String attr2Name = graphBuilder.addNodeWithAttribute(varp, expr2AttrType);
+
+        // instead of using a variable x, just connect with attr1Name
+        graphBuilder.addNode(varp, attr1Name, expr1AttrType.getSecond().getSecond().text());
+        graphBuilder.addProductionRule(varp, attr1Name, expr2AttrType.getSecond().getSecond().text(), op, attr2Name);
+
+        PlainGraph attrGraph2 = graphBuilder.cloneGraph(varp);
+
+        LaxCondition trn1 = tr_NS(expr1, attrGraph1);
+        LaxCondition trn2 = tr_NS(expr2, attrGraph2);
+        AndCondition andCon = new AndCondition(trn1, trn2);
+
+        return new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon);
+    }
+
+    private Set<TypeNode> intersect(Set<TypeNode> set1, Set<TypeNode> set2) {
+        Set<TypeNode> intersection = new HashSet<>(set1);
+        intersection.retainAll(set2);
+        return intersection;
     }
 
     @Override

@@ -141,8 +141,6 @@ public class GraphBuilder {
      * @return          The type of the variable
      *                  or null if the variable does not exists
      */
-    // TODO static getVariableType is broken for translating multiple OCL constraints (with different context)
-    //  self appears multiple times in the map and it is not deterministic which type it will return
     public String getVariableType(String key) {
         for (Map.Entry<PlainGraph, Map<String, PlainNode>> entry :graphNodeMap.entrySet()) {
             if (entry.getValue().containsKey(key)) {
