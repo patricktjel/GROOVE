@@ -251,10 +251,6 @@ public class GraphBuilder {
         // create the quantification of this laxCondition
         String quantLvl = Integer.toString(level);
         addNode(graph, quantLvl, c.getQuantifier().getGrooveString());
-        // create connection between the current quantification level and the previous quantification level
-        if (level > 0) {
-            addEdge(graph, quantLvl, IN, Integer.toString(level-1));
-        }
 
         // connect the nodes of the graph with its quantifier
         for (Map.Entry<String, PlainNode> entry : graphNodeMap.get(c.getGraph()).entrySet()) {
@@ -262,6 +258,16 @@ public class GraphBuilder {
                 //the quantifier shouldn't connect with itself and check if the node didn't exist already in the previous quantlevel
                 addEdge(graph, entry.getKey(), AT, quantLvl);
             }
+        }
+
+        PlainNode quantifier = graphNodeMap.get(graph).get(quantLvl);
+        if (graph.inEdgeSet(quantifier).size() == 1) {
+            // if no node is connected with the quantifier, we can remove the quantifier
+            // the one incoming edge is the self loop which contains the label of the quantifier
+            removeNode(graph, quantifier);
+        } else if (level > 0) {
+            // create connection between the current quantification level and the previous quantification level
+            addEdge(graph, quantLvl, IN, Integer.toString(level-1));
         }
 
         // all nodes from this level are created and connected. Start with the next level if applicable

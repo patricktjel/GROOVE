@@ -219,7 +219,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                //rule24    applying the morgan's law -E(c) = A(-c)
+                //rule24    applying the morgan's law -E(c, L) = A(-c, L)
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 graphBuilder.applyNot(trn.getGraph());
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
