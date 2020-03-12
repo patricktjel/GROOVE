@@ -158,10 +158,13 @@ public class EquivalenceTests {
 
         laxSimplifier.simplify(condition);
 
+        //create expected
         PlainGraph graph = graphBuilder.createGraph();
         graphBuilder.addNode(graph, "self", "person");
+        PlainGraph graph2 = graphBuilder.createGraph();
+        graphBuilder.addNode(graph2, "self", "person");
+        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.FORALL, graph, new LaxCondition(Quantifier.EXISTS, graph2)));
 
-        String expected = graphBuilder.conToString(new LaxCondition(Quantifier.FORALL, graph));
         assertEquals(expected, graphBuilder.conToString(condition));
     }
 }

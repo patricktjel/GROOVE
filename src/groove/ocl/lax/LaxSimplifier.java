@@ -89,15 +89,6 @@ public class LaxSimplifier {
             laxCon.setGraph(graphBuilder.mergeGraphs(laxCon.getGraph(), laxCon2.getGraph()));
             laxCon.setCondition(laxCon2.getCondition());
         }
-
-        /** If the condition is null && the graphs are the same (according to {@link GraphBuilder#graphToString(PlainGraph graph)}) && the quantification is the same
-         * or the outer quantification is bigger, then they may be merged together */
-        if (laxCon.getCondition() instanceof LaxCondition
-                && graphBuilder.graphToString(laxCon.getGraph()).equals(graphBuilder.graphToString(((LaxCondition) laxCon.getCondition()).getGraph()))
-                && laxCon.getQuantifier().compareTo(((LaxCondition) laxCon.getCondition()).getQuantifier()) >= 0) {
-            laxCon.setCondition(((LaxCondition) laxCon.getCondition()).getCondition());
-        }
-
         return eqEdges;
     }
 
