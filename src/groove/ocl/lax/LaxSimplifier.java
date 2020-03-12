@@ -4,6 +4,7 @@ import groove.graph.plain.PlainGraph;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.condition.AndCondition;
 import groove.ocl.lax.condition.Condition;
+import groove.ocl.lax.condition.ImpliesCondition;
 import groove.ocl.lax.condition.LaxCondition;
 
 import java.util.Map;
@@ -24,13 +25,15 @@ public class LaxSimplifier {
 
     /**
      * A method that makes sure that the correct simplify method is called
-     * @return      A list with equivalences according to E3
+     * @return      A list with equivalences according to E4
      */
     public Map<String, String> simplify (Condition condition) {
         if (condition instanceof LaxCondition) {
             return simplify((LaxCondition) condition);
         } else if (condition instanceof AndCondition) {
             return simplify((AndCondition) condition);
+        } else if (condition instanceof ImpliesCondition) {
+            return simplify((ImpliesCondition) condition);
         }
         //shouldn't happen
         assert false;
@@ -41,7 +44,6 @@ public class LaxSimplifier {
      * Apply the equivalence rules to make the Lax condition simple
      * @return  The final LaxCondition result
      */
-    @SuppressWarnings("DanglingJavadoc") // Necessary for method reference in Javadoc
     private Map<String, String> simplify(LaxCondition laxCon) {
         Map<String, String> eqEdges;
         if (laxCon.getCondition() != null) {
@@ -67,19 +69,28 @@ public class LaxSimplifier {
             return eqEdges;
         }
 
-        // replace AndCondition if possible (part of E3)
+        // replace AndCondition if possible (part of E4)
         if (laxCon.getCondition() instanceof AndCondition) {
             replaceAndCondition(laxCon);
         }
 
-        // Apply E3 replacement
+        // Apply E4 replacement
         for (Map.Entry<String, String> entry :eqEdges.entrySet()) {
             renameVar(laxCon, entry.getKey(), entry.getValue());
         }
 
-        // if the condition is an AndCondition Let it simplify according to E2
+        // if the condition is an AndCondition Let it simplify according to E3
         if (laxCon.getCondition() instanceof AndCondition) {
-            laxCon.setCondition(simplifyE2((AndCondition) laxCon.getCondition()));
+            laxCon.setCondition(simplifyE3((AndCondition) laxCon.getCondition()));
+        }
+
+        // Apply E2: E(a) implies E(b)== A(a, E(b))
+        if (laxCon.getCondition() instanceof ImpliesCondition) {
+            ImpliesCondition con = (ImpliesCondition) laxCon.getCondition();
+            assert con.getExpr1() instanceof LaxCondition;
+            LaxCondition expr1 = (LaxCondition) con.getExpr1();
+            assert expr1.getCondition() == null;
+            laxCon.setCondition(new LaxCondition(Quantifier.FORALL, expr1.getGraph(), con.getExpr2()));
         }
 
         // If condition (and this) are LaxConditions and the quantifiers are the same, try to apply E1 rules
@@ -111,18 +122,29 @@ public class LaxSimplifier {
         eqEdges1.putAll(eqEdges2);
         return eqEdges1;
     }
+
     /**
-     * Given an AndCondition apply the Equivalences E2 and return the result
-     * @param   andCon  AndCondition
-     * @return          The result of applying E2 rules
+     * Handle the simplify for the ImpliesCondition
      */
-    private Condition simplifyE2(AndCondition andCon) {
+    private Map<String, String> simplify(ImpliesCondition impCon) {
+        Map<String, String> eqEdges1 = simplify(impCon.getExpr1());
+        Map<String, String> eqEdges2 = simplify(impCon.getExpr2());
+        eqEdges1.putAll(eqEdges2);
+        return eqEdges1;
+    }
+
+    /**
+     * Given an AndCondition apply the Equivalences E3 and return the result
+     * @param   andCon  AndCondition
+     * @return          The result of applying E3 rules
+     */
+    private Condition simplifyE3(AndCondition andCon) {
         // First try to simplify the existing AndConditions according to E2
         if (andCon.getExpr1() instanceof AndCondition){
-            andCon.setExpr1(simplifyE2((AndCondition) andCon.getExpr1()));
+            andCon.setExpr1(simplifyE3((AndCondition) andCon.getExpr1()));
         }
         if (andCon.getExpr2() instanceof AndCondition){
-            andCon.setExpr2(simplifyE2((AndCondition) andCon.getExpr2()));
+            andCon.setExpr2(simplifyE3((AndCondition) andCon.getExpr2()));
         }
         // so now we are sure that both expr1 and expr 2 are LaxConditions
         LaxCondition expr1L = (LaxCondition) andCon.getExpr1();
@@ -159,6 +181,10 @@ public class LaxSimplifier {
             renameVar((LaxCondition) condition, o, n);
         } else if (condition instanceof AndCondition) {
             renameVar((AndCondition) condition, o, n);
+        } else if (condition instanceof ImpliesCondition) {
+            renameVar((ImpliesCondition) condition, o, n);
+        } else {
+            assert false;
         }
     }
 
@@ -178,5 +204,13 @@ public class LaxSimplifier {
     private void renameVar(AndCondition andCon, String o, String n) {
         renameVar(andCon.getExpr1(), o, n);
         renameVar(andCon.getExpr2(), o, n);
+    }
+
+    /**
+     * Call renameVar for both expr1 and expr2
+     */
+    private void renameVar(ImpliesCondition impCon, String o, String n) {
+        renameVar(impCon.getExpr1(), o, n);
+        renameVar(impCon.getExpr2(), o, n);
     }
 }

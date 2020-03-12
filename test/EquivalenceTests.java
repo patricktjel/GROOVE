@@ -4,6 +4,7 @@ import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.LaxSimplifier;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.AndCondition;
+import groove.ocl.lax.condition.ImpliesCondition;
 import groove.ocl.lax.condition.LaxCondition;
 import org.junit.jupiter.api.Test;
 
@@ -101,7 +102,7 @@ public class EquivalenceTests {
         assertEquals(expected, graphBuilder.conToString(condition));
     }
 
-    //E2 (and E1 to merge it with the first existential)
+    //E3 (and E1 to merge it with the first existential)
     @Test
     public void simplifyAndCondition() throws Exception {
         PlainGraph g = graphBuilder.createGraph();
@@ -138,9 +139,9 @@ public class EquivalenceTests {
         assertEquals(expected, graphBuilder.conToString(condition));
     }
 
-    // E3
+    // E4
     @Test
-    public void test() throws Exception {
+    public void simplifyAndRename() throws Exception {
         PlainGraph g1 = graphBuilder.createGraph();
         graphBuilder.addNode(g1, "self", "person");
 
@@ -166,5 +167,41 @@ public class EquivalenceTests {
         String expected = graphBuilder.conToString(new LaxCondition(Quantifier.FORALL, graph, new LaxCondition(Quantifier.EXISTS, graph2)));
 
         assertEquals(expected, graphBuilder.conToString(condition));
+    }
+
+    @Test
+    public void simplifyImplies() throws Exception {
+        PlainGraph g = graphBuilder.createGraph();
+        graphBuilder.addNode(g, "self", "person");
+
+        PlainGraph g1 = graphBuilder.createGraph();
+        graphBuilder.addNode(g1, "self", "person");
+        graphBuilder.addNode(g1, "m", "mother");
+        graphBuilder.addEdge(g1, "self", "m", "m");
+
+        PlainGraph g2 = graphBuilder.createGraph();
+        graphBuilder.addNode(g2, "self", "person");
+        graphBuilder.addNode(g2, "f", "father");
+        graphBuilder.addEdge(g2, "self", "f", "f");
+
+        LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, g1);
+        LaxCondition l2 = new LaxCondition(Quantifier.EXISTS, g2);
+        LaxCondition condition = new LaxCondition(Quantifier.FORALL, g, new ImpliesCondition(l1, l2));
+
+        laxSimplifier.simplify(condition);
+
+        //create expected
+        PlainGraph graph = graphBuilder.createGraph();
+        graphBuilder.addNode(graph, "self", "person");
+        graphBuilder.addNode(graph, "m", "mother");
+        graphBuilder.addEdge(graph, "self", "m", "m");
+
+        PlainGraph graph2 = graphBuilder.createGraph();
+        graphBuilder.addNode(graph2, "self", "person");
+        graphBuilder.addNode(graph2, "f", "father");
+        graphBuilder.addEdge(graph2, "self", "f", "f");
+        LaxCondition expected = new LaxCondition(Quantifier.FORALL, graph, new LaxCondition(Quantifier.EXISTS, graph2));
+
+        assertEquals(graphBuilder.conToString(expected), graphBuilder.conToString(condition));
     }
 }

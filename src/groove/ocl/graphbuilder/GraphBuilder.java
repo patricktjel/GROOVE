@@ -8,6 +8,7 @@ import groove.graph.plain.PlainNode;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.condition.AndCondition;
 import groove.ocl.lax.condition.Condition;
+import groove.ocl.lax.condition.ImpliesCondition;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
@@ -402,6 +403,8 @@ public class GraphBuilder {
             return conToString((LaxCondition) condition);
         } else if (condition instanceof AndCondition) {
             return conToString((AndCondition) condition);
+        } else if (condition instanceof ImpliesCondition) {
+            return conToString((ImpliesCondition) condition);
         }
         //shouldn't happen
         assert false;
@@ -419,6 +422,10 @@ public class GraphBuilder {
 
     private String conToString(AndCondition andCon) {
         return String.format("%s \u2227 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
+    }
+
+    private String conToString(ImpliesCondition implCon) {
+        return String.format("%s \u2192 %s", conToString(implCon.getExpr1()), conToString(implCon.getExpr2()));
     }
 
     public void applyNot(PlainGraph graph) {

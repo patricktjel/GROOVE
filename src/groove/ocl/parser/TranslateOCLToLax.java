@@ -14,6 +14,7 @@ import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.AndCondition;
 import groove.ocl.lax.condition.Condition;
+import groove.ocl.lax.condition.ImpliesCondition;
 import groove.ocl.lax.condition.LaxCondition;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
@@ -112,13 +113,41 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outALogicalExpression(ALogicalExpression node) {
-        //TODO fix implication
         if (!node.getImplication().isEmpty()) {
             Condition con1 = (Condition) getOut(node.getBooleanExpression());
-            Condition con2 = (Condition) getOut(node.getImplication().get(0));
-            resetOut(node, new AndCondition(con1, con2));
+
+            for (PImplication impNode : node.getImplication()) {
+                Condition con2 = (Condition) getOut(impNode);
+                // PImplication can only be an implies
+                con1 = new ImpliesCondition(con1, con2);
+            }
+            resetOut(node, con1);
         } else {
             defaultOut(node);
+        }
+    }
+
+    @Override
+    public void outABooleanExpression(ABooleanExpression node) {
+        if (!node.getBooleanOperation().isEmpty()) {
+            Condition con1 = (Condition) getOut(node.getRelationalExpression());
+
+            // loop through all the operations and create a nested condition in con1
+            for (PBooleanOperation nodeOp : node.getBooleanOperation()) {
+                Condition con2 = (Condition) getOut(nodeOp);
+
+                // op can be AAnd, AOr, AXor
+                PBooleanOperator op = ((ABooleanOperation) nodeOp).getBooleanOperator();
+                if (op instanceof AAndBooleanOperator) {
+                    con1 = new AndCondition(con1, con2);
+                } else {
+                    // makes sure that we do not miss one of the (new) operations
+                    assert false;
+                }
+            }
+            resetOut(node, con1);
+        } else {
+          defaultOut(node);
         }
     }
 

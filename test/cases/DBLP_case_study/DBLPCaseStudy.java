@@ -51,9 +51,8 @@ public class DBLPCaseStudy {
 
     @Test
     public void compatibleYear() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv compatibleYear: self.conferenceEdition->notEmpty() implies self.publicationYear >= self.conferenceEdition.year ";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
     }
 
