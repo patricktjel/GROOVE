@@ -434,9 +434,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
             TypeNode exprType = determineType(expr);
 
-            //TODO figure out which side the clan arrows go
-            if (exprType.getSubtypes().contains(roleType)) {
-                // rule42
+            if (roleType.getSupertypes().contains(exprType)) {
+                // if exprType is an element in the clan of the roletype (clan is a type with its supertypes)
+                // then it is rule42
                 con = null;
             } else {
                 // rule41
