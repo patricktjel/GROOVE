@@ -128,7 +128,17 @@ public class LaxSimplifier {
      */
     private Map<String, String> simplify(ImpliesCondition impCon) {
         Map<String, String> eqEdges1 = simplify(impCon.getExpr1());
+        // if expr1 is an AndCondition Let it simplify according to E3
+        if (impCon.getExpr1() instanceof AndCondition) {
+            impCon.setExpr1(simplifyE3((AndCondition) impCon.getExpr1()));
+        }
+
         Map<String, String> eqEdges2 = simplify(impCon.getExpr2());
+        // if expr2 is an AndCondition Let it simplify according to E3
+        if (impCon.getExpr2() instanceof AndCondition) {
+            impCon.setExpr2(simplifyE3((AndCondition) impCon.getExpr2()));
+        }
+
         eqEdges1.putAll(eqEdges2);
         return eqEdges1;
     }

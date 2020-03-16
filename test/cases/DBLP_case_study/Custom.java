@@ -78,5 +78,10 @@ public class Custom extends DBLPCaseStudy {
         String ocl = "context EditedBook inv andImpliesTest: self.numPages > 0 and self.year > 0 implies self.publicationYear > 0";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self, self--numPages-->N1, self--year-->N6, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:gt-->N4, N4--bool:true-->N4, N6--type:int-->N6, N7--int:0-->N7, N8--prod:-->N8, N8--arg:0-->N6, N8--arg:1-->N7, N8--int:gt-->N9, N9--bool:true-->N9], " +
+                "∃([self--type:EditedBook-->self, self--publicationYear-->N11, N11--type:int-->N11, N12--int:0-->N12, N13--prod:-->N13, N13--arg:0-->N11, N13--arg:1-->N12, N13--int:gt-->N14, N14--bool:true-->N14]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+        assertEquals("andImpliesTest", condition.getGraph().getName());
     }
 }

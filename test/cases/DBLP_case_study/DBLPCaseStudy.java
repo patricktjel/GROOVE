@@ -52,8 +52,13 @@ public class DBLPCaseStudy {
     @Test
     public void compatibleYear() throws Exception {
         String ocl = "context EditedBook inv compatibleYear: self.conferenceEdition->notEmpty() implies self.publicationYear >= self.conferenceEdition.year ";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        //TODO: is this correct? or should the two ConferenceEditions be the same nodes? We have to investigate this with more complex constraints in which sets appear
+        String expected = "∀([self--type:EditedBook-->self, self--conferenceEdition-->N0, N0--type:ConferenceEdition-->N0], " +
+                "∃([self--type:EditedBook-->self, self--publicationYear-->N3, self--conferenceEdition-->N4, N3--type:int-->N3, N4--type:ConferenceEdition-->N4, N4--year-->N5, N5--type:int-->N5, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--int:ge-->N7, N7--bool:true-->N7]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

@@ -310,6 +310,8 @@ public class GraphBuilder {
         // only in the first case g1 should be replaced with g2
         // else glue the two graphs together
         if (subsetGraphs(g1, g2)) {
+            // make sure that the name does not change, in the root case of the tree the g1 contains the name of the invariant
+            g2.setName(g1.getName());
             return g2;
         } else if (!subsetGraphs(g2, g1)) {
             return mergeGraphsInternal(g1, g2);
