@@ -2,10 +2,7 @@ package groove.ocl.lax;
 
 import groove.graph.plain.PlainGraph;
 import groove.ocl.graphbuilder.GraphBuilder;
-import groove.ocl.lax.condition.AndCondition;
-import groove.ocl.lax.condition.Condition;
-import groove.ocl.lax.condition.ImpliesCondition;
-import groove.ocl.lax.condition.LaxCondition;
+import groove.ocl.lax.condition.*;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,6 +29,8 @@ public class LaxSimplifier {
             return simplify((LaxCondition) condition);
         } else if (condition instanceof AndCondition) {
             return simplify((AndCondition) condition);
+        } else if (condition instanceof OrCondition) {
+            return simplify((OrCondition) condition);
         } else if (condition instanceof ImpliesCondition) {
             return simplify((ImpliesCondition) condition);
         }
@@ -124,6 +123,16 @@ public class LaxSimplifier {
     }
 
     /**
+     * Handle the simplify for the OrCondition
+     */
+    private Map<String, String> simplify(OrCondition andCon) {
+        Map<String, String> eqEdges1 = simplify(andCon.getExpr1());
+        Map<String, String> eqEdges2 = simplify(andCon.getExpr2());
+        eqEdges1.putAll(eqEdges2);
+        return eqEdges1;
+    }
+
+    /**
      * Handle the simplify for the ImpliesCondition
      */
     private Map<String, String> simplify(ImpliesCondition impCon) {
@@ -191,6 +200,8 @@ public class LaxSimplifier {
             renameVar((LaxCondition) condition, o, n);
         } else if (condition instanceof AndCondition) {
             renameVar((AndCondition) condition, o, n);
+        } else if (condition instanceof OrCondition) {
+            renameVar((OrCondition) condition, o, n);
         } else if (condition instanceof ImpliesCondition) {
             renameVar((ImpliesCondition) condition, o, n);
         } else {
@@ -212,6 +223,14 @@ public class LaxSimplifier {
      * Call renameVar for both expr1 and expr2
      */
     private void renameVar(AndCondition andCon, String o, String n) {
+        renameVar(andCon.getExpr1(), o, n);
+        renameVar(andCon.getExpr2(), o, n);
+    }
+
+    /**
+     * Call renameVar for both expr1 and expr2
+     */
+    private void renameVar(OrCondition andCon, String o, String n) {
         renameVar(andCon.getExpr1(), o, n);
         renameVar(andCon.getExpr2(), o, n);
     }

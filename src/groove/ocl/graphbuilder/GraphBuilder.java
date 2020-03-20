@@ -6,10 +6,7 @@ import groove.graph.plain.PlainEdge;
 import groove.graph.plain.PlainGraph;
 import groove.graph.plain.PlainNode;
 import groove.ocl.lax.Operator;
-import groove.ocl.lax.condition.AndCondition;
-import groove.ocl.lax.condition.Condition;
-import groove.ocl.lax.condition.ImpliesCondition;
-import groove.ocl.lax.condition.LaxCondition;
+import groove.ocl.lax.condition.*;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
 import groovy.lang.Tuple2;
@@ -236,10 +233,11 @@ public class GraphBuilder {
      * @return      The resulting graph
      */
     public PlainGraph laxToGraph(LaxCondition c) {
-        return laxToGraph(c.getGraph(), c, 0);
+        return laxToGraph(c.getGraph(), c, 0, null);
     }
 
-    private PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level) {
+    private PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level, String prevQuant) {
+        // contains the nodeMap of the previous quantLevel
         Map<String, PlainNode> nodeMap = new HashMap<>();
         // add the graph to the existing graph
         if (level > 0 ) {
@@ -248,8 +246,7 @@ public class GraphBuilder {
         }
 
         // create the quantification of this laxCondition
-        String quantLvl = Integer.toString(level);
-        addNode(graph, quantLvl, c.getQuantifier().getGrooveString());
+        String quantLvl = addNode(graph, c.getQuantifier().getGrooveString());
 
         // connect the nodes of the graph with its quantifier
         for (Map.Entry<String, PlainNode> entry : graphNodeMap.get(c.getGraph()).entrySet()) {
@@ -266,23 +263,32 @@ public class GraphBuilder {
             removeNode(graph, quantifier);
         } else if (level > 0) {
             // create connection between the current quantification level and the previous quantification level
-            addEdge(graph, quantLvl, IN, Integer.toString(level-1));
+            addEdge(graph, quantLvl, IN, prevQuant);
         }
 
         // all nodes from this level are created and connected. Start with the next level if applicable
         if (c.getCondition() != null) {
-            return laxToGraphCondition(graph, c.getCondition(), level + 1);
+            return laxToGraphCondition(graph, c.getCondition(), level + 1, quantLvl);
         } else {
             return graph;
         }
     }
 
     /**
-     * For an and condition both conditions should be handled
+     * For an AndCondition both conditions should be handled
      */
-    private PlainGraph laxToGraph(PlainGraph graph, AndCondition c, int level) {
-        laxToGraphCondition(graph, c.getExpr1(), level);
-        laxToGraphCondition(graph, c.getExpr2(), level);
+    private PlainGraph laxToGraph(PlainGraph graph, AndCondition c, int level, String prevQuant) {
+        laxToGraphCondition(graph, c.getExpr1(), level, prevQuant);
+        laxToGraphCondition(graph, c.getExpr2(), level, prevQuant);
+        return graph;
+    }
+
+    /**
+     * For an OrCondition both conditions should be handled
+     */
+    private PlainGraph laxToGraph(PlainGraph graph, OrCondition c, int level, String prevQuant) {
+        laxToGraphCondition(graph, c.getExpr1(), level, prevQuant);
+        laxToGraphCondition(graph, c.getExpr2(), level, prevQuant);
         return graph;
     }
 
@@ -290,11 +296,13 @@ public class GraphBuilder {
      * Determine if the Condition is an LaxCondition or an AndCondition
      * Cast the condition to the right type and call the right method
      */
-    private PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level) {
+    private PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level, String prevQuant) {
         if (c instanceof LaxCondition) {
-            return laxToGraph(graph, (LaxCondition) c, level);
+            return laxToGraph(graph, (LaxCondition) c, level, prevQuant);
         } else if (c instanceof AndCondition) {
-            return laxToGraph(graph, (AndCondition) c, level);
+            return laxToGraph(graph, (AndCondition) c, level, prevQuant);
+        } else if (c instanceof OrCondition) {
+            return laxToGraph(graph, (OrCondition) c, level, prevQuant);
         }
         assert false; // shouldn't happen
         return null;
@@ -405,6 +413,8 @@ public class GraphBuilder {
             return conToString((LaxCondition) condition);
         } else if (condition instanceof AndCondition) {
             return conToString((AndCondition) condition);
+        } else if (condition instanceof OrCondition) {
+            return conToString((OrCondition) condition);
         } else if (condition instanceof ImpliesCondition) {
             return conToString((ImpliesCondition) condition);
         }
@@ -424,6 +434,10 @@ public class GraphBuilder {
 
     private String conToString(AndCondition andCon) {
         return String.format("%s \u2227 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
+    }
+
+    private String conToString(OrCondition andCon) {
+        return String.format("%s \u2228 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
     }
 
     private String conToString(ImpliesCondition implCon) {

@@ -12,10 +12,7 @@ import groove.ocl.OCL;
 import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
-import groove.ocl.lax.condition.AndCondition;
-import groove.ocl.lax.condition.Condition;
-import groove.ocl.lax.condition.ImpliesCondition;
-import groove.ocl.lax.condition.LaxCondition;
+import groove.ocl.lax.condition.*;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
 import groove.ocl.lax.graph.constants.IntConstant;
@@ -139,7 +136,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // op can be AAnd, AOr, AXor
                 PBooleanOperator op = ((ABooleanOperation) nodeOp).getBooleanOperator();
                 if (op instanceof AAndBooleanOperator) {
+                    // rule5
                     con1 = new AndCondition(con1, con2);
+                } else if (op instanceof AOrBooleanOperator) {
+                    // rule6
+                    con1 = new OrCondition(con1, con2);
                 } else {
                     // makes sure that we do not miss one of the (new) operations
                     assert false;

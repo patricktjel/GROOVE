@@ -63,13 +63,18 @@ public class DBLPCaseStudy {
 
     @Test
     public void conferenceIsPublished() throws Exception {
-        assert false;
         String ocl = "context ConferenceEdition inv conferenceIsPublished: " +
                         "self.editedBook->notEmpty() or " +
                         "self.bookSeriesIssue->notEmpty() or " +
                         "self.journalIssue->notEmpty() ";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:ConferenceEdition-->self], " +
+                "∃([N0--type:EditedBook-->N0, self--type:ConferenceEdition-->self, self--editedBook-->N0]) " +
+                "∨ ∃([N2--type:BookSeriesIssue-->N2, self--type:ConferenceEdition-->self, self--bookSeriesIssue-->N2]) " +
+                "∨ ∃([N4--type:JournalIssue-->N4, self--type:ConferenceEdition-->self, self--journalIssue-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
