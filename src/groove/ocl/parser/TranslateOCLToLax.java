@@ -192,8 +192,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     // else both parts are necessary
                     LaxCondition p1 = rule16Part1(expr1AttrType, expr2AttrType, op, expr1, (String) expr2);
                     LaxCondition p2 = rule16Part2(expr1AttrType, expr2AttrType, op, expr1, (String) expr2);
-                    //TODO p1 OR p2 instead of AND
-                    resetOut(node, new AndCondition(p1, p2));
+                    resetOut(node, new OrCondition(p1, p2));
                 }
             }
         } else {

@@ -102,6 +102,7 @@ public class GraphBuilder {
         if (node != null) {
             // if the graph contains the old node, replace that name with the new name
             graphNodeMap.get(graph).remove(o);
+            assert !graphNodeMap.get(graph).containsKey(n);
             graphNodeMap.get(graph).put(n, node);
         }
     }
@@ -436,8 +437,8 @@ public class GraphBuilder {
         return String.format("%s \u2227 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
     }
 
-    private String conToString(OrCondition andCon) {
-        return String.format("%s \u2228 %s", conToString(andCon.getExpr1()), conToString(andCon.getExpr2()));
+    private String conToString(OrCondition orCon) {
+        return String.format("%s \u2228 %s", conToString(orCon.getExpr1()), conToString(orCon.getExpr2()));
     }
 
     private String conToString(ImpliesCondition implCon) {

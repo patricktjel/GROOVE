@@ -125,9 +125,9 @@ public class LaxSimplifier {
     /**
      * Handle the simplify for the OrCondition
      */
-    private Map<String, String> simplify(OrCondition andCon) {
-        Map<String, String> eqEdges1 = simplify(andCon.getExpr1());
-        Map<String, String> eqEdges2 = simplify(andCon.getExpr2());
+    private Map<String, String> simplify(OrCondition orCon) {
+        Map<String, String> eqEdges1 = simplify(orCon.getExpr1());
+        Map<String, String> eqEdges2 = simplify(orCon.getExpr2());
         eqEdges1.putAll(eqEdges2);
         return eqEdges1;
     }
@@ -230,9 +230,9 @@ public class LaxSimplifier {
     /**
      * Call renameVar for both expr1 and expr2
      */
-    private void renameVar(OrCondition andCon, String o, String n) {
-        renameVar(andCon.getExpr1(), o, n);
-        renameVar(andCon.getExpr2(), o, n);
+    private void renameVar(OrCondition orCon, String o, String n) {
+        renameVar(orCon.getExpr1(), o, n);
+        renameVar(orCon.getExpr2(), o, n);
     }
 
     /**
