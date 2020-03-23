@@ -73,8 +73,8 @@ public class USECaseStudy {
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includesAll(self.employee)", GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
-        String expected = "∀([self--type:Project-->self, N0--type:Employee-->N0], " +
-                            "∃([N0--type:Employee-->N0, self--type:Project-->self, self--employee-->N0, self--department-->N1, N1--type:Department-->N1, N1--employee-->N0]))";
+        String expected = "∀([self--type:Project-->self, self--employee-->N0, N0--type:Employee-->N0], " +
+                "∃([N0--type:Employee-->N0, N1--type:Department-->N1, N1--employee-->N0, self--type:Project-->self, self--department-->N1]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 

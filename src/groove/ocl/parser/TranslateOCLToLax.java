@@ -287,8 +287,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 LaxCondition trn1 = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 LaxCondition trn2 = tr_NS(expr2, graphBuilder.cloneGraph(var));
 
-                //TODO: trn2 implies trn1 = not(trn2) and trn1 although the And seems to work?
-                AndCondition condition = new AndCondition(trn2, trn1);
+                Condition condition = new ImpliesCondition(trn2, trn1);
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
             } else if (OCL.NOT_EMPTY.equals(operation)) {
                 // rule23
