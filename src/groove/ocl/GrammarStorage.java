@@ -39,7 +39,6 @@ public class GrammarStorage {
         AspectGraph graph = AspectGraph.newInstance(plainGraph);
         try {
             reload();
-            //TODO maybe not the best way to set the graph fixed.
             graph.setFixed();
             store.putGraphs(ResourceKind.RULE, Collections.singleton(graph), false);
             LOGGER.info(String.format("Rule graph: %s is saved", graph.getQualName()));
