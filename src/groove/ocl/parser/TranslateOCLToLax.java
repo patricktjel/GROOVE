@@ -263,11 +263,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     public void outAPostfixExpression(APostfixExpression node) {
         if (getOut(node) instanceof Constant) {
             super.outAPostfixExpression(node);
-        } else if (!node.getPropertyInvocation().isEmpty()
-                && node.getPropertyInvocation().getLast() instanceof ACollectionPropertyInvocation
-                && ((ACollectionPropertyInvocation) node.getPropertyInvocation().getLast()).getPropertyCall() instanceof APropertyCall) {
-            // if there is a collectionPropertyCall get the name of the operation and determine which rule to apply
-            APropertyCall propertyCall = (APropertyCall) ((ACollectionPropertyInvocation) node.getPropertyInvocation().getLast()).getPropertyCall();
+        } else if (!node.getPropertyInvocation().isEmpty()) {
+            // if there is an propertyInvocation
+            // get the name of the operation and determine which rule to apply
+            APropertyCall propertyCall = getAPropertyCAll(node.getPropertyInvocation().getLast());
+            assert propertyCall != null;
             String operation = (String) getOut(propertyCall.getPathName());
             String expr1 = (String) getOut(node.getPrimaryExpression());
 
@@ -294,14 +294,75 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                //rule24    applying the morgan's law -E(c, L) = A(-c, L)
+                // rule24    applying the morgan's law -E(c, L) = A(-c, L)
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 graphBuilder.applyNot(trn.getGraph());
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
+            } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
+                //rule35
+                String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+            } else if (OCL.OCL_IS_TYPE_OF.equals(operation)) {
+                // rule36
+                String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+            } else {
+                assert false; //This operation is not implemented
             }
         } else {
             resetOut(node);
         }
+    }
+
+
+    /**
+     * returns the _propertyCall_ of PPropertyInvocation because the generated code does not have that getter in the right abstract class
+     */
+    private APropertyCall getAPropertyCAll(PPropertyInvocation node) {
+        if (node instanceof ACollectionPropertyInvocation) {
+            return (APropertyCall) ((ACollectionPropertyInvocation) node).getPropertyCall();
+        } else if (node instanceof AObjectPropertyInvocation) {
+            return (APropertyCall) ((AObjectPropertyInvocation) node).getPropertyCall();
+        } else {
+            assert false; // shouldn't happen
+            return null;
+        }
+    }
+
+    @Override
+    public void outAIfExpression(AIfExpression node) {
+        //rule9
+        Condition cond = (Condition) getOut(node.getCondition());
+        Condition thenBranch = (Condition) getOut(node.getThenBranch());
+        Condition elseBranch = (Condition) getOut(node.getElseBranch());
+
+        AndCondition ifThen = new AndCondition(cond, thenBranch);
+        AndCondition elseThen = new AndCondition(negate(cond), elseBranch);
+        resetOut(node, new OrCondition(ifThen, elseThen));
+    }
+
+    /**
+     * Create the negation of an Condition
+     * @param cond  The condition that gets negated
+     * @return      The negated condition
+     */
+    private Condition negate(Condition cond) {
+        if (cond instanceof AndCondition) {
+            // -(a ∧ b) = -a v -b
+            return new OrCondition(negate(((AndCondition) cond).getExpr1()), negate(((AndCondition) cond).getExpr2()));
+        } else if (cond instanceof OrCondition){
+            return new AndCondition(negate(((OrCondition) cond).getExpr1()), negate(((OrCondition) cond).getExpr2()));
+        } else if (cond instanceof ImpliesCondition) {
+            return new AndCondition(((ImpliesCondition) cond).getExpr1(), negate(((ImpliesCondition) cond).getExpr2()));
+        } else if (cond instanceof LaxCondition){
+            return negate((LaxCondition) cond);
+        } else {
+            assert false; // shouldn't happen
+            return null;
+        }
+    }
+
+    private LaxCondition negate(LaxCondition laxCon) {
+        //TODO: implement
+        return laxCon;
     }
 
     @Override

@@ -10,9 +10,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Custom extends DBLPCaseStudy {
+
     @Test
     public void isEmpty1() throws Exception {
-        String ocl = "context EditedBook inv isEmpty1:  self.conferenceEdition->isEmpty()";
+        String ocl = "context EditedBook inv isEmpty1: self.conferenceEdition->isEmpty()";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
@@ -23,7 +24,7 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void isEmpty2() throws Exception {
-        String ocl = "context EditedBook inv isEmpty2:  self.conferenceEdition.conferenceSeries->isEmpty()";
+        String ocl = "context EditedBook inv isEmpty2: self.conferenceEdition.conferenceSeries->isEmpty()";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
@@ -83,5 +84,60 @@ public class Custom extends DBLPCaseStudy {
                 "∃([self--type:EditedBook-->self, self--publicationYear-->N11, N11--type:int-->N11, N12--int:0-->N12, N13--prod:-->N13, N13--arg:0-->N11, N13--arg:1-->N12, N13--int:gt-->N14, N14--bool:true-->N14]))";
         assertEquals(expected, map.get(condition).conToString(condition));
         assertEquals("andImpliesTest", condition.getGraph().getName());
+    }
+
+    @Test
+    public void ifthenelseEmpty() throws Exception {
+        String ocl = "context EditedBook inv ifthenelseEmpty: if self.conferenceEdition->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void ifthenelseProd() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv ifthenelseProd: if self.numPages > 0 then self.year > 0 else self.publicationYear > 0 endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void ifthenelseAnd1() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv ifthenelseand: if self.conferenceEdition->notEmpty() and self.bookSection->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void ifthenelseAnd2() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv ifthenelseEmpty: if self.conferenceEdition->notEmpty() and self.numPages > 0 then self.year > 0 else self.publicationYear > 0 endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void ifthenelsetrue() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv ifthenelsetrue: if self.numPages > 0 then self.year > 0 else true endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void oclIsKindOf() throws Exception {
+        assert false;
+        String ocl = "context Book inv oclIsKindOf: self.oclIsKindOf(BookSeriesIssue)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void oclIsTypeOf() throws Exception {
+        assert false;
+        String ocl = "context Book inv oclIsTypeOf: self.oclIsTypeOf(BookSeriesIssue)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
     }
 }
