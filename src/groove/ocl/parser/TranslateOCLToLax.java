@@ -171,13 +171,26 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule12
                 defaultOut(node);
             } else {
-                String t = determineType(expr1).text();
-                if (OCL.PRIMARY_OPERATIONS.contains(t)) {
+                String t1 = determineType(expr1).text();
+                if (OCL.PRIMARY_OPERATIONS.contains(t1)) {
                     // if the type is primary then it's rule16
                     resetOut(node, applyRule16(expr1, op, expr2.toString()));
                 } else {
-                    // rule10 or rule11 depends if t(expr1) is Set(T) or T
-                    defaultOut(node);
+                    // rule10
+                    // TODO: implement rule 11 T is Set(T)
+                    String t2 = determineType(expr2.toString()).text();
+                    if (t1.equals(t2)) {
+                        PlainGraph var = graphBuilder.createGraph();
+                        graphBuilder.addNode(var, t1);
+
+                        LaxCondition trn1 = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                        LaxCondition trn2 = tr_NS(expr2.toString(), graphBuilder.cloneGraph(var));
+                        AndCondition andCon = new AndCondition(trn1, trn2);
+
+                        resetOut(node, new LaxCondition(Quantifier.EXISTS, var, andCon));
+                    } else {
+                        assert false;
+                    }
                 }
             }
         } else {

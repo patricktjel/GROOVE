@@ -12,6 +12,7 @@ import groove.ocl.lax.graph.constants.Constant;
 import groovy.lang.Tuple2;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -101,9 +102,31 @@ public class GraphBuilder {
         PlainNode node = graphNodeMap.get(graph).get(o);
         if (node != null) {
             // if the graph contains the old node, replace that name with the new name
-            graphNodeMap.get(graph).remove(o);
-            assert !graphNodeMap.get(graph).containsKey(n);
-            graphNodeMap.get(graph).put(n, node);
+            if (!graphNodeMap.get(graph).containsKey(n)) {
+                graphNodeMap.get(graph).remove(o);
+                graphNodeMap.get(graph).put(n, node);
+            } else {
+                // the new node is already part of the graph, therefore move all the edges of the old node to the new node if they do not exist yet.
+                PlainNode oldNode = graphNodeMap.get(graph).get(o);
+
+                // handle the incoming edges
+                for (PlainEdge in: new HashSet<>(graph.inEdgeSet(oldNode))) {
+                    addEdge(graph, getVarName(graph, in.source()), in.label().text(), n);
+                    removeEdge(graph, in);
+                }
+
+                //handle the outgoing edges
+                for (PlainEdge out: new HashSet<>(graph.inEdgeSet(oldNode))) {
+                    if (out.source() != out.target()) {
+                        // self loops are already added by handling the incoming edges
+                        addEdge(graph, n, out.label().text(), getVarName(graph, out.target()));
+                        removeEdge(graph, out);
+                    }
+                }
+
+                // remove the old node
+                removeNode(graph, oldNode);
+            }
         }
     }
 

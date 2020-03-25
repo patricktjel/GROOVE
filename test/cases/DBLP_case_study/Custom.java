@@ -166,9 +166,12 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void equals() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv equals: self = self.editor.editedBook";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([self--type:EditedBook-->self, self--editor-->N1, N1--type:Person-->N1, N1--editedBook-->self]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 }
