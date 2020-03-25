@@ -268,6 +268,12 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             // get the name of the operation and determine which rule to apply
             APropertyCall propertyCall = getAPropertyCAll(node.getPropertyInvocation().getLast());
             assert propertyCall != null;
+            if (propertyCall.getPropertyCallParameters() == null) {
+                // check if the propertycall is one of operations we have to transform
+                resetOut(node);
+                return;
+            }
+
             String operation = (String) getOut(propertyCall.getPathName());
             String expr1 = (String) getOut(node.getPrimaryExpression());
 
