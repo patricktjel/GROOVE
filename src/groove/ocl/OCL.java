@@ -1,6 +1,14 @@
 package groove.ocl;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class OCL {
+    public final static String NULL = "null";
+
+    public final static List<String> PRIMARY_OPERATIONS = new ArrayList<>(Arrays.asList("bool", "int", "real", "string"));
+
     public final static String INCLUDES_ALL = "includesAll";
     public final static String NOT_EMPTY = "notEmpty";
     public final static String IS_EMPTY = "isEmpty";

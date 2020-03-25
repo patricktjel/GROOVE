@@ -102,15 +102,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     @Override
-    public void outARelationalExpression(ARelationalExpression node) {
-        // operators are {=, <>}
-        // rules that could apply are 15,16,17,18 (Research topics)
-        defaultOut(node);
-    }
-
-    @Override
     public void outALogicalExpression(ALogicalExpression node) {
         if (!node.getImplication().isEmpty()) {
+            // rule8
             Condition con1 = (Condition) getOut(node.getBooleanExpression());
 
             for (PImplication impNode : node.getImplication()) {
@@ -153,52 +147,110 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     @Override
-    public void outACompareableExpression(ACompareableExpression node) {
-        // operators are {<, <=, =>, >}
-        // rules that could apply are 15, 16, 17
-        if (node.getComparison() != null){
-            String expr1 = getOut(node.getAdditiveExpression()).toString();
-            Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
-            Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
+    public void outARelationalExpression(ARelationalExpression node) {
+        // operators are {=, <>}
+        if (node.getEquation() != null) {
+            String expr1 = getOut(node.getCompareableExpression()).toString();
+            Object expr2 = getOut(node.getEquation());
+            Operator op = (Operator) getOut(((AEquation) node.getEquation()).getEquationOperator());
 
-            Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(expr1);
-            expr1 = expr1AttrType.getFirst().getFirst();
-            if (expr2 instanceof Constant) {
-                // so its rule15
-                PlainGraph var = graphBuilder.createGraph();
-                String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
-
-                LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
-
-                PlainGraph attrGraph = graphBuilder.cloneGraph(var);
-                graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, (Constant) expr2);
-
-                // given the values create the right LaxCondition
-                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph))));
-            } else {
-                // its rule16
-                Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2.toString());
-                expr2 = expr2AttrType.getFirst().getFirst();
-
-                Set<TypeNode> supertypes1 = typeGraph.getSupertypes(expr1AttrType.getFirst().getSecond());
-                Set<TypeNode> supertypes2 = typeGraph.getSupertypes(expr2AttrType.getFirst().getSecond());
-                if (expr1.equals(expr2)) {
-                    // if expr1 == expr 2 only the first part is needed
-                    resetOut(node, rule16Part1(expr1AttrType, expr2AttrType, op, expr1, (String) expr2));
-                } else if (intersect(supertypes1, supertypes2).isEmpty()) {
-                    // if clan(expr1) ∩ clan(expr2) is empty then only the second part is needed
-                    resetOut(node, rule16Part2(expr1AttrType, expr2AttrType, op, expr1, (String) expr2));
+            if (expr2 instanceof Constant){
+                // rule 15
+                resetOut(node, applyRule15(expr1, op, (Constant) expr2));
+            } else if (OCL.NULL.equals(expr2)) {
+                if (op.equals(Operator.EQ)){
+                    // rule13
+                    defaultOut(node);
+                } else if (op.equals(Operator.NEQ)){
+                    // rule14
+                    defaultOut(node);
                 } else {
-                    // else both parts are necessary
-                    LaxCondition p1 = rule16Part1(expr1AttrType, expr2AttrType, op, expr1, (String) expr2);
-                    LaxCondition p2 = rule16Part2(expr1AttrType, expr2AttrType, op, expr1, (String) expr2);
-                    resetOut(node, new OrCondition(p1, p2));
+                    assert false; // shouldn't happen
+                }
+            } else if (op.equals(Operator.NEQ)) {
+                // rule12
+                defaultOut(node);
+            } else {
+                String t = determineType(expr1).text();
+                if (OCL.PRIMARY_OPERATIONS.contains(t)) {
+                    // if the type is primary then it's rule16
+                    resetOut(node, applyRule16(expr1, op, expr2.toString()));
+                } else {
+                    // rule10 or rule11 depends if t(expr1) is Set(T) or T
+                    defaultOut(node);
                 }
             }
         } else {
             defaultOut(node);
         }
     }
+
+    @Override
+    public void outACompareableExpression(ACompareableExpression node) {
+        // operators are {<, <=, =>, >}
+        if (node.getComparison() != null){
+            String expr1 = getOut(node.getAdditiveExpression()).toString();
+            Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
+            Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
+
+            if (expr2 instanceof Constant) {
+                // so its rule15
+                resetOut(node, applyRule15(expr1, op, (Constant) expr2));
+            } else {
+                // its rule16
+               resetOut(node, applyRule16(expr1, op, expr2.toString()));
+            }
+        } else {
+            defaultOut(node);
+        }
+    }
+
+    /**
+     * Given the expr1, operator and constant
+     * Apply transformation rule15
+     */
+    private LaxCondition applyRule15(String expr1, Operator op, Constant expr2) {
+        Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(expr1);
+        expr1 = expr1AttrType.getFirst().getFirst();
+
+        PlainGraph var = graphBuilder.createGraph();
+        String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
+
+        LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+
+        PlainGraph attrGraph = graphBuilder.cloneGraph(var);
+        graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, expr2);
+
+        // given the values create the right LaxCondition
+        return new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph)));
+    }
+
+    /**
+     * Given the expr1, operator and expr2
+     * Apply transformation rule16
+     */
+    private Condition applyRule16(String expr1, Operator op, String expr2) {
+        Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(expr1);
+        expr1 = expr1AttrType.getFirst().getFirst();
+        Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(expr2);
+        expr2 = expr2AttrType.getFirst().getFirst();
+
+        Set<TypeNode> supertypes1 = typeGraph.getSupertypes(expr1AttrType.getFirst().getSecond());
+        Set<TypeNode> supertypes2 = typeGraph.getSupertypes(expr2AttrType.getFirst().getSecond());
+        if (expr1.equals(expr2)) {
+            // if expr1 == expr 2 only the first part is needed
+            return rule16Part1(expr1AttrType, expr2AttrType, op, expr1, expr2);
+        } else if (intersect(supertypes1, supertypes2).isEmpty()) {
+            // if clan(expr1) ∩ clan(expr2) is empty then only the second part is needed
+            return rule16Part2(expr1AttrType, expr2AttrType, op, expr1, expr2);
+        } else {
+            // else both parts are necessary
+            LaxCondition p1 = rule16Part1(expr1AttrType, expr2AttrType, op, expr1, expr2);
+            LaxCondition p2 = rule16Part2(expr1AttrType, expr2AttrType, op, expr1, expr2);
+            return new OrCondition(p1, p2);
+        }
+    }
+
 
     /**
      * rule16 (part before the v)
@@ -369,6 +421,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private LaxCondition negate(LaxCondition laxCon) {
         //TODO: implement
         return laxCon;
+    }
+
+    @Override
+    public void outAEquationOperator(AEquationOperator node) {
+        resetOut(node, Operator.EQ);
+    }
+
+    @Override
+    public void outAInEquationOperator(AInEquationOperator node) {
+        resetOut(node, Operator.NEQ);
     }
 
     @Override

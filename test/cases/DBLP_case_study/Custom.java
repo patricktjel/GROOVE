@@ -88,6 +88,7 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void ifthenelseEmpty() throws Exception {
+        assert false;
         String ocl = "context EditedBook inv ifthenelseEmpty: if self.conferenceEdition->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
@@ -137,6 +138,36 @@ public class Custom extends DBLPCaseStudy {
     public void oclIsTypeOf() throws Exception {
         assert false;
         String ocl = "context Book inv oclIsTypeOf: self.oclIsTypeOf(BookSeriesIssue)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void constantEquals() throws Exception {
+        String ocl = "context EditedBook inv constantEquals: self.year = 2020";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([self--type:EditedBook-->self, self--year-->N1, N1--type:int-->N1, N2--int:2020-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:eq-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void intEquals() throws Exception {
+        String ocl = "context EditedBook inv intEquals: self.year = self.publicationYear";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N2, N1--type:int-->N1, N2--type:int-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:eq-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void equals() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv equals: self = self.editor.editedBook";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
     }
