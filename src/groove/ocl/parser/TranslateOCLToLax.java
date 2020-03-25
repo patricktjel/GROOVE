@@ -159,11 +159,21 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, applyRule15(expr1, op, (Constant) expr2));
             } else if (OCL.NULL.equals(expr2)) {
                 if (op.equals(Operator.EQ)){
-                    // rule13
-                    defaultOut(node);
+                    // rule13 (= null is equal to isEmpty)
+                    // TODO: fix isEmpty
+                    PlainGraph var = graphBuilder.createGraph();
+                    graphBuilder.addNode(var, determineType(expr1).text());
+
+                    LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                    graphBuilder.applyNot(trn.getGraph());
+                    resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
                 } else if (op.equals(Operator.NEQ)){
-                    // rule14
-                    defaultOut(node);
+                    // rule14 (<> null is equal to notEmpty)
+                    PlainGraph var = graphBuilder.createGraph();
+                    graphBuilder.addNode(var, determineType(expr1).text());
+
+                    LaxCondition trs = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                    resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trs));
                 } else {
                     assert false; // shouldn't happen
                 }
@@ -366,6 +376,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
                 // rule24    applying the morgan's law -E(c, L) = A(-c, L)
+                // TODO this implementation fails
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 graphBuilder.applyNot(trn.getGraph());
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
