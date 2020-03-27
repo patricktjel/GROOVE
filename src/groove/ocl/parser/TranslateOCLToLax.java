@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static groove.ocl.Groove.EQ;
+import static groove.ocl.Groove.NOT;
 
 /**
  * recursive tree visitor that uses the {@link de.tuberlin.cs.cis.ocl.parser.analysis.AnalysisAdapter#getOut(Node)} for the recursive return values
@@ -162,9 +163,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     // rule13 (= null is equal to isEmpty)
                     PlainGraph var = graphBuilder.createGraph();
                     String varn = graphBuilder.addNode(var, determineType(expr1).text());
-                    graphBuilder.addEdge(var, varn, "not:", varn);
-
                     LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+
+                    graphBuilder.addEdge(var, varn, String.format("%s:", NOT), varn);
                     resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
                 } else if (op.equals(Operator.NEQ)){
                     // rule14 (<> null is equal to notEmpty)
@@ -320,9 +321,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
                 // rule24
-                graphBuilder.addEdge(var, varn, "not:", varn);
-
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                graphBuilder.addEdge(var, varn, String.format("%s:", NOT), varn);
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
                 //rule35
@@ -347,6 +347,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             } else {
                 assert false; //This operation is not implemented
             }
+        } else if (getOut(node) instanceof Condition) {
+            defaultOut(node);
         } else {
             resetOut(node);
         }
@@ -369,12 +371,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     @Override
     public void outAIfExpression(AIfExpression node) {
         //rule9
-        Condition cond = (Condition) getOut(node.getCondition());
+        Condition ifCond = (Condition) getOut(node.getCondition());
+        Condition elseCond = graphBuilder.cloneCondition(ifCond);
         Condition thenBranch = (Condition) getOut(node.getThenBranch());
         Condition elseBranch = (Condition) getOut(node.getElseBranch());
 
-        AndCondition ifThen = new AndCondition(cond, thenBranch);
-        AndCondition elseThen = new AndCondition(negate(cond), elseBranch);
+        AndCondition ifThen = new AndCondition(ifCond, thenBranch);
+        AndCondition elseThen = new AndCondition(negate(elseCond), elseBranch);
         resetOut(node, new OrCondition(ifThen, elseThen));
     }
 
@@ -388,8 +391,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             // -(a ∧ b) = -a v -b
             return new OrCondition(negate(((AndCondition) cond).getExpr1()), negate(((AndCondition) cond).getExpr2()));
         } else if (cond instanceof OrCondition){
+            // -(a v b) = -a ∧ -b
             return new AndCondition(negate(((OrCondition) cond).getExpr1()), negate(((OrCondition) cond).getExpr2()));
         } else if (cond instanceof ImpliesCondition) {
+            // -(a -> b) = a ∧ -b
             return new AndCondition(((ImpliesCondition) cond).getExpr1(), negate(((ImpliesCondition) cond).getExpr2()));
         } else if (cond instanceof LaxCondition){
             return negate((LaxCondition) cond);
@@ -400,7 +405,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     private LaxCondition negate(LaxCondition laxCon) {
-        //TODO: implement
+        graphBuilder.negate(laxCon.getGraph());
         return laxCon;
     }
 

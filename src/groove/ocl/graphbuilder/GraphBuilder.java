@@ -11,10 +11,7 @@ import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
 import groovy.lang.Tuple2;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static groove.ocl.Groove.*;
@@ -74,7 +71,11 @@ public class GraphBuilder {
      */
     public void addEdge(PlainGraph graph, String from, String label, String to) {
         Map<String, PlainNode> nodeMap = graphNodeMap.get(graph);
-        graph.addEdge(nodeMap.get(from), label, nodeMap.get(to));
+        addEdge(graph, nodeMap.get(from), label, nodeMap.get(to));
+    }
+
+    private void addEdge(PlainGraph graph, PlainNode from, String label, PlainNode to) {
+        graph.addEdge(from, label, to);
     }
 
     public void removeEdge(PlainGraph graph, PlainEdge edge) {
@@ -86,8 +87,31 @@ public class GraphBuilder {
         graphNodeMap.get(graph).remove(getVarName(graph, node));
     }
 
-    public void removeGraph(PlainGraph graph) {
-        graphNodeMap.remove(graph);
+    public void renameVar(Condition con, Map<String, String> eqEdges) {
+        for (Map.Entry<String, String> entry : eqEdges.entrySet()) {
+            renameVar(con, entry.getKey(), entry.getValue());
+        }
+    }
+
+    /**
+     * A method that makes sure that the correct renameVar method is called
+     */
+    public void renameVar(Condition condition, String o, String n) {
+        if (condition instanceof LaxCondition) {
+            renameVar(((LaxCondition) condition).getGraph(), o, n);
+        } else if (condition instanceof OperatorCondition) {
+            renameVar((OperatorCondition) condition, o, n);
+        } else {
+            assert false;
+        }
+    }
+
+    /**
+     * Call renameVar for both expr1 and expr2
+     */
+    private void renameVar(OperatorCondition opCon, String o, String n) {
+        renameVar(opCon.getExpr1(), o, n);
+        renameVar(opCon.getExpr2(), o, n);
     }
 
     /**
@@ -205,6 +229,36 @@ public class GraphBuilder {
     }
 
     /**
+     * Given a Condition, create a clone
+     */
+    public Condition cloneCondition(Condition con) {
+        if (con instanceof OperatorCondition) {
+            // clone both conditions
+            Condition expr1 = cloneCondition(((OperatorCondition) con).getExpr1());
+            Condition expr2 = cloneCondition(((OperatorCondition) con).getExpr2());
+
+            // determine which kind of OperatorCondition it was
+            if (con instanceof AndCondition) {
+                return new AndCondition(expr1, expr2);
+            } else if (con instanceof ImpliesCondition) {
+                return new ImpliesCondition(expr1, expr2);
+            } else if (con instanceof OrCondition) {
+                return new OrCondition(expr1, expr2);
+            }
+        } else if (con instanceof LaxCondition) {
+            PlainGraph graph = cloneGraph(((LaxCondition) con).getGraph());
+            Condition condition = null;
+            if (((LaxCondition) con).getCondition() != null) {
+                // if the laxcondition has a condition clone the condition
+                condition = cloneCondition(((LaxCondition) con).getCondition());
+            }
+            return new LaxCondition(((LaxCondition) con).getQuantifier(), graph, condition);
+        }
+        assert false;   // shouldn't happen
+        return null;
+    }
+
+    /**
      * Given a graph in which v:T is already defined add the attributed graph components
      * (rule15)
      */
@@ -251,13 +305,95 @@ public class GraphBuilder {
         return attrName;
     }
 
+    public void negate(PlainGraph graph) {
+        // if we are talking about negating an edge:
+        for (PlainEdge edge : graph.edgeSet()) {
+            if (labelContainsType(edge.label().text())) {
+                // if there exists a type edge check whether the not edge exists already;
+                List<PlainEdge> notEdge = getNotEdge(graph, edge);
+                if (notEdge.isEmpty()) {
+                    // add not edge
+                    addEdge(graph, edge.source(), String.format("%s:", NOT), edge.target());
+                } else {
+                    // remove not edge
+                    removeEdge(graph, notEdge.get(0));
+                }
+            }
+        }
+
+        // if we are talking about negating a comparison:
+        //TODO: negation of a comparison
+    }
+
+    /**
+     * Returns the corresponding "NOT:" edge of the given edge in the given graph,
+     * if possible, otherwise an empty list
+     */
+    private List<PlainEdge> getNotEdge(PlainGraph graph, PlainEdge edge) {
+        return graph.edgeSet().stream().filter(e ->
+                e.source().equals(edge.source())
+                        && e.target().equals(edge.target())
+                        && e.label().text().equals(String.format("%s:", NOT)))
+                .collect(Collectors.toList());
+    }
+
+    private boolean labelContainsType(String label) {
+        return label.startsWith(String.format("%s:", TYPE));
+    }
+
     /**
      * Given a LaxCondition merge the recursive laxConditions into one graph including the quantification
      * @param c     The LaxCondition
      * @return      The resulting graph
      */
     public PlainGraph laxToGraph(LaxCondition c) {
+        validate(c, new HashSet<>());
         return laxToGraph(c.getGraph(), c, 0, null);
+    }
+
+    /**
+     * Because we have to clone the graphs for conditions like the if else then, it is possible that there
+     * are different nodes with the same name, so we have to validate the Condition and rename the variables
+     * If we can find such a name collision
+     */
+    private Set<String> validate(Condition c, Set<String> vars) {
+        if (c instanceof LaxCondition) {
+            vars.addAll(graphNodeMap.get(((LaxCondition) c).getGraph()).keySet());
+            if (((LaxCondition) c).getCondition() != null) {
+                Set<String> val = validate(((LaxCondition) c).getCondition(), new HashSet<>(vars));
+                vars.addAll(val);
+            }
+            return vars;
+        } else if (c instanceof OperatorCondition){
+            Set<String> val1 = validate(((OperatorCondition) c).getExpr1(), new HashSet<>(vars));
+            Set<String> val2 = validate(((OperatorCondition) c).getExpr2(), new HashSet<>(vars));
+            Set<String> intersection = intersection(val1, val2);
+            intersection.removeAll(vars);
+            if (!intersection.isEmpty()) {
+                // there are nodes that exist in both expr1 and expr2 but not in its parents;
+                // so rename those nodes in expr2 such that the laxCondition can be transformed to one graph
+                for (String i : intersection) {
+                    renameVar(((OperatorCondition) c).getExpr2(), i, getUniqueNodeName());
+                }
+                // reset val2 since node names are renamed
+                val2 = validate(((OperatorCondition) c).getExpr2(), new HashSet<>(vars));
+            }
+            vars.addAll(val1);
+            vars.addAll(val2);
+            return vars;
+        } else {
+            assert false; //shouldn't happen
+        }
+        return vars;
+    }
+
+    /**
+     * Given 2 sets return the intersection
+     */
+    private Set<String> intersection(Set<String> s1, Set<String> s2) {
+        Set<String> intersection = new HashSet<>(s1);
+        intersection.retainAll(s2);
+        return intersection;
     }
 
     private PlainGraph laxToGraph(PlainGraph graph, LaxCondition c, int level, String prevQuant) {
@@ -299,18 +435,9 @@ public class GraphBuilder {
     }
 
     /**
-     * For an AndCondition both conditions should be handled
+     * For an OperatorCondition both conditions should be handled
      */
-    private PlainGraph laxToGraph(PlainGraph graph, AndCondition c, int level, String prevQuant) {
-        laxToGraphCondition(graph, c.getExpr1(), level, prevQuant);
-        laxToGraphCondition(graph, c.getExpr2(), level, prevQuant);
-        return graph;
-    }
-
-    /**
-     * For an OrCondition both conditions should be handled
-     */
-    private PlainGraph laxToGraph(PlainGraph graph, OrCondition c, int level, String prevQuant) {
+    private PlainGraph laxToGraph(PlainGraph graph, OperatorCondition c, int level, String prevQuant) {
         laxToGraphCondition(graph, c.getExpr1(), level, prevQuant);
         laxToGraphCondition(graph, c.getExpr2(), level, prevQuant);
         return graph;
@@ -323,10 +450,8 @@ public class GraphBuilder {
     private PlainGraph laxToGraphCondition(PlainGraph graph, Condition c, int level, String prevQuant) {
         if (c instanceof LaxCondition) {
             return laxToGraph(graph, (LaxCondition) c, level, prevQuant);
-        } else if (c instanceof AndCondition) {
-            return laxToGraph(graph, (AndCondition) c, level, prevQuant);
-        } else if (c instanceof OrCondition) {
-            return laxToGraph(graph, (OrCondition) c, level, prevQuant);
+        } else if (c instanceof OperatorCondition) {
+            return laxToGraph(graph, (OperatorCondition) c, level, prevQuant);
         }
         assert false; // shouldn't happen
         return null;
@@ -386,6 +511,7 @@ public class GraphBuilder {
      */
     public boolean subsetGraphs(PlainGraph g1, PlainGraph g2) {
         for (PlainNode node : g1.nodeSet()) {
+            // check if all nodes of g1 also exist in g2
             String nodeName = getVarName(g1, node);
             if (!graphNodeMap.get(g2).containsKey(nodeName)) {
                 return false;
@@ -393,7 +519,9 @@ public class GraphBuilder {
         }
 
         for (PlainEdge edge: g1.edgeSet()) {
-            if (!g2.containsEdge(edge)) {
+            // check if all edges of g1 also exist in g2
+            // and check if the edge has the same negation
+            if (!(g2.containsEdge(edge) && getNotEdge(g1, edge).size() == getNotEdge(g2, edge).size())) {
                 return false;
             }
         }
@@ -466,19 +594,5 @@ public class GraphBuilder {
 
     private String conToString(ImpliesCondition implCon) {
         return String.format("%s \u2192 %s", conToString(implCon.getExpr1()), conToString(implCon.getExpr2()));
-    }
-
-    public void applyNot(PlainGraph graph) {
-        for (PlainEdge e : graph.edgeSet()) {
-            if (!labelContainsType(e.label().text())) {
-                // replace the the label l of the edge e with 'not:l'
-                addEdge(graph, getVarName(graph, e.source()), String.format("%s:%s", NOT, e.label().text()), getVarName(graph, e.target()));
-                removeEdge(graph, e);
-            }
-        }
-    }
-
-    private boolean labelContainsType(String label) {
-        return label.startsWith(String.format("%s:", TYPE));
     }
 }

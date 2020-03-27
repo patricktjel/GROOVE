@@ -40,7 +40,7 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:EditedBook-->self], " +
-                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N3, N1--type:int-->N1, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:ge-->N5, N5--bool:true-->N5]))";
+                "∃([N1--type:int-->N1, self--type:EditedBook-->self, self--publicationYear-->N3, self--year-->N1, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:ge-->N5, N5--bool:true-->N5]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -90,11 +90,27 @@ public class Custom extends DBLPCaseStudy {
     }
 
     @Test
-    public void ifthenelseEmpty() throws Exception {
-        assert false;
-        String ocl = "context EditedBook inv ifthenelseEmpty: if self.conferenceEdition->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
+    public void ifthenelseNotEmpty() throws Exception {
+        String ocl = "context EditedBook inv ifthenelseNotEmpty: if self.conferenceEdition->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--year-->N3, N3--type:int-->N3, N4--int:0-->N4, N5--prod:-->N5, N5--arg:0-->N3, N5--arg:1-->N4, N5--int:gt-->N6, N6--bool:true-->N6]) " +
+                "∨ ∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--publicationYear-->N8, N8--type:int-->N8, N9--int:0-->N9, N10--prod:-->N10, N10--arg:0-->N8, N10--arg:1-->N9, N10--int:gt-->N11, N11--bool:true-->N11]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void ifthenelseEmpty() throws Exception {
+        String ocl = "context EditedBook inv ifthenelseEmpty: if self.conferenceEdition->isEmpty() then self.year > 0 else self.publicationYear > 0 endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--year-->N3, N3--type:int-->N3, N4--int:0-->N4, N5--prod:-->N5, N5--arg:0-->N3, N5--arg:1-->N4, N5--int:gt-->N6, N6--bool:true-->N6]) " +
+                "∨ ∃([N0--type:ConferenceEdition-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--publicationYear-->N8, N8--type:int-->N8, N9--int:0-->N9, N10--prod:-->N10, N10--arg:0-->N8, N10--arg:1-->N9, N10--int:gt-->N11, N11--bool:true-->N11]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
@@ -169,7 +185,7 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:EditedBook-->self], " +
-                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N3, N1--type:int-->N1, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:eq-->N5, N5--bool:true-->N5]))";
+                "∃([N1--type:int-->N1, self--type:EditedBook-->self, self--publicationYear-->N3, self--year-->N1, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:eq-->N5, N5--bool:true-->N5]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
