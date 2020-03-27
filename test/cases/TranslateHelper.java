@@ -33,7 +33,7 @@ public class TranslateHelper {
         Parser parser = new Parser(new Lexer(new PushbackReader(new StringReader(ocl))));
         Start parseTree = parser.parse();
 
-        parseTree.apply(new TreePrinter(new PrintWriter(System.out)));
+//        parseTree.apply(new TreePrinter(new PrintWriter(System.out)));
 
         TranslateOCLToLax translateOCLToLax = new TranslateOCLToLax(grammarStorage.getTypeGraphs());
 
