@@ -383,9 +383,23 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
                 //rule35
                 String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+
+                // the already defined var is of the type expr1, instead it should use the parameter T
+                var = graphBuilder.createGraph();
+                graphBuilder.addNode(var, T);
+
+                LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.OCL_IS_TYPE_OF.equals(operation)) {
                 // rule36
                 String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+
+                // the already defined var is of the type expr1, instead it should use the parameter T
+                var = graphBuilder.createGraph();
+                graphBuilder.addNode(var, String.format("#%s", T));
+
+                LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else {
                 assert false; //This operation is not implemented
             }
