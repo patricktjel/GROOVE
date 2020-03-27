@@ -37,16 +37,19 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:EditedBook-->self], " +
-                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N2, N1--type:int-->N1, N2--type:int-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N3, N1--type:int-->N1, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:ge-->N5, N5--bool:true-->N5]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
     public void attrGraphSubset() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv attrGraphSubset: self.publicationYear >= self.bookSection.bookChapter.year";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([self--type:EditedBook-->self, self--publicationYear-->N1, self--bookSection-->N6, N1--type:int-->N1, N2--type:BookChapter-->N2, N2--year-->N3, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:ge-->N5, N5--bool:true-->N5, N6--type:BookSection-->N6, N6--bookChapter-->N2]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
@@ -163,7 +166,7 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:EditedBook-->self], " +
-                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N2, N1--type:int-->N1, N2--type:int-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:eq-->N4, N4--bool:true-->N4]))";
+                "∃([self--type:EditedBook-->self, self--year-->N1, self--publicationYear-->N3, N1--type:int-->N1, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:eq-->N5, N5--bool:true-->N5]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 

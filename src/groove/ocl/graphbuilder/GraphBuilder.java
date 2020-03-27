@@ -116,7 +116,7 @@ public class GraphBuilder {
                 }
 
                 //handle the outgoing edges
-                for (PlainEdge out: new HashSet<>(graph.inEdgeSet(oldNode))) {
+                for (PlainEdge out: new HashSet<>(graph.outEdgeSet(oldNode))) {
                     if (out.source() != out.target()) {
                         // self loops are already added by handling the incoming edges
                         addEdge(graph, n, out.label().text(), getVarName(graph, out.target()));
