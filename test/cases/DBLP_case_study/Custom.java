@@ -13,10 +13,13 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void isEmpty1() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv isEmpty1: self.conferenceEdition->isEmpty()";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION,true);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
@@ -25,8 +28,8 @@ public class Custom extends DBLPCaseStudy {
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
-        String expected = "∀([self--type:EditedBook-->self, N0--type:ConferenceSeries-->N0], " +
-                "∃([N0--type:ConferenceSeries-->N0, N1--type:ConferenceEdition-->N1, N1--not:conferenceSeries-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N1]))";
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceSeries-->N0, N0--not:-->N0, N1--type:ConferenceEdition-->N1, N1--conferenceSeries-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N1]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -194,9 +197,12 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void eqNull() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv eqNull: self.editor = null";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:Person-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--editor-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 }

@@ -160,13 +160,12 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             } else if (OCL.NULL.equals(expr2)) {
                 if (op.equals(Operator.EQ)){
                     // rule13 (= null is equal to isEmpty)
-                    // TODO: fix isEmpty
                     PlainGraph var = graphBuilder.createGraph();
-                    graphBuilder.addNode(var, determineType(expr1).text());
+                    String varn = graphBuilder.addNode(var, determineType(expr1).text());
+                    graphBuilder.addEdge(var, varn, "not:", varn);
 
                     LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
-                    graphBuilder.applyNot(trn.getGraph());
-                    resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
+                    resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
                 } else if (op.equals(Operator.NEQ)){
                     // rule14 (<> null is equal to notEmpty)
                     PlainGraph var = graphBuilder.createGraph();
@@ -305,7 +304,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             }
 
             PlainGraph var = graphBuilder.createGraph();
-            graphBuilder.addNode(var, determineType(expr1).text());
+            String varn = graphBuilder.addNode(var, determineType(expr1).text());
 
             if (OCL.INCLUDES_ALL.equals(operation)){
                 String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
@@ -320,11 +319,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                // rule24    applying the morgan's law -E(c, L) = A(-c, L)
-                // TODO this implementation fails
+                // rule24
+                graphBuilder.addEdge(var, varn, "not:", varn);
+
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
-                graphBuilder.applyNot(trn.getGraph());
-                resetOut(node, new LaxCondition(Quantifier.FORALL, var, trn));
+                resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
                 //rule35
                 String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
@@ -352,7 +351,6 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             resetOut(node);
         }
     }
-
 
     /**
      * returns the _propertyCall_ of PPropertyInvocation because the generated code does not have that getter in the right abstract class
