@@ -305,24 +305,46 @@ public class GraphBuilder {
         return attrName;
     }
 
+    /**
+     * Negates a graph such that:
+     *  If there exists a production rule, replace the TRUE boolean for FALSE and vice versa
+     *  Else Negate the type edges
+     *      If there exists a not edge already, remove it
+     *      Else add the not edge
+     */
     public void negate(PlainGraph graph) {
-        // if we are talking about negating an edge:
-        for (PlainEdge edge : graph.edgeSet()) {
-            if (labelContainsType(edge.label().text())) {
-                // if there exists a type edge check whether the not edge exists already;
-                List<PlainEdge> notEdge = getNotEdge(graph, edge);
-                if (notEdge.isEmpty()) {
-                    // add not edge
-                    addEdge(graph, edge.source(), String.format("%s:", NOT), edge.target());
+        if (graph.edgeSet().stream().anyMatch(e -> e.label().text().equals(String.format("%s:", PROD)))){
+            // we are talking about negating a comparison if there is a prod rule:
+            // therefore: replace all TRUE boolean for FALSE and vice versa.
+            List<? extends PlainEdge> bools = graph.edgeSet().stream().filter(e ->
+                    e.label().text().equals(String.format("%s:%s", BOOL, TRUE_STRING)) ||
+                            e.label().text().equals(String.format("%s:%s", BOOL, FALSE_STRING))
+            ).collect(Collectors.toList());
+
+            for (PlainEdge bool : bools) {
+                if (bool.label().text().contains(TRUE_STRING)) {
+                    addEdge(graph, bool.source(), String.format("%s:%s", BOOL, FALSE_STRING), bool.target());
                 } else {
-                    // remove not edge
-                    removeEdge(graph, notEdge.get(0));
+                    addEdge(graph, bool.source(), String.format("%s:%s", BOOL, TRUE_STRING), bool.target());
+                }
+                removeEdge(graph, bool);
+            }
+        } else {
+            // if we are talking about negating an edge:
+            for (PlainEdge edge : graph.edgeSet()) {
+                if (labelContainsType(edge.label().text())) {
+                    // if there exists a type edge check whether the not edge exists already;
+                    List<PlainEdge> notEdge = getNotEdge(graph, edge);
+                    if (notEdge.isEmpty()) {
+                        // add not edge
+                        addEdge(graph, edge.source(), String.format("%s:", NOT), edge.target());
+                    } else {
+                        // remove not edge
+                        removeEdge(graph, notEdge.get(0));
+                    }
                 }
             }
         }
-
-        // if we are talking about negating a comparison:
-        //TODO: negation of a comparison
     }
 
     /**

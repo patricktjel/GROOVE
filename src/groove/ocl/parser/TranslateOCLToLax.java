@@ -24,8 +24,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static groove.ocl.Groove.EQ;
-import static groove.ocl.Groove.NOT;
+import static groove.ocl.Groove.*;
 
 /**
  * recursive tree visitor that uses the {@link de.tuberlin.cs.cis.ocl.parser.analysis.AnalysisAdapter#getOut(Node)} for the recursive return values
@@ -236,16 +235,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(expr1);
         expr1 = expr1AttrType.getFirst().getFirst();
 
-        PlainGraph var = graphBuilder.createGraph();
-        String varName = graphBuilder.addNode(var, expr1AttrType.getFirst().getSecond().text());
-
-        LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
-
-        PlainGraph attrGraph = graphBuilder.cloneGraph(var);
+        PlainGraph attrGraph = graphBuilder.createGraph();
+        String varName = graphBuilder.addNode(attrGraph, expr1AttrType.getFirst().getSecond().text());
         graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, expr2);
 
+        LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(attrGraph));
+
         // given the values create the right LaxCondition
-        return new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, new LaxCondition(Quantifier.EXISTS, attrGraph)));
+        return new LaxCondition(Quantifier.EXISTS, attrGraph, trn);
     }
 
     /**
@@ -372,13 +369,26 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     public void outAIfExpression(AIfExpression node) {
         //rule9
         Condition ifCond = (Condition) getOut(node.getCondition());
-        Condition elseCond = graphBuilder.cloneCondition(ifCond);
+        Condition elseCond = negate(graphBuilder.cloneCondition(ifCond));
         Condition thenBranch = (Condition) getOut(node.getThenBranch());
-        Condition elseBranch = (Condition) getOut(node.getElseBranch());
 
         AndCondition ifThen = new AndCondition(ifCond, thenBranch);
-        AndCondition elseThen = new AndCondition(negate(elseCond), elseBranch);
-        resetOut(node, new OrCondition(ifThen, elseThen));
+
+        Object elseBranch = getOut(node.getElseBranch());
+        if (elseBranch instanceof Condition) {
+            AndCondition elseThen = new AndCondition(elseCond, (Condition) elseBranch);
+            resetOut(node, new OrCondition(ifThen, elseThen));
+        } else if (elseBranch instanceof BooleanConstant) {
+            if (elseBranch.equals(BooleanConstant.TRUE)) {
+                // else is true, then the elsecond should hold
+                resetOut(node, new OrCondition(ifThen, elseCond));
+            } else {
+                // else is false, so the rule should only contain the ifThen else the rule shouldn't match
+                resetOut(node, ifThen);
+            }
+        } else {
+            assert false; //shouldn't happen
+        }
     }
 
     /**
@@ -389,7 +399,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private Condition negate(Condition cond) {
         if (cond instanceof AndCondition) {
             // -(a ∧ b) = -a v -b
-            return new OrCondition(negate(((AndCondition) cond).getExpr1()), negate(((AndCondition) cond).getExpr2()));
+            OrCondition or = new OrCondition(negate(((AndCondition) cond).getExpr1()), negate(((AndCondition) cond).getExpr2()));
+            return new LaxCondition(Quantifier.FORALL, graphBuilder.createGraph(), or);
         } else if (cond instanceof OrCondition){
             // -(a v b) = -a ∧ -b
             return new AndCondition(negate(((OrCondition) cond).getExpr1()), negate(((OrCondition) cond).getExpr2()));
