@@ -179,34 +179,47 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 } else {
                     assert false; // shouldn't happen
                 }
-            } else if (op.equals(Operator.NEQ)) {
-                // rule12
-                defaultOut(node);
+            } else if (OCL.PRIMARY_OPERATIONS.contains(determineType(expr1).text())) {
+                // if the type is primary then it's rule16
+                resetOut(node, applyRule16(expr1, op, expr2.toString()));
             } else {
-                String t1 = determineType(expr1).text();
-                if (OCL.PRIMARY_OPERATIONS.contains(t1)) {
-                    // if the type is primary then it's rule16
-                    resetOut(node, applyRule16(expr1, op, expr2.toString()));
-                } else {
-                    // rule10
-                    // TODO: implement rule 11 T is Set(T)
-                    String t2 = determineType(expr2.toString()).text();
-                    if (t1.equals(t2)) {
-                        PlainGraph var = graphBuilder.createGraph();
-                        graphBuilder.addNode(var, t1);
-
-                        LaxCondition trn1 = tr_NS(expr1, graphBuilder.cloneGraph(var));
-                        LaxCondition trn2 = tr_NS(expr2.toString(), graphBuilder.cloneGraph(var));
-                        AndCondition andCon = new AndCondition(trn1, trn2);
-
-                        resetOut(node, new LaxCondition(Quantifier.EXISTS, var, andCon));
-                    } else {
-                        assert false;
-                    }
-                }
+                // rule10, rule11 or rule12
+                Condition condition = applyEquals(expr1, expr2.toString(), op);
+                resetOut(node, condition);
             }
         } else {
             defaultOut(node);
+        }
+    }
+
+    private Condition applyEquals(String expr1, String expr2, Operator op) {
+        String t1 = determineType(expr1).text();
+        String t2 = determineType(expr2).text();
+        if (t1.equals(t2)) {
+            PlainGraph var = graphBuilder.createGraph();
+            String vn = graphBuilder.addNode(var, t1);
+
+            PlainGraph varp = graphBuilder.createGraph();
+            String vpn = graphBuilder.addNode(varp, t2);
+
+            LaxCondition trn1 = tr_NS(expr1, graphBuilder.cloneGraph(var));
+            LaxCondition trn2 = tr_NS(expr2, graphBuilder.cloneGraph(varp));
+            AndCondition andCon = new AndCondition(trn1, trn2);
+
+            var = graphBuilder.mergeGraphs(var, varp);
+
+            if (op.equals(Operator.NEQ)) {
+                // rule12
+                graphBuilder.addEdge(var, vn, String.format("%s:%s", NOT, EQ), vpn);
+            } else {
+                // rule10
+                graphBuilder.addEdge(var, vn, EQ, vpn);
+            }
+            return new LaxCondition(Quantifier.EXISTS, var, andCon);
+            // TODO: implement rule 11 T is Set(T)
+        } else {
+            assert false; //shouln't happen
+            return null;
         }
     }
 
@@ -620,7 +633,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             // rule40
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
-            graphBuilder.addEdge(graph, vp, EQ, expr);
+            graphBuilder.addEdge(graph, vp, EQUIV, expr);
 
             con = new LaxCondition(Quantifier.EXISTS, graph);
         }

@@ -1,6 +1,7 @@
 package groove.ocl;
 
 public class Groove {
+    public final static String EQUIV = "==";
     public final static String EQ = "=";
     public final static String AT = "@";
     public final static String PROD = "prod";

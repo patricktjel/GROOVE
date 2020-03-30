@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static groove.ocl.Groove.EQ;
+import static groove.ocl.Groove.EQUIV;
 
 /**
  * A class responsible for simplifying a LaxCondition
@@ -127,7 +127,7 @@ public class LaxSimplifier {
      */
     private Map<String, String> getEquivalenceCondition(LaxCondition laxCon) {
         return laxCon.getGraph().edgeSet().stream()
-                .filter(e -> e.label().toParsableString().equals(EQ))
+                .filter(e -> e.label().toParsableString().equals(EQUIV))
                 .collect(Collectors.toMap(
                         e -> graphBuilder.getVarName(laxCon.getGraph(), e.source()),
                         e -> graphBuilder.getVarName(laxCon.getGraph(), e.target())

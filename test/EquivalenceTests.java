@@ -151,7 +151,7 @@ public class EquivalenceTests {
         PlainGraph g3 = graphBuilder.createGraph();
         graphBuilder.addNode(g3, "self", "person");
         graphBuilder.addNode(g3, "n0", "person");
-        graphBuilder.addEdge(g3, "n0", Groove.EQ, "self");
+        graphBuilder.addEdge(g3, "n0", Groove.EQUIV, "self");
 
         LaxCondition l3 = new LaxCondition(Quantifier.EXISTS, g3);
         LaxCondition l2 = new LaxCondition(Quantifier.EXISTS, g2, l3);
