@@ -616,7 +616,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
-                // rule37
+                // rule40
                 return tr_NS(expr, graph);
             } else {
                 //rule41
@@ -632,7 +632,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 return new LaxCondition(Quantifier.EXISTS, graph, trn);
             }
         } else {
-            // rule40
+            // rule39
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQUIV, expr);
