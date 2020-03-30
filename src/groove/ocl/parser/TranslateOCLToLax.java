@@ -277,6 +277,15 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     @Override
+    public void outAPrefixedUnaryExpression(APrefixedUnaryExpression node) {
+        if (node.getUnaryOperator() != null) {
+            resetOut(node, negate((Condition) getOut(node)));
+        } else {
+            defaultOut(node);
+        }
+    }
+
+    @Override
     public void outAPostfixExpression(APostfixExpression node) {
         if (getOut(node) instanceof Constant) {
             super.outAPostfixExpression(node);

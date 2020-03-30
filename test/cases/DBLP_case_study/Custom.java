@@ -34,6 +34,17 @@ public class Custom extends DBLPCaseStudy {
     }
 
     @Test
+    public void not() throws Exception {
+        String ocl = "context EditedBook inv isEmpty1: not self.conferenceEdition->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
     public void attrGraphEQ() throws Exception {
         String ocl = "context EditedBook inv attrGraphEQ: self.year >= self.publicationYear";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
