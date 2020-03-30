@@ -135,6 +135,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 } else if (op instanceof AOrBooleanOperator) {
                     // rule6
                     con1 = new OrCondition(con1, con2);
+                } else if (op instanceof AXorBooleanOperator) {
+                    // rule7 (a xor b = (a v b) ^ -(a ^ b)
+                    con1 = new AndCondition(new OrCondition(con1, con2), negate(new AndCondition(con1, con2)));
                 } else {
                     // makes sure that we do not miss one of the (new) operations
                     assert false;
@@ -279,6 +282,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     @Override
     public void outAPrefixedUnaryExpression(APrefixedUnaryExpression node) {
         if (node.getUnaryOperator() != null) {
+            // rule4
             resetOut(node, negate((Condition) getOut(node)));
         } else {
             defaultOut(node);

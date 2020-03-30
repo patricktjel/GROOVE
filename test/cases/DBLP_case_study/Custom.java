@@ -101,6 +101,14 @@ public class Custom extends DBLPCaseStudy {
     }
 
     @Test
+    public void xor() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv xorTest: self.numPages > 0 xor self.year > 0";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
     public void ifthenelseNotEmpty() throws Exception {
         String ocl = "context EditedBook inv ifthenelseNotEmpty: if self.conferenceEdition->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
