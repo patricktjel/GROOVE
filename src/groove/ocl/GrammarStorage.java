@@ -37,10 +37,10 @@ public class GrammarStorage {
     }
 
     public void saveGraph(PlainGraph plainGraph){
+        GraphInfo.setInjective(plainGraph, false);
+        GraphInfo.setRole(plainGraph, Action.Role.INVARIANT);
         // first transform it to an AspectGraph
         AspectGraph graph = AspectGraph.newInstance(plainGraph);
-        GraphInfo.setInjective(graph, false);
-        GraphInfo.setRole(graph, Action.Role.INVARIANT);
         try {
             reload();
             graph.setFixed();

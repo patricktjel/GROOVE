@@ -9,9 +9,10 @@ public class OCL {
 
     public final static List<String> PRIMARY_OPERATIONS = new ArrayList<>(Arrays.asList("bool", "int", "real", "string"));
 
-    public final static String INCLUDES_ALL = "includesAll";
-    public final static String NOT_EMPTY = "notEmpty";
-    public final static String IS_EMPTY = "isEmpty";
-    public final static String OCL_IS_KIND_OF = "oclIsKindOf";
-    public final static String OCL_IS_TYPE_OF = "oclIsTypeOf";
+    public final static String INCLUDES_ALL     = "includesAll";
+    public final static String NOT_EMPTY        = "notEmpty";
+    public final static String IS_EMPTY         = "isEmpty";
+    public final static String OCL_IS_KIND_OF   = "oclIsKindOf";
+    public final static String OCL_IS_TYPE_OF   = "oclIsTypeOf";
+    public final static String OCL_AS_TYPE      = "oclAsType";
 }

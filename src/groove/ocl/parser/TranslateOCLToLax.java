@@ -363,7 +363,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
                 // the already defined var is of the type expr1, instead it should use the parameter T
                 var = graphBuilder.createGraph();
-                graphBuilder.addNode(var, String.format("#%s", T));
+                graphBuilder.addNode(var, String.format("%s%s", SHARP_TYPE, T));
 
                 LaxCondition trn = tr_NS(expr1, graphBuilder.cloneGraph(var));
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
@@ -565,26 +565,32 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
         TypeNode type = types.get(0);
         for (String path: split) {
-            // follow the edges to the final type node
-            List<TypeEdge> typeEdges = getTypeNodeOfAttribute(type, path);
+            // check if the path is an OCL cast, because that will change the way we have to follow the edges
+            if (path.contains(OCL.OCL_AS_TYPE)){
+                String t = path.substring(path.indexOf("(")+1, path.indexOf(")"));
+                type = typeGraph.getNode(String.format("%s:%s", TYPE, t));
+            } else {
+                // follow the edges to the final type node
+                List<TypeEdge> typeEdges = getTypeNodeOfAttribute(type, path);
 
-            if (typeEdges.isEmpty()){
-                // the type does not have the path edge, does one of its super types contain the path edge?
-                for (TypeNode superType: type.getSupertypes()) {
-                    typeEdges = getTypeNodeOfAttribute(superType, path);
-                    if (!typeEdges.isEmpty()){
-                        break;
+                if (typeEdges.isEmpty()){
+                    // the type does not have the path edge, does one of its super types contain the path edge?
+                    for (TypeNode superType: type.getSupertypes()) {
+                        typeEdges = getTypeNodeOfAttribute(superType, path);
+                        if (!typeEdges.isEmpty()){
+                            break;
+                        }
+                    }
+                    // if the edge does not exist in the type graph and neither in the supertypes, the given OCL expression is not correct
+                    if (typeEdges.isEmpty()){
+                        LOGGER.severe(String.format("The outgoing edge %s does not exist for class %s", path, type));
+                        throw new InvalidOCLException();
                     }
                 }
-                // if the edge does not exist in the type graph and neither in the supertypes, the given OCL expression is not correct
-                if (typeEdges.isEmpty()){
-                    LOGGER.severe(String.format("The outgoing edge %s does not exist for class %s", path, type));
-                    throw new InvalidOCLException();
-                }
+                type = typeEdges
+                        .get(0)
+                        .target();
             }
-            type = typeEdges
-                    .get(0)
-                    .target();
         }
 
         return type;
@@ -606,21 +612,25 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private LaxCondition tr_NS(String expr, PlainGraph graph) {
         if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
-
             String role = split.remove(split.size() - 1);
-            TypeNode roleType = determineType(expr);
-
             expr = StringUtils.join(split, ".");
-            TypeNode exprType = determineType(expr);
 
-            PlainGraph varPrime = graphBuilder.createGraph();
-            String vp = graphBuilder.addNode(varPrime, exprType.text());
-            LaxCondition trn = tr_NS(expr, varPrime);
+            if (role.contains(OCL.OCL_AS_TYPE)) {
+                // rule37
+                return tr_NS(expr, graph);
+            } else {
+                //rule41
+                TypeNode exprType = determineType(expr);
 
-            graphBuilder.addNode(graph, vp, exprType.text());
-            graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
+                PlainGraph varPrime = graphBuilder.createGraph();
+                String vp = graphBuilder.addNode(varPrime, exprType.text());
+                LaxCondition trn = tr_NS(expr, varPrime);
 
-            return new LaxCondition(Quantifier.EXISTS, graph, trn);
+                graphBuilder.addNode(graph, vp, exprType.text());
+                graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
+
+                return new LaxCondition(Quantifier.EXISTS, graph, trn);
+            }
         } else {
             // rule40
             String vp = graphBuilder.getVarNameOfNoden0(graph);

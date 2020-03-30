@@ -195,10 +195,15 @@ public class GraphBuilder {
                         .filter(e -> e.label().toString().contains("type:"))
                         .collect(Collectors.toList())
                         .get(0);
-                return edge.label().toString().replace(String.format("%s:",TYPE), "");
+                if (edge.label().toString().contains(SHARP_TYPE)) {
+                    return edge.label().toString().replace(String.format("%s:%s",TYPE, SHARP_TYPE), "");
+                } else {
+                    return edge.label().toString().replace(String.format("%s:",TYPE), "");
+                }
             }
         }
         // shouldn't happen unless method is called with a key that does not exist
+        assert false;
         return null;
     }
 
