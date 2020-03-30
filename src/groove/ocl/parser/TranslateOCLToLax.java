@@ -604,7 +604,6 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      * The tr_N translation rules
      */
     private LaxCondition tr_NS(String expr, PlainGraph graph) {
-        LaxCondition con;
         if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
 
@@ -614,30 +613,22 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
             TypeNode exprType = determineType(expr);
 
-            if (roleType.getSupertypes().contains(exprType)) {
-                // if exprType is an element in the clan of the roletype (clan is a type with its supertypes)
-                // then it is rule42
-                con = null;
-            } else {
-                // rule41
-                PlainGraph varPrime = graphBuilder.createGraph();
-                String vp = graphBuilder.addNode(varPrime, exprType.text());
-                LaxCondition trn = tr_NS(expr, varPrime);
+            PlainGraph varPrime = graphBuilder.createGraph();
+            String vp = graphBuilder.addNode(varPrime, exprType.text());
+            LaxCondition trn = tr_NS(expr, varPrime);
 
-                graphBuilder.addNode(graph, vp, exprType.text());
-                graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
+            graphBuilder.addNode(graph, vp, exprType.text());
+            graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
 
-                con = new LaxCondition(Quantifier.EXISTS, graph, trn);
-            }
+            return new LaxCondition(Quantifier.EXISTS, graph, trn);
         } else {
             // rule40
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQUIV, expr);
 
-            con = new LaxCondition(Quantifier.EXISTS, graph);
+            return new LaxCondition(Quantifier.EXISTS, graph);
         }
-        return con;
     }
 
     public Map<LaxCondition, GraphBuilder> getResults() {
