@@ -1,8 +1,10 @@
 package groove.ocl;
 
+import groove.grammar.Action;
 import groove.grammar.aspect.AspectGraph;
 import groove.grammar.model.ResourceKind;
 import groove.grammar.type.TypeGraph;
+import groove.graph.GraphInfo;
 import groove.graph.plain.PlainGraph;
 import groove.io.store.SystemStore;
 import groove.util.Log;
@@ -37,6 +39,8 @@ public class GrammarStorage {
     public void saveGraph(PlainGraph plainGraph){
         // first transform it to an AspectGraph
         AspectGraph graph = AspectGraph.newInstance(plainGraph);
+        GraphInfo.setInjective(graph, false);
+        GraphInfo.setRole(graph, Action.Role.INVARIANT);
         try {
             reload();
             graph.setFixed();
