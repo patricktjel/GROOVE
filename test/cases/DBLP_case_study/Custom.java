@@ -198,7 +198,7 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N1--type:AuthoredPublication-->N1, self--type:Person-->self, self--authoredPublication-->N1]))";
+                "∃([N0--type:AuthoredPublication-->N0, self--type:Person-->self, self--authoredPublication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -209,7 +209,7 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N1--type:#AuthoredPublication-->N1, self--type:Person-->self, self--authoredPublication-->N1]))";
+                "∃([N0--type:#AuthoredPublication-->N0, self--type:Person-->self, self--authoredPublication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -233,8 +233,8 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N1--type:#Book-->N1, self--type:Person-->self, self--publication-->N1, self--numPublications-->N4, self--publication-->N5, N4--type:int-->N4, N5--type:Book-->N5, N5--numPages-->N6, N6--type:int-->N6, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N8--bool:true-->N8]) " +
-                "∨ ∃([N1--type:#Book-->N1, N1--not:-->N1, self--type:Person-->self, self--publication-->N1]))";
+                "∃([N0--type:#Book-->N0, self--type:Person-->self, self--publication-->N0, self--numPublications-->N3, self--publication-->N4, N3--type:int-->N3, N4--type:Book-->N4, N4--numPages-->N5, N5--type:int-->N5, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--int:eq-->N7, N7--bool:true-->N7]) " +
+                "∨ ∃([N0--type:#Book-->N0, N0--not:-->N0, self--type:Person-->self, self--publication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -324,5 +324,24 @@ public class Custom extends DBLPCaseStudy {
         String expected = "∀([self--type:EditedBook-->self], " +
                 "∃([N0--type:Person-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--editor-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void exists1() throws Exception {
+        String ocl = "context Person inv exists1: self.publication->exists(p:Publication | p.title = 'test')";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([p--type:Publication-->p, p--title-->N1, self--type:Person-->self, self--publication-->p, N1--type:string-->N1, N2--string:'test'-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--string:eq-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void exists2() throws Exception {
+        assert false;
+        String ocl = "context Person inv exists1: self.publication->exists(p1:Publication, p2:Publication | p1.title <> p2.title)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
     }
 }

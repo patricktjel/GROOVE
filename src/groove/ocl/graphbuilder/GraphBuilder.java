@@ -202,8 +202,7 @@ public class GraphBuilder {
                 }
             }
         }
-        // shouldn't happen unless method is called with a key that does not exist
-        assert false;
+        // The variable key does not exist yet, it is only declared in the syntax tree
         return null;
     }
 
