@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * <a href="https://www.researchgate.net/publication/2637671_Validating_UML_models_and_OCL_constraints">USE case study</a>
  */
 public class USECaseStudy {
-    private static final String GRAPH_LOCATION = "C:\\Users\\patri\\Google Drive\\UT\\afstuderen\\groove\\USE_case_study.gps";
+    protected static final String GRAPH_LOCATION = "C:\\Users\\patri\\Google Drive\\UT\\afstuderen\\groove\\USE_case_study.gps";
 
     @Test
     public void inv_i1a() throws Exception {

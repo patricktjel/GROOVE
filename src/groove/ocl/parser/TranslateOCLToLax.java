@@ -330,6 +330,18 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
                 Condition condition = new ImpliesCondition(trn2, trn1);
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
+            } else if (OCL.EXCLUDES_ALL.equals(operation)) {
+                //rule20
+                String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+
+                PlainGraph var = graphBuilder.createGraph();
+                graphBuilder.addNode(var, determineType(node, expr1).text());
+
+                LaxCondition trn1 = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+                LaxCondition trn2 = tr_NS(node, expr2, graphBuilder.cloneGraph(var));
+
+                Condition condition = new ImpliesCondition(trn2, negate(trn1, false, true));
+                resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
             } else if (OCL.NOT_EMPTY.equals(operation)) {
                 // rule23
                 resetOut(node, applyNotEmpty(node, expr1));
@@ -340,7 +352,6 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 //rule35
                 String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
 
-                // the already defined var is of the type expr1, instead it should use the parameter T
                 PlainGraph var = graphBuilder.createGraph();
                 graphBuilder.addNode(var, T);
 
@@ -350,7 +361,6 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule36
                 String T = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
 
-                // the already defined var is of the type expr1, instead it should use the parameter T
                 PlainGraph var = graphBuilder.createGraph();
                 graphBuilder.addNode(var, String.format("%s%s", SHARP_TYPE, T));
 
@@ -358,7 +368,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.EXISTS.equals(operation)) {
                 // rule17
-                PlainGraph var = createVariableFromDeclarator(node);
+                PlainGraph var = createVariableFromDeclarator(propertyCall);
 
                 LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
                 Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
@@ -366,7 +376,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, tre)));
             } else if (OCL.FORALL.equals(operation)) {
                 // rule18
-                PlainGraph var = createVariableFromDeclarator(node);
+                PlainGraph var = createVariableFromDeclarator(propertyCall);
 
                 LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
                 Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
@@ -405,8 +415,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
 
-    private PlainGraph createVariableFromDeclarator(APostfixExpression node) {
-        AConcreteDeclarator declarator = (AConcreteDeclarator) ((APropertyCallParameters) ((APropertyCall) ((ACollectionPropertyInvocation) node.getPropertyInvocation().get(1)).getPropertyCall()).getPropertyCallParameters()).getDeclarator();
+    /**
+     * Create a variable graph from the declarator
+     */
+    private PlainGraph createVariableFromDeclarator(APropertyCall propertyCall) {
+        AConcreteDeclarator declarator = (AConcreteDeclarator) ((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getDeclarator();
         String varn = declarator.getActualParameterList().toString().trim();
         String T = ((ASimpleTypePostfix) declarator.getSimpleTypePostfix()).getSimpleTypeSpecifier().toString().trim();
 
@@ -480,7 +493,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     private LaxCondition negate(LaxCondition laxCon) {
-        graphBuilder.negate(laxCon.getGraph());
+        return negate(laxCon, true, false);
+    }
+
+    private LaxCondition negate(LaxCondition laxCon, boolean negateNodes, boolean negateEdges) {
+        graphBuilder.negate(laxCon.getGraph(), negateNodes, negateEdges);
         return laxCon;
     }
 

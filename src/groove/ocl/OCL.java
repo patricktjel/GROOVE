@@ -9,6 +9,7 @@ public class OCL {
 
     public final static List<String> PRIMARY_OPERATIONS = new ArrayList<>(Arrays.asList("bool", "int", "real", "string"));
 
+    public final static String EXCLUDES_ALL     = "excludesAll";
     public final static String EXISTS           = "exists";
     public final static String FORALL           = "forall";
     public final static String INCLUDES_ALL     = "includesAll";
