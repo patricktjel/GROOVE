@@ -318,8 +318,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 expr1 = expr1.concat(String.format(".%s", getOut(p)));
             }
 
-            if (OCL.INCLUDES_ALL.equals(operation)){
-                // rule19
+            if (OCL.INCLUDES_ALL.equals(operation) || OCL.INCLUDES.equals(operation)){
+                // rule19 || rule21
                 String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
 
                 PlainGraph var = graphBuilder.createGraph();
@@ -330,8 +330,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
                 Condition condition = new ImpliesCondition(trn2, trn1);
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, condition));
-            } else if (OCL.EXCLUDES_ALL.equals(operation)) {
-                //rule20
+            } else if (OCL.EXCLUDES_ALL.equals(operation) || OCL.EXCLUDES.equals(operation)) {
+                //rule20 || rule22
                 String expr2 = (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
 
                 PlainGraph var = graphBuilder.createGraph();
