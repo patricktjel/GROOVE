@@ -358,17 +358,20 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, trn));
             } else if (OCL.EXISTS.equals(operation)) {
                 // rule17
-                AConcreteDeclarator declarator = (AConcreteDeclarator) ((APropertyCallParameters) ((APropertyCall) ((ACollectionPropertyInvocation) node.getPropertyInvocation().get(1)).getPropertyCall()).getPropertyCallParameters()).getDeclarator();
-                String varn = declarator.getActualParameterList().toString().trim();
-                String T = ((ASimpleTypePostfix) declarator.getSimpleTypePostfix()).getSimpleTypeSpecifier().toString().trim();
-
-                PlainGraph var = graphBuilder.createGraph();
-                graphBuilder.addNode(var, varn, T);
+                PlainGraph var = createVariableFromDeclarator(node);
 
                 LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
                 Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
 
                 resetOut(node, new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, tre)));
+            } else if (OCL.FORALL.equals(operation)) {
+                // rule18
+                PlainGraph var = createVariableFromDeclarator(node);
+
+                LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+                Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
+
+                resetOut(node, new LaxCondition(Quantifier.FORALL, var, new ImpliesCondition(trn, tre)));
             } else {
                 assert false; //This operation is not implemented
             }
@@ -400,6 +403,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         LaxCondition trn = tr_NS(node, expr, graphBuilder.cloneGraph(var));
         graphBuilder.addEdge(var, varn, String.format("%s:", NOT), varn);
         return new LaxCondition(Quantifier.EXISTS, var, trn);
+    }
+
+    private PlainGraph createVariableFromDeclarator(APostfixExpression node) {
+        AConcreteDeclarator declarator = (AConcreteDeclarator) ((APropertyCallParameters) ((APropertyCall) ((ACollectionPropertyInvocation) node.getPropertyInvocation().get(1)).getPropertyCall()).getPropertyCallParameters()).getDeclarator();
+        String varn = declarator.getActualParameterList().toString().trim();
+        String T = ((ASimpleTypePostfix) declarator.getSimpleTypePostfix()).getSimpleTypeSpecifier().toString().trim();
+
+        PlainGraph var = graphBuilder.createGraph();
+        graphBuilder.addNode(var, varn, T);
+        return var;
     }
 
     /**

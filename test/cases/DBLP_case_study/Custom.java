@@ -341,7 +341,18 @@ public class Custom extends DBLPCaseStudy {
     public void exists2() throws Exception {
         assert false;
         String ocl = "context Person inv exists1: self.publication->exists(p1:Publication, p2:Publication | p1.title <> p2.title)";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void forall() throws Exception {
+        String ocl = "context Person inv forall: self.publication->forall(p:Publication | p.title = 'test')";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self, self--publication-->p, p--type:Publication-->p], " +
+                "∃([p--type:Publication-->p, p--title-->N1, N1--type:string-->N1, N2--string:'test'-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--string:eq-->N4, N4--bool:true-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 }
