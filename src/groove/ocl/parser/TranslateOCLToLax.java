@@ -195,8 +195,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             PlainGraph varp = graphBuilder.createGraph();
             String vpn = graphBuilder.addNode(varp, t2);
 
-            LaxCondition trn1 = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
-            LaxCondition trn2 = tr_NS(node, expr2, graphBuilder.cloneGraph(varp));
+            LaxCondition trn1 = tr_N(node, expr1, graphBuilder.cloneGraph(var));
+            LaxCondition trn2 = tr_N(node, expr2, graphBuilder.cloneGraph(varp));
             AndCondition andCon = new AndCondition(trn1, trn2);
 
             var = graphBuilder.mergeGraphs(var, varp);
@@ -269,7 +269,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      * Apply transformation rule25
      */
     private LaxCondition applySize(Node node, String expr1, int n) {
-        expr1 = expr1.split("->")[0];
+        expr1 = expr1.split(OCL.ARROW)[0];
         TypeNode t = determineType(node, expr1);
 
         // Create all nodes in vars
@@ -285,7 +285,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             varNames.add(varName);
 
             // connect it
-            LaxCondition trs = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+            Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(var));
             con = new AndCondition(con, trs);
 
             // merge the vars
@@ -315,7 +315,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         String varName = graphBuilder.addNode(attrGraph, expr1AttrType.getFirst().getSecond().text());
         graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, expr2);
 
-        LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(attrGraph));
+        LaxCondition trn = tr_N(node, expr1, graphBuilder.cloneGraph(attrGraph));
 
         // given the values create the right LaxCondition
         return new LaxCondition(Quantifier.EXISTS, attrGraph, trn);
@@ -345,8 +345,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
         PlainGraph attrGraph2 = graphBuilder.cloneGraph(varp);
 
-        LaxCondition trn1 = tr_NS(node, expr1, attrGraph1);
-        LaxCondition trn2 = tr_NS(node, expr2, attrGraph2);
+        LaxCondition trn1 = tr_N(node, expr1, attrGraph1);
+        LaxCondition trn2 = tr_N(node, expr2, attrGraph2);
         AndCondition andCon = new AndCondition(trn1, trn2);
 
         return new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon);
@@ -373,27 +373,30 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             assert propertyCall != null;
             if (propertyCall.getPropertyCallParameters() == null) {
                 // check if the propertycall is one of operations we have to transform
+                // self.editedBook, the editedBook is also an propertyInvocation, one we want to skip
                 resetOut(node);
                 return;
             }
 
+            // get the name of the operation and determine which rule to apply
             String operation = (String) getOut(propertyCall.getPathName());
             String expr1 = (String) getOut(node.getPrimaryExpression());
 
-            @SuppressWarnings("unchecked") // it's a clone so this can't go wrong
-            LinkedList<PPropertyInvocation> clone = (LinkedList<PPropertyInvocation>) node.getPropertyInvocation().clone();
-            clone.removeLast(); // we want to remove the last therefore we needed the clone
-            for (PPropertyInvocation p : clone) {
-                expr1 = expr1.concat(String.format(".%s", getOut(p)));
+            // create the complete expr1 value
+            for (Iterator<PPropertyInvocation> i = node.getPropertyInvocation().iterator(); i.hasNext();) {
+                PPropertyInvocation n = i.next();
+                if (i.hasNext()){
+                    expr1 = expr1.concat( n.toString().replaceAll(" ", ""));
+                }
             }
 
             // apply the correct translation rule
-            if (OCL.INCLUDES_ALL.equals(operation) || OCL.INCLUDES.equals(operation)){
+            if (OCL.INCLUDES_ALL.equals(operation) || OCL.INCLUDES.equals(operation)) {
                 // rule19 || rule21
                 resetOut(node, applyIncludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.EXCLUDES_ALL.equals(operation) || OCL.EXCLUDES.equals(operation)) {
                 //rule20 || rule22
-               resetOut(node, applyExcludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
+                resetOut(node, applyExcludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.NOT_EMPTY.equals(operation)) {
                 // rule23
                 resetOut(node, applyNotEmpty(node, expr1));
@@ -413,6 +416,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule18
                 resetOut(node, applyForall(node, expr1, propertyCall));
             } else if (OCL.SIZE.equals(operation)) {
+                // operation size has to be compared with a constant, the constant is not available at this point in the tree
                 resetOut(node);
             } else {
                 assert false; //This operation is not implemented
@@ -434,69 +438,69 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private LaxCondition applyIncludes(Node node, String expr1, String expr2) {
         PlainGraph var = graphBuilder.createVar(determineType(node, expr1).text());
 
-        LaxCondition trn1 = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
-        LaxCondition trn2 = tr_NS(node, expr2, graphBuilder.cloneGraph(var));
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var));
+        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(var));
 
-        Condition condition = new ImpliesCondition(trn2, trn1);
+        Condition condition = new ImpliesCondition(trs2, trs1);
         return new LaxCondition(Quantifier.FORALL, var, condition);
     }
 
     private LaxCondition applyExcludes(Node node, String expr1, String expr2) {
         PlainGraph var = graphBuilder.createVar(determineType(node, expr1).text());
 
-        LaxCondition trn1 = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
-        LaxCondition trn2 = tr_NS(node, expr2, graphBuilder.cloneGraph(var));
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var));
+        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(var));
 
-        Condition condition = new ImpliesCondition(trn2, negate(trn1, false, true));
+        Condition condition = new ImpliesCondition(trs2, negate(trs1, false, true));
         return new LaxCondition(Quantifier.FORALL, var, condition);
     }
 
     private LaxCondition applyNotEmpty(Node node, String expr) {
         PlainGraph var = graphBuilder.createVar(determineType(node, expr).text());
 
-        LaxCondition trn = tr_NS(node, expr, graphBuilder.cloneGraph(var));
-        return new LaxCondition(Quantifier.EXISTS, var, trn);
+        Condition trs = tr_S(node, expr, graphBuilder.cloneGraph(var));
+        return new LaxCondition(Quantifier.EXISTS, var, trs);
     }
 
     private LaxCondition applyIsEmpty(Node node, String expr) {
         PlainGraph var = graphBuilder.createGraph();
         String varn = graphBuilder.addNode(var, determineType(node, expr).text());
 
-        LaxCondition trn = tr_NS(node, expr, graphBuilder.cloneGraph(var));
+        Condition trs = tr_S(node, expr, graphBuilder.cloneGraph(var));
         graphBuilder.addEdge(var, varn, String.format("%s:", NOT), varn);
-        return new LaxCondition(Quantifier.EXISTS, var, trn);
+        return new LaxCondition(Quantifier.EXISTS, var, trs);
     }
 
     private LaxCondition applyOclIsKindOf(Node node, String expr1, String T) {
         PlainGraph var = graphBuilder.createVar(T);
 
-        LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+        LaxCondition trn = tr_N(node, expr1, graphBuilder.cloneGraph(var));
         return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
 
     private LaxCondition applyOclIsTypeOf(Node node, String expr1, String T) {
         PlainGraph var = graphBuilder.createVar(String.format("%s%s", SHARP_TYPE, T));
 
-        LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+        LaxCondition trn = tr_N(node, expr1, graphBuilder.cloneGraph(var));
         return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
 
     private LaxCondition applyExists(APostfixExpression node, String expr1, APropertyCall propertyCall) {
         PlainGraph var = createVariableFromDeclarator(propertyCall);
 
-        LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+        Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(var));
         Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
 
-        return new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trn, tre));
+        return new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trs, tre));
     }
 
     private LaxCondition applyForall(APostfixExpression node, String expr1, APropertyCall propertyCall) {
         PlainGraph var = createVariableFromDeclarator(propertyCall);
 
-        LaxCondition trn = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+        Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(var));
         Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
 
-        return new LaxCondition(Quantifier.FORALL, var, new ImpliesCondition(trn, tre));
+        return new LaxCondition(Quantifier.FORALL, var, new ImpliesCondition(trs, tre));
     }
 
     /**
@@ -555,26 +559,32 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      * @return      The negated condition
      */
     private Condition negate(Condition cond) {
+        return negate(cond, true, false);
+    }
+
+    private Condition negate(Condition cond, boolean negateNodes, boolean negateEdges) {
         if (cond instanceof AndCondition) {
             // -(a ∧ b) = -a v -b
-            OrCondition or = new OrCondition(negate(((AndCondition) cond).getExpr1()), negate(((AndCondition) cond).getExpr2()));
+            OrCondition or = new OrCondition(
+                    negate(((AndCondition) cond).getExpr1(), negateNodes, negateEdges),
+                    negate(((AndCondition) cond).getExpr2(), negateNodes, negateEdges));
             return new LaxCondition(Quantifier.FORALL, graphBuilder.createGraph(), or);
         } else if (cond instanceof OrCondition){
             // -(a v b) = -a ∧ -b
-            return new AndCondition(negate(((OrCondition) cond).getExpr1()), negate(((OrCondition) cond).getExpr2()));
+            return new AndCondition(
+                    negate(((OrCondition) cond).getExpr1(), negateNodes, negateEdges),
+                    negate(((OrCondition) cond).getExpr2(), negateNodes, negateEdges));
         } else if (cond instanceof ImpliesCondition) {
             // -(a -> b) = a ∧ -b
-            return new AndCondition(((ImpliesCondition) cond).getExpr1(), negate(((ImpliesCondition) cond).getExpr2()));
+            return new AndCondition(
+                    ((ImpliesCondition) cond).getExpr1(),
+                    negate(((ImpliesCondition) cond).getExpr2(), negateNodes, negateEdges));
         } else if (cond instanceof LaxCondition){
-            return negate((LaxCondition) cond);
+            return negate((LaxCondition) cond, negateNodes, negateEdges);
         } else {
             assert false; // shouldn't happen
             return null;
         }
-    }
-
-    private LaxCondition negate(LaxCondition laxCon) {
-        return negate(laxCon, true, false);
     }
 
     private LaxCondition negate(LaxCondition laxCon, boolean negateNodes, boolean negateEdges) {
@@ -682,7 +692,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      */
     private TypeNode determineType(Node node, String expr) {
         List<String> split = new ArrayList<>();
-        Collections.addAll(split, expr.split("\\."));
+        Collections.addAll(split, expr.split("(\\.|->|\\(|\\))+"));
 
         // TODO check if an expression could start without a custom variable (e.g. self), if so a nullpointer exists here
         // TODO fix this (USE case study inv 3) shows that this is possible
@@ -706,11 +716,17 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
 
         TypeNode type = types.get(0);
-        for (String path: split) {
+        for (Iterator<String> i = split.iterator(); i.hasNext();) {
+            String path = i.next();
             // check if the path is an OCL cast, because that will change the way we have to follow the edges
-            if (path.contains(OCL.OCL_AS_TYPE)){
-                String t = path.substring(path.indexOf("(")+1, path.indexOf(")"));
+            if (path.equals(OCL.OCL_AS_TYPE)){
+                String t = split.get(split.indexOf(path) + 1);
                 type = typeGraph.getNode(String.format("%s:%s", TYPE, t));
+
+                // the next is handled already, skip it
+                i.next();
+            } else if(path.equals(OCL.UNION) || path.equals(OCL.INTERSECTION)) {
+                return type;
             } else {
                 // follow the edges to the final type node
                 List<TypeEdge> typeEdges = getTypeNodeOfAttribute(type, path);
@@ -761,7 +777,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     /**
      * The tr_N translation rules
      */
-    private LaxCondition tr_NS(Node node, String expr, PlainGraph graph) {
+    private LaxCondition tr_N(Node node, String expr, PlainGraph graph) {
         if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
             String role = split.remove(split.size() - 1);
@@ -769,19 +785,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
                 // rule40
-                return tr_NS(node, expr, graph);
+                return tr_N(node, expr, graph);
             } else {
                 //rule41
-                TypeNode exprType = determineType(node, expr);
-
-                PlainGraph varPrime = graphBuilder.createGraph();
-                String vp = graphBuilder.addNode(varPrime, exprType.text());
-                LaxCondition trn = tr_NS(node, expr, varPrime);
-
-                graphBuilder.addNode(graph, vp, exprType.text());
-                graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
-
-                return new LaxCondition(Quantifier.EXISTS, graph, trn);
+                return applyNavigationRole(node, expr, role, graph);
             }
         } else {
             // rule39
@@ -791,6 +798,55 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             return new LaxCondition(Quantifier.EXISTS, graph);
         }
+    }
+
+    private LaxCondition applyNavigationRole(Node node, String expr, String role, PlainGraph graph) {
+        TypeNode exprType = determineType(node, expr);
+
+        PlainGraph varPrime = graphBuilder.createGraph();
+        String vp = graphBuilder.addNode(varPrime, exprType.text());
+        LaxCondition trn = tr_N(node, expr, varPrime);
+
+        graphBuilder.addNode(graph, vp, exprType.text());
+        graphBuilder.addEdge(graph, vp, role, graphBuilder.getVarNameOfNoden0(graph));
+
+        return new LaxCondition(Quantifier.EXISTS, graph, trn);
+    }
+
+    private Condition tr_S(Node node, String expr, PlainGraph graph) {
+        if (expr.contains(OCL.ARROW)) {
+            List<String> split = new ArrayList<>(Arrays.asList(expr.split(OCL.ARROW)));
+
+            // determine the operation and expr2
+            String[] operationCall = split.remove(split.size() - 1).split("([()])+");
+            String operation =  operationCall[0];
+            String expr2 = operationCall[1];
+
+            // remove the selected operation from expr
+            expr = StringUtils.join(split, OCL.ARROW);
+
+            // determine which translation rule to apply
+            if (OCL.UNION.equals(operation)) {
+                // rule44
+                Condition trs1 = tr_S(node, expr, graphBuilder.cloneGraph(graph));
+                Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+                return new OrCondition(trs1, trs2);
+            } else if (OCL.INTERSECTION.equals(operation)) {
+                // rule45
+                Condition trs1 = tr_S(node, expr, graphBuilder.cloneGraph(graph));
+                Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+                return new AndCondition(trs1, trs2);
+            }
+        } else if (expr.contains(".")) {
+            List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
+            String role = split.remove(split.size() - 1);
+            expr = StringUtils.join(split, ".");
+
+            //rule41
+            return applyNavigationRole(node, expr, role, graph);
+        }
+        assert false; //shouldn't happen
+        return null;
     }
 
     public Map<LaxCondition, GraphBuilder> getResults() {

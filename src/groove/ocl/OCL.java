@@ -5,7 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class OCL {
-    public final static String NULL = "null";
+    public final static String NULL             = "null";
+    public final static String ARROW            = "->";
 
     public final static List<String> PRIMARY_OPERATIONS = new ArrayList<>(Arrays.asList("bool", "int", "real", "string"));
 
@@ -21,4 +22,6 @@ public class OCL {
     public final static String OCL_IS_KIND_OF   = "oclIsKindOf";
     public final static String OCL_IS_TYPE_OF   = "oclIsTypeOf";
     public final static String SIZE             = "size";
+    public final static String UNION            = "union";
+    public final static String INTERSECTION     = "intersection";
 }

@@ -447,9 +447,24 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void union() throws Exception {
-        assert false;
-        String ocl = "context Person inv union: self.editedBook->union(self.authoredPublication)->size() >= 2";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        String ocl = "context Person inv union: self.editedBook->union(self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:EditedBook-->N0], ∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0]) " +
+                "∨ ∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--publication-->N0])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void intersect() throws Exception {
+        String ocl = "context Person inv union: self.editedBook->intersection(self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0, self--publication-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 }
