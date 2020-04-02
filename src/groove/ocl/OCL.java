@@ -20,4 +20,5 @@ public class OCL {
     public final static String OCL_AS_TYPE      = "oclAsType";
     public final static String OCL_IS_KIND_OF   = "oclIsKindOf";
     public final static String OCL_IS_TYPE_OF   = "oclIsTypeOf";
+    public final static String SIZE             = "size";
 }

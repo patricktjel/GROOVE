@@ -355,4 +355,69 @@ public class Custom extends DBLPCaseStudy {
                 "∃([p--type:Publication-->p, p--title-->N1, N1--type:string-->N1, N2--string:'test'-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--string:eq-->N4, N4--bool:true-->N4]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
+
+    @Test
+    public void sizeGE2() throws Exception {
+        String ocl = "context Person inv sizeGE2: self.publication->size() >= 2";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--not:=-->N2, N2--type:Publication-->N2, self--type:Person-->self, self--publication-->N0, self--publication-->N2]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void sizeGT2() throws Exception {
+        String ocl = "context Person inv sizeGT2: self.publication->size() > 2";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--not:=-->N2, N0--not:=-->N4, N2--type:Publication-->N2, N2--not:=-->N4, N4--type:Publication-->N4, self--type:Person-->self, self--publication-->N0, self--publication-->N2, self--publication-->N4]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void sizeEQ2() throws Exception {
+        assert false;
+        String ocl = "context Person inv sizeEQ2: self.publication->size() = 2";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void sizeLE2() throws Exception {
+        assert false;
+        String ocl = "context Person inv sizeLE2: self.publication->size() <= 2";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void sizeLT2() throws Exception {
+        assert false;
+        String ocl = "context Person inv sizeLT2: self.publication->size() < 2";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void sizeNEQ2() throws Exception {
+        assert false;
+        String ocl = "context Person inv sizeGE2: self.publication->size() <> 2";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void sizeGE5() throws Exception {
+        String ocl = "context Person inv sizeGE5: self.publication->size() >= 5";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--not:=-->N2, N0--not:=-->N4, N0--not:=-->N6, N0--not:=-->N8, N2--type:Publication-->N2, N2--not:=-->N4, N2--not:=-->N6, N2--not:=-->N8, N4--type:Publication-->N4, N4--not:=-->N6, N4--not:=-->N8, N6--type:Publication-->N6, N6--not:=-->N8, N8--type:Publication-->N8, self--type:Person-->self, self--publication-->N0, self--publication-->N2, self--publication-->N4, self--publication-->N6, self--publication-->N8]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
 }

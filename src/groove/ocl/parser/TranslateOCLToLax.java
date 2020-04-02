@@ -157,7 +157,18 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Object expr2 = getOut(node.getEquation());
             Operator op = (Operator) getOut(((AEquation) node.getEquation()).getEquationOperator());
 
-            if (expr2 instanceof Constant){
+            if (expr1.contains(OCL.SIZE)){
+                int n = ((IntConstant) expr2).getConstant();
+                if (op.equals(Operator.EQ)){
+                    // rule27
+                    Condition and = new AndCondition(applySize(node, expr1, n), negate(applySize(node, expr1, n+1)));
+                    resetOut(node, and);
+                } else if (op.equals(Operator.NEQ)){
+                    // rule30
+                    Condition and = negate(new AndCondition(applySize(node, expr1, n), negate(applySize(node, expr1, n+1))));
+                    resetOut(node, negate(and));
+                }
+            } else if (expr2 instanceof Constant){
                 // rule 15
                 resetOut(node, applyRule15(node, expr1, op, (Constant) expr2));
             } else if (OCL.NULL.equals(expr2)) {
@@ -222,7 +233,22 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
             Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
 
-            if (expr2 instanceof Constant) {
+            if (expr1.contains(OCL.SIZE)){
+                int n = ((IntConstant) expr2).getConstant();
+                if (op.equals(Operator.GTEQ)){
+                    // rule25
+                    resetOut(node, applySize(node, expr1, n));
+                } else if (op.equals(Operator.GT)){
+                    // rule26
+                    resetOut(node, applySize(node, expr1, n+1));
+                } else if (op.equals(Operator.LTEQ)){
+                    // rule28
+                    resetOut(node, negate(applySize(node, expr1, n+1)));
+                } else if (op.equals(Operator.LT)){
+                    // rule29
+                    resetOut(node, negate(applySize(node, expr1, n)));
+                }
+            } else if (expr2 instanceof Constant) {
                 // so its rule15
                 resetOut(node, applyRule15(node, expr1, op, (Constant) expr2));
             } else {
@@ -232,6 +258,45 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         } else {
             defaultOut(node);
         }
+    }
+
+    /**
+     * Given the expr1, and constant n
+     * Apply transformation rule25
+     */
+    private LaxCondition applySize(Node node, String expr1, int n) {
+        expr1 = expr1.split("->")[0];
+        TypeNode t = determineType(node, expr1);
+
+        // Create all nodes in vars
+        PlainGraph vars = graphBuilder.createGraph();
+        List<String> varNames = new ArrayList<>();
+
+        // start with an empty LaxCondition, with simplification this one will disappear
+        Condition con = new LaxCondition(Quantifier.EXISTS, graphBuilder.createGraph());
+        for (int i = 0; i < n; i++) {
+            // create var
+            PlainGraph var = graphBuilder.createGraph();
+            String varName = graphBuilder.addNode(var, t.text());
+            varNames.add(varName);
+
+            // connect it
+            LaxCondition trs = tr_NS(node, expr1, graphBuilder.cloneGraph(var));
+            con = new AndCondition(con, trs);
+
+            // merge the vars
+            vars = graphBuilder.mergeGraphs(vars, var);
+        }
+
+        // create the != edges
+        PlainGraph neq = graphBuilder.cloneGraph(vars);
+        for (int i = 0; i < n-1; i++) {
+            for (int j = i + 1; j < n; j++) {
+                graphBuilder.addEdge(neq, varNames.get(i), String.format("%s:%s", NOT, EQ) ,varNames.get(j));
+            }
+        }
+        LaxCondition neqCon = new LaxCondition(Quantifier.EXISTS, neq);
+        return new LaxCondition(Quantifier.EXISTS, vars, new AndCondition(neqCon, con));
     }
 
     /**
@@ -382,6 +447,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
 
                 resetOut(node, new LaxCondition(Quantifier.FORALL, var, new ImpliesCondition(trn, tre)));
+            } else if (OCL.SIZE.equals(operation)) {
+                resetOut(node);
             } else {
                 assert false; //This operation is not implemented
             }
