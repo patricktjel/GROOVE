@@ -725,7 +725,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
                 // the next is handled already, skip it
                 i.next();
-            } else if(path.equals(OCL.UNION) || path.equals(OCL.INTERSECTION)) {
+            } else if(OCL.SET_OPERATIONS.contains(path)) {
                 return type;
             } else {
                 // follow the edges to the final type node
@@ -826,16 +826,20 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, OCL.ARROW);
 
             // determine which translation rule to apply
-            if (OCL.UNION.equals(operation)) {
-                // rule44
-                Condition trs1 = tr_S(node, expr, graphBuilder.cloneGraph(graph));
-                Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
-                return new OrCondition(trs1, trs2);
-            } else if (OCL.INTERSECTION.equals(operation)) {
-                // rule45
-                Condition trs1 = tr_S(node, expr, graphBuilder.cloneGraph(graph));
-                Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
-                return new AndCondition(trs1, trs2);
+            if (OCL.UNION.equals(operation) || OCL.INCLUDING.equals(operation)) {
+                // rule44 || rule48
+                return applyUnion(node, expr, expr2, graph);
+            } else if (OCL.INTERSECTION.equals(operation) || OCL.EXCLUDING.equals(operation)) {
+                // rule45 || rule49
+                return applyIntersection(node, expr, expr2, graph);
+            } else if (OCL.MINUS.equals(operation)) {
+                // rule46
+                return applyMinus(node, expr, expr2, graph);
+            } else if (OCL.SYMMETRICDIFFERENCE.equals(operation)) {
+                // rule47
+                Condition union = applyUnion(node, expr, expr2, graph);
+                Condition intersect = applyIntersection(node, expr, expr2, graph);
+                return new AndCondition(union, negate(intersect));
             }
         } else if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
@@ -847,6 +851,24 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
         assert false; //shouldn't happen
         return null;
+    }
+
+    private Condition applyUnion(Node node, String expr1, String expr2, PlainGraph graph) {
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
+        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+        return new OrCondition(trs1, trs2);
+    }
+
+    private Condition applyIntersection(Node node, String expr1, String expr2, PlainGraph graph) {
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
+        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+        return new AndCondition(trs1, trs2);
+    }
+
+    private Condition applyMinus(Node node, String expr1, String expr2, PlainGraph graph) {
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
+        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+        return new AndCondition(trs1, negate(trs2));
     }
 
     public Map<LaxCondition, GraphBuilder> getResults() {

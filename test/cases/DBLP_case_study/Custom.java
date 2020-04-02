@@ -467,4 +467,43 @@ public class Custom extends DBLPCaseStudy {
                 "∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0, self--publication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
+
+    @Test
+    public void minus() throws Exception {
+        assert false;
+        String ocl = "context Person inv minus: (self.editedBook - self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void symmetricDifference() throws Exception {
+        assert false;
+        String ocl = "context Person inv symmtericDifference: self.editedBook->symmetricDifference(self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void including() throws Exception {
+        String ocl = "context Person inv including: self.editedBook->including(self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:EditedBook-->N0], ∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0]) " +
+                "∨ ∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--publication-->N0])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void excluding() throws Exception {
+        String ocl = "context Person inv excluding: self.editedBook->excluding(self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0, self--publication-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
 }
