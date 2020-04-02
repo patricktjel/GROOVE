@@ -66,6 +66,18 @@ public class GraphBuilder {
         return addNode(graph, getUniqueNodeName(), label);
     }
 
+    public PlainGraph createVar(String label) {
+        PlainGraph graph = createGraph();
+        addNode(graph, label);
+        return graph;
+    }
+
+    public PlainGraph createVar(String nodeName, String label) {
+        PlainGraph graph = createGraph();
+        addNode(graph, nodeName, label);
+        return graph;
+    }
+
     /**
      * Add an edge from {@param from} to {@param to} with the label {@param label}
      */
