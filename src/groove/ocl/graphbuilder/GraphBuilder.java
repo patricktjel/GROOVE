@@ -477,6 +477,7 @@ public class GraphBuilder {
             // if no node is connected with the quantifier, we can remove the quantifier
             // the one incoming edge is the self loop which contains the label of the quantifier
             removeNode(graph, quantifier);
+            quantLvl = prevQuant;
         } else if (level > 0) {
             // create connection between the current quantification level and the previous quantification level
             addEdge(graph, quantLvl, IN, prevQuant);

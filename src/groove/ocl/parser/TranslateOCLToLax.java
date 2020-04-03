@@ -174,7 +174,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 }
             } else if (OCL.PRIMARY_OPERATIONS.contains(determineType(node, expr1).text())) {
                 // if the type is primary then it's rule16
-                resetOut(node, applyRule16(node, expr1, op, expr2.toString()));
+                resetOut(node, applyRule16(node, expr1, expr2.toString(), op));
             } else {
                 // rule10, rule11 or rule12
                 Condition condition = applyEquals(node, expr1, expr2.toString(), op);
@@ -231,7 +231,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 resetOut(node, applyRule15(node, expr1, op, (Constant) expr2));
             } else {
                 // its rule16
-               resetOut(node, applyRule16(node, expr1, op, expr2.toString()));
+               resetOut(node, applyRule16(node, expr1, expr2.toString(), op));
             }
         } else {
             defaultOut(node);
@@ -325,7 +325,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      * Given the expr1, operator and expr2
      * Apply transformation rule16
      */
-    private Condition applyRule16(Node node, String expr1, Operator op, String expr2) {
+    private Condition applyRule16(Node node, String expr1, String expr2, Operator op) {
         Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(node, expr1);
         expr1 = expr1AttrType.getFirst().getFirst();
         Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(node, expr2);
@@ -415,6 +415,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             } else if (OCL.FORALL.equals(operation)) {
                 // rule19 || rule20
                 resetOut(node, applyForall(node, expr1, propertyCall));
+            } else if (OCL.IS_UNIQUE.equals(operation)) {
+                // rule35
+                resetOut(node, applyIsUnique(node, expr1, (String) getOut(node)));
             } else if (OCL.SIZE.equals(operation)) {
                 // operation size has to be compared with a constant, the constant is not available at this point in the tree
                 resetOut(node);
@@ -495,6 +498,31 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Tuple2<PlainGraph, Condition> variableFromDeclarator = createVariableFromDeclarator(node, expr1, propertyCall);
         Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
         return new LaxCondition(Quantifier.FORALL, variableFromDeclarator.getFirst(), new ImpliesCondition(variableFromDeclarator.getSecond(), tre));
+    }
+
+    private LaxCondition applyIsUnique(APostfixExpression node, String expr1, String attr) {
+        // determine type and name of first variable
+        String T = determineType(node, expr1).toString();
+
+        // create var1
+        PlainGraph var1 = graphBuilder.createGraph();
+        String var1Name = graphBuilder.addNode(var1, T);
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var1));
+
+        //create var2
+        PlainGraph var2 = graphBuilder.createGraph();
+        String var2Name = graphBuilder.addNode(var2, T);
+        Condition trs2 = tr_S(node, expr1, graphBuilder.cloneGraph(var2));
+
+        // merge the vars
+        PlainGraph vars = graphBuilder.mergeGraphs(var1, var2);
+
+        // create the expr1 <> expr2 -> expr1.attr <> expr2.attr
+        Condition neq1 = applyEquals(node, var1Name, var2Name, Operator.NEQ);
+        Condition neq2 = applyRule16(node, String.format("%s.%s", var1Name, attr), String.format("%s.%s", var2Name, attr), Operator.NEQ);
+        Condition tre = new ImpliesCondition(neq1, neq2);
+
+        return new LaxCondition(Quantifier.FORALL, vars, new ImpliesCondition(new AndCondition(trs1, trs2), tre));
     }
 
     /**

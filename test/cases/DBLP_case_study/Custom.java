@@ -368,6 +368,18 @@ public class Custom extends DBLPCaseStudy {
     }
 
     @Test
+    public void attrIsUnique() throws Exception {
+        String ocl = "context Person inv isUnique: self.publication->isUnique(year)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self, self--publication-->N0, self--publication-->N2, N0--type:Publication-->N0, N2--type:Publication-->N2], " +
+                "∀([N0--type:Publication-->N0, N0--not:=-->N2, N2--type:Publication-->N2], " +
+                "∃([N0--type:Publication-->N0, N0--year-->N7, N7--type:int-->N7, N2--type:Publication-->N2, N2--year-->N9, N9--type:int-->N9, N10--prod:-->N10, N10--arg:0-->N7, N10--arg:1-->N9, N10--int:neq-->N11, N11--bool:true-->N11])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
     public void sizeGE2() throws Exception {
         String ocl = "context Person inv sizeGE2: self.publication->size() >= 2";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
