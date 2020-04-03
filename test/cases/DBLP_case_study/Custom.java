@@ -358,10 +358,13 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void forall2() throws Exception {
-        assert false;
         String ocl = "context Person inv forAll2: self.publication->forAll(p1,p2:Publication | p1.year = p2.year)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self, self--publication-->p1, self--publication-->p2, p1--type:Publication-->p1, p2--type:Publication-->p2], " +
+                "∃([p1--type:Publication-->p1, p1--year-->N1, N1--type:int-->N1, p2--type:Publication-->p2, p2--year-->N3, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:eq-->N5, N5--bool:true-->N5]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

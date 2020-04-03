@@ -539,7 +539,7 @@ public class GraphBuilder {
      * @param g1    The first graph
      * @param g2    The second graph
      */
-    public PlainGraph mergeGraphsInternal(PlainGraph g1, PlainGraph g2) {
+    private PlainGraph mergeGraphsInternal(PlainGraph g1, PlainGraph g2) {
         // Create all nodes of g2 in g1
         // AddNode does check if the node does exist already, if so it doesn't create a new one
         for (Map.Entry<String, PlainNode> entry: graphNodeMap.get(g2).entrySet()){

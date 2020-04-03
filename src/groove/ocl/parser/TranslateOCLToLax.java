@@ -413,7 +413,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule18
                 resetOut(node, applyExists(node, expr1, propertyCall));
             } else if (OCL.FORALL.equals(operation)) {
-                // rule19
+                // rule19 || rule20
                 resetOut(node, applyForall(node, expr1, propertyCall));
             } else if (OCL.SIZE.equals(operation)) {
                 // operation size has to be compared with a constant, the constant is not available at this point in the tree
@@ -486,31 +486,44 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     private LaxCondition applyExists(APostfixExpression node, String expr1, APropertyCall propertyCall) {
-        PlainGraph var = createVariableFromDeclarator(propertyCall);
-
-        Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(var));
+        Tuple2<PlainGraph, Condition> variableFromDeclarator = createVariableFromDeclarator(node, expr1, propertyCall);
         Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
-
-        return new LaxCondition(Quantifier.EXISTS, var, new AndCondition(trs, tre));
+        return new LaxCondition(Quantifier.EXISTS, variableFromDeclarator.getFirst(), new AndCondition(variableFromDeclarator.getSecond(), tre));
     }
 
     private LaxCondition applyForall(APostfixExpression node, String expr1, APropertyCall propertyCall) {
-        PlainGraph var = createVariableFromDeclarator(propertyCall);
-
-        Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(var));
+        Tuple2<PlainGraph, Condition> variableFromDeclarator = createVariableFromDeclarator(node, expr1, propertyCall);
         Condition tre = (Condition) getOut(node.getPropertyInvocation().get(1));
-
-        return new LaxCondition(Quantifier.FORALL, var, new ImpliesCondition(trs, tre));
+        return new LaxCondition(Quantifier.FORALL, variableFromDeclarator.getFirst(), new ImpliesCondition(variableFromDeclarator.getSecond(), tre));
     }
 
     /**
-     * Create a variable graph from the declarator
+     * Create the graph with all the variables
+     * and the tr_S condition for every variable such that the variables are connected
+     * @return A Tuple2 with in the first the vars PlainGraph and in the second the tr_S condition
      */
-    private PlainGraph createVariableFromDeclarator(APropertyCall propertyCall) {
+    private Tuple2<PlainGraph, Condition> createVariableFromDeclarator(APostfixExpression node, String expr1, APropertyCall propertyCall) {
         AConcreteDeclarator declarator = (AConcreteDeclarator) ((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getDeclarator();
-        String varn = declarator.getActualParameterList().toString().trim();
+        AActualParameterList actualParameterList = (AActualParameterList) declarator.getActualParameterList();
+
+        // determine type and name of first variable
         String T = ((ASimpleTypePostfix) declarator.getSimpleTypePostfix()).getSimpleTypeSpecifier().toString().trim();
-        return graphBuilder.createVar(varn, T);
+        String varn = actualParameterList.getExpression().toString().trim();
+
+        // create a graph with first variable
+        PlainGraph vars = graphBuilder.createVar(varn, T);
+        Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(vars));
+        for (PNextExpr expr : actualParameterList.getNextExpr()) {
+            // if there are more declared variables create the variable graph and create the path according expr1
+            // apply rule20
+            PlainGraph var2 = graphBuilder.createVar(((ANextExpr) expr).getExpression().toString().trim(), T);
+            Condition trs2 = tr_S(node, expr1, graphBuilder.cloneGraph(var2));
+
+            // create the new trs condition and merge the variable to the complete graph of variables
+            trs = new AndCondition(trs, trs2);
+            vars = graphBuilder.mergeGraphs(vars, var2);
+        }
+        return new Tuple2<>(vars, trs);
     }
 
     /**
