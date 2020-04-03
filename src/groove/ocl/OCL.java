@@ -11,7 +11,7 @@ public class OCL {
     public final static String EXCLUDES_ALL         = "excludesAll";
     public final static String EXCLUDES             = "excludes";
     public final static String EXISTS               = "exists";
-    public final static String FORALL               = "forall";
+    public final static String FORALL               = "forAll";
     public final static String INCLUDES_ALL         = "includesAll";
     public final static String INCLUDES             = "includes";
     public final static String IS_EMPTY             = "isEmpty";

@@ -241,22 +241,22 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private Condition applySize(Node node, String expr1, IntConstant expr2, Operator op) {
         int n = expr2.getConstant();
         if (op.equals(Operator.GTEQ)){
-            // rule25
+            // rule26
             return applySize(node, expr1, n);
         } else if (op.equals(Operator.GT)){
-            // rule26
+            // rule27
             return applySize(node, expr1, n+1);
         } else if (op.equals(Operator.EQ)){
-            // rule27
+            // rule28
             return new AndCondition(applySize(node, expr1, n), negate(applySize(node, expr1, n+1)));
         } else if (op.equals(Operator.LTEQ)){
-            // rule28
+            // rule29
             return negate(applySize(node, expr1, n+1));
         } else if (op.equals(Operator.LT)){
-            // rule29
+            // rule30
             return negate(applySize(node, expr1, n));
         } else if (op.equals(Operator.NEQ)){
-            // rule30
+            // rule31
             return negate(new AndCondition(applySize(node, expr1, n), negate(applySize(node, expr1, n+1))));
         } else {
             assert false; //shouldn't happen
@@ -266,7 +266,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     /**
      * Given the expr1, and constant n
-     * Apply transformation rule25
+     * Apply transformation rule26
      */
     private LaxCondition applySize(Node node, String expr1, int n) {
         expr1 = expr1.split(OCL.ARROW)[0];
@@ -392,28 +392,28 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             // apply the correct translation rule
             if (OCL.INCLUDES_ALL.equals(operation) || OCL.INCLUDES.equals(operation)) {
-                // rule19 || rule21
+                // rule20 || rule22
                 resetOut(node, applyIncludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.EXCLUDES_ALL.equals(operation) || OCL.EXCLUDES.equals(operation)) {
-                //rule20 || rule22
+                //rule21 || rule23
                 resetOut(node, applyExcludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.NOT_EMPTY.equals(operation)) {
-                // rule23
+                // rule24
                 resetOut(node, applyNotEmpty(node, expr1));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                // rule24
+                // rule25
                 resetOut(node, applyIsEmpty(node, expr1));
             } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
-                //rule35
+                //rule36
                 resetOut(node, applyOclIsKindOf(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.OCL_IS_TYPE_OF.equals(operation)) {
-                // rule36
+                // rule37
                 resetOut(node, applyOclIsTypeOf(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.EXISTS.equals(operation)) {
-                // rule17
+                // rule18
                 resetOut(node, applyExists(node, expr1, propertyCall));
             } else if (OCL.FORALL.equals(operation)) {
-                // rule18
+                // rule19
                 resetOut(node, applyForall(node, expr1, propertyCall));
             } else if (OCL.SIZE.equals(operation)) {
                 // operation size has to be compared with a constant, the constant is not available at this point in the tree
@@ -700,7 +700,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         if (curType == null){
             // if curType = null; it may happen that the variable (split.get(0)) is defined in a declarator
             // which is the case when we are inside an exists or forall
-            curType = getDeclarator(node);
+            curType = getTypeOfDeclarator(node);
         }
         split.remove(split.get(0));
 
@@ -754,13 +754,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return type;
     }
 
-    private String getDeclarator(Node node) {
+    private String getTypeOfDeclarator(Node node) {
         // it seems that the variable doesn't exist yet, probably we are inside an exists or forall;
         // find the declarator to determine the type
         if (node instanceof APropertyCallParameters) {
             return ((ASimpleTypeSpecifier) ((ASimpleTypePostfix) ((AConcreteDeclarator) ((APropertyCallParameters) node).getDeclarator()).getSimpleTypePostfix()).getSimpleTypeSpecifier()).toString().trim();
         } else {
-            return getDeclarator(node.parent());
+            return getTypeOfDeclarator(node.parent());
         }
     }
 
@@ -784,14 +784,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
-                // rule40
+                // rule41
                 return tr_N(node, expr, graph);
             } else {
-                //rule41
+                //rule42
                 return applyNavigationRole(node, expr, role, graph);
             }
         } else {
-            // rule39
+            // rule40
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQUIV, expr);
@@ -827,16 +827,16 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             // determine which translation rule to apply
             if (OCL.UNION.equals(operation) || OCL.INCLUDING.equals(operation)) {
-                // rule44 || rule48
+                // rule45 || rule49
                 return applyUnion(node, expr, expr2, graph);
             } else if (OCL.INTERSECTION.equals(operation) || OCL.EXCLUDING.equals(operation)) {
-                // rule45 || rule49
+                // rule46 || rule50
                 return applyIntersection(node, expr, expr2, graph);
             } else if (OCL.MINUS.equals(operation)) {
-                // rule46
+                // rule47
                 return applyMinus(node, expr, expr2, graph);
             } else if (OCL.SYMMETRICDIFFERENCE.equals(operation)) {
-                // rule47
+                // rule48
                 Condition union = applyUnion(node, expr, expr2, graph);
                 Condition intersect = applyIntersection(node, expr, expr2, graph);
                 return new AndCondition(union, negate(intersect));
@@ -846,7 +846,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             String role = split.remove(split.size() - 1);
             expr = StringUtils.join(split, ".");
 
-            //rule41
+            //rule42
             return applyNavigationRole(node, expr, role, graph);
         }
         assert false; //shouldn't happen

@@ -347,13 +347,21 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void forall() throws Exception {
-        String ocl = "context Person inv forall: self.publication->forall(p:Publication | p.title = 'test')";
+        String ocl = "context Person inv forAll: self.publication->forAll(p:Publication | p.title = 'test')";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self, self--publication-->p, p--type:Publication-->p], " +
                 "∃([p--type:Publication-->p, p--title-->N1, N1--type:string-->N1, N2--string:'test'-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--string:eq-->N4, N4--bool:true-->N4]))";
         assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void forall2() throws Exception {
+        assert false;
+        String ocl = "context Person inv forAll2: self.publication->forAll(p1,p2:Publication | p1.year = p2.year)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
     }
 
     @Test
@@ -451,8 +459,8 @@ public class Custom extends DBLPCaseStudy {
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
-        String expected = "∀([self--type:Person-->self], " +
-                "∃([N0--type:EditedBook-->N0], ∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0]) " +
+        String expected = "∀([self--type:Person-->self], ∃([N0--type:EditedBook-->N0], " +
+                "∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0]) " +
                 "∨ ∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--publication-->N0])))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
