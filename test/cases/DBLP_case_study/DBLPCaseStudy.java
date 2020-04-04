@@ -14,25 +14,32 @@ public class DBLPCaseStudy {
 
     @Test
     public void nameIsKey() throws Exception {
-        assert false;
         String ocl = "context Person inv nameIsKey: Person.allInstances()->isUnique(name)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self, N0--type:Person-->N0, N1--type:Person-->N1], " +
+                "∀([N0--type:Person-->N0, N0--not:=-->N1, N1--type:Person-->N1], " +
+                "∃([N0--type:Person-->N0, N0--name-->N5, N5--type:string-->N5, N1--type:Person-->N1, N1--name-->N7, N7--type:string-->N7, N8--prod:-->N8, N8--arg:0-->N5, N8--arg:1-->N7, N8--string:neq-->N9, N9--bool:true-->N9])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
     public void withoutRepetitions() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv editedBookWithoutRepetitions: self.bookSection->isUnique(title) ";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self, self--bookSection-->N0, self--bookSection-->N2, N0--type:BookSection-->N0, N2--type:BookSection-->N2], " +
+                "∀([N0--type:BookSection-->N0, N0--not:=-->N2, N2--type:BookSection-->N2], " +
+                "∃([N0--type:BookSection-->N0, N0--title-->N7, N7--type:string-->N7, N2--type:BookSection-->N2, N2--title-->N9, N9--type:string-->N9, N10--prod:-->N10, N10--arg:0-->N7, N10--arg:1-->N9, N10--string:neq-->N11, N11--bool:true-->N11])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
     public void theSamePublisher() throws Exception {
         assert false;
-        String ocl ="context Book " +
-                        "inv theSamePublisher: " +
+        String ocl ="context Book inv theSamePublisher: " +
                             "if self.oclIsTypeOf(BookSeriesIssue) " +
                                 "then self.publisher = self.oclAsType(BookSeriesIssue).bookSeries.publisher " +
                                 "else true " +
@@ -43,10 +50,15 @@ public class DBLPCaseStudy {
 
     @Test
     public void correctPagination() throws Exception {
-        assert false;
-        String ocl = "context EditedBook inv correctPagination: self.bookChapter->forAll(c1, c2 | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) ";
+        String ocl = "context EditedBook inv correctPagination: self.bookChapter->forAll(c1, c2:BookChapter | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) ";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self, self--bookChapter-->c1, self--bookChapter-->c2, c1--type:BookChapter-->c1, c2--type:BookChapter-->c2], " +
+                "∀([c1--type:BookChapter-->c1, c1--not:=-->c2, c2--type:BookChapter-->c2], " +
+                "∃([c1--type:BookChapter-->c1, c1--iniPage-->N3, N3--type:int-->N3, c2--type:BookChapter-->c2, c2--endPage-->N5, N5--type:int-->N5, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--int:gt-->N7, N7--bool:true-->N7]) " +
+                "∨ ∃([c2--type:BookChapter-->c2, c2--iniPage-->N9, N9--type:int-->N9, N13--bool:true-->N13, c1--type:BookChapter-->c1, c1--endPage-->N11, N12--prod:-->N12, N12--arg:0-->N9, N12--arg:1-->N11, N12--int:gt-->N13, N11--type:int-->N11])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

@@ -529,4 +529,14 @@ public class Custom extends DBLPCaseStudy {
                 "∃([N0--type:EditedBook-->N0, self--type:Person-->self, self--editedBook-->N0, self--publication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
+
+    @Test
+    public void allInstances() throws Exception {
+        String ocl = "context Person inv allInstances: EditedBook.allInstances()->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], ∃([N0--type:EditedBook-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
 }

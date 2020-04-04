@@ -735,13 +735,18 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         List<String> split = new ArrayList<>();
         Collections.addAll(split, expr.split("(\\.|->|\\(|\\))+"));
 
-        // TODO check if an expression could start without a custom variable (e.g. self), if so a nullpointer exists here
-        // TODO fix this (USE case study inv 3) shows that this is possible
         String curType = graphBuilder.getVariableType(split.get(0));
         if (curType == null){
-            // if curType = null; it may happen that the variable (split.get(0)) is defined in a declarator
-            // which is the case when we are inside an exists or forall
-            curType = getTypeOfDeclarator(node);
+            if (split.size() > 1 && OCL.ALL_INSTANCES.equals(split.get(1))) {
+                // if the expression does not start with an custom variable, check if it starts with allInstances
+                curType = split.get(0);
+                split.remove(split.get(1));
+            } else {
+                // if curType = null and it is not an allInstances; it may happen that the variable (split.get(0)) is defined in a declarator
+                // which is the case when we are inside an exists or forall
+                curType = getTypeOfDeclarator(node);
+            }
+
         }
         split.remove(split.get(0));
 
@@ -825,14 +830,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
-                // rule41
+                // rule40
                 return tr_N(node, expr, graph);
             } else {
-                //rule42
+                //rule41
                 return applyNavigationRole(node, expr, role, graph);
             }
         } else {
-            // rule40
+            // rule39
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQUIV, expr);
@@ -887,8 +892,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             String role = split.remove(split.size() - 1);
             expr = StringUtils.join(split, ".");
 
-            //rule42
-            return applyNavigationRole(node, expr, role, graph);
+            if (role.contains(OCL.ALL_INSTANCES)){
+                //rule43
+                return new LaxCondition(Quantifier.EXISTS, graph);
+            } else {
+                //rule42
+                return applyNavigationRole(node, expr, role, graph);
+            }
         }
         assert false; //shouldn't happen
         return null;

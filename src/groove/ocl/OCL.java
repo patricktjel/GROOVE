@@ -23,6 +23,7 @@ public class OCL {
     public final static String SIZE                 = "size";
 
     //SET OPERATIONS
+    public final static String ALL_INSTANCES        = "allInstances";
     public final static String EXCLUDING            = "excluding";
     public final static String INCLUDING            = "including";
     public final static String INTERSECTION         = "intersection";
@@ -30,6 +31,6 @@ public class OCL {
     public final static String SYMMETRICDIFFERENCE  = "symmetricDifference";
     public final static String UNION                = "union";
     public final static Set<String> SET_OPERATIONS = new HashSet<>(Arrays.asList(
-            EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, UNION
+            ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, UNION
     ));
 }
