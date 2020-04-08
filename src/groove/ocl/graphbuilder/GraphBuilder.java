@@ -184,9 +184,12 @@ public class GraphBuilder {
      * @return          The name of the node with nodenumber 0
      */
     public String getVarNameOfNoden0(PlainGraph graph) {
+        return getVarNameOfNodeN(graph, 0);
+    }
+    public String getVarNameOfNodeN(PlainGraph graph, int n) {
         List<String> varNames = graphNodeMap.get(graph).entrySet()
                 .stream()
-                .filter(e -> e.getValue().getNumber() == 0)
+                .filter(e -> e.getValue().getNumber() == n)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
         assert  varNames.size() == 1;

@@ -21,6 +21,8 @@ public class OCL {
     public final static String OCL_IS_KIND_OF       = "oclIsKindOf";
     public final static String OCL_IS_TYPE_OF       = "oclIsTypeOf";
     public final static String SIZE                 = "size";
+    public final static String MIN                  = "min";
+    public final static String MAX                  = "max";
 
     //SET OPERATIONS
     public final static String ALL_INSTANCES        = "allInstances";
@@ -31,6 +33,7 @@ public class OCL {
     public final static String SYMMETRICDIFFERENCE  = "symmetricDifference";
     public final static String UNION                = "union";
     public final static Set<String> SET_OPERATIONS = new HashSet<>(Arrays.asList(
-            ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, UNION
+            ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, UNION,
+            MIN, MAX
     ));
 }
