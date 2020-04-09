@@ -275,7 +275,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      */
     private LaxCondition applyRule15(Node node, String expr1, Operator op, Constant expr2) {
         Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(node, expr1);
-        if (!expr1.contains(OCL.MIN)) {
+        if (!(expr1.contains(OCL.MIN) || expr1.contains(OCL.MAX))) {
             expr1 = expr1AttrType.getFirst().getFirst();
         }
 
@@ -403,10 +403,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule25
                 resetOut(node, applyIsEmpty(node, expr1));
             } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
-                //rule36
+                //rule34
                 resetOut(node, applyOclIsKindOf(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.OCL_IS_TYPE_OF.equals(operation)) {
-                // rule37
+                // rule35
                 resetOut(node, applyOclIsTypeOf(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.EXISTS.equals(operation)) {
                 // rule18
@@ -415,9 +415,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // rule19 || rule20
                 resetOut(node, applyForall(node, expr1, propertyCall));
             } else if (OCL.IS_UNIQUE.equals(operation)) {
-                // rule35
+                // rule33
                 resetOut(node, applyIsUnique(node, expr1, (String) getOut(node)));
-            } else if (OCL.SIZE.equals(operation) || OCL.MIN.equals(operation)) {
+            } else if (OCL.SIZE.equals(operation) || OCL.MIN.equals(operation) || OCL.MAX.equals(operation)) {
                 // operation size has to be compared with a constant, the constant is not available at this point in the tree
                 resetOut(node);
             } else {
@@ -825,6 +825,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      */
     private Condition tr_N(Node node, String expr, PlainGraph graph) {
         if (expr.contains(OCL.MIN)) {
+            // rule40
+            LaxCondition min = applyMin(node, expr, graphBuilder.cloneGraph(graph));
+            expr = determineTypeAndAttribute(node, expr).getFirst().getFirst();
+            Condition trn = tr_N(node, expr, graph);
+            return new AndCondition(trn, min);
+        } else if (expr.contains(OCL.MAX)) {
+            // rule41
+            //TODO fix MAX
             LaxCondition min = applyMin(node, expr, graphBuilder.cloneGraph(graph));
             expr = determineTypeAndAttribute(node, expr).getFirst().getFirst();
             Condition trn = tr_N(node, expr, graph);
@@ -835,14 +843,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
-                // rule40
+                // rule38
                 return tr_N(node, expr, graph);
             } else {
-                //rule41
+                //rule39
                 return applyNavigationRole(node, expr, role, graph);
             }
         } else {
-            // rule39
+            // rule37
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQUIV, expr);
