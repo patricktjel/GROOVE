@@ -24,7 +24,7 @@ public class Custom extends USECaseStudy {
 
     @Test
     public void inv_excludes() throws Exception {
-        String ocl = "context Project inv excludesAll: self.department.employee->excludes(self.employee)";
+        String ocl = "context Project inv excludes: self.department.employee->excludes(self.employee)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
@@ -35,7 +35,7 @@ public class Custom extends USECaseStudy {
 
     @Test
     public void inv_includes() throws Exception {
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv i5: self.department.employee->includes(self.employee)", GRAPH_LOCATION);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv includes: self.department.employee->includes(self.employee)", GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Project-->self, self--employee-->N0, N0--type:Employee-->N0], " +

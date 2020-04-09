@@ -371,7 +371,15 @@ public class GraphBuilder {
             for (PlainEdge edge : graph.edgeSet()) {
                 if (!labelContainsType(edge.label().text())) {
                     // if there exists an edge check whether the not edge exists already
-                    if (edge.label().text().contains(NOT)) {
+                    if (edge.label().text().contains(EQ)) {
+                        // the edges = and != are different and should be replaced for each other
+                        // TODO verify this implementation
+                        if (edge.label().text().equals(NEQ)) {
+                            addEdge(graph, edge.source(), EQ, edge.target());
+                        } else {
+                            addEdge(graph, edge.source(), NEQ, edge.target());
+                        }
+                    } else if (edge.label().text().contains(NOT)) {
                         // remove not edge
                         addEdge(graph, edge.source(), String.format("%s", edge.label().text().split(":")[1]), edge.target());
                     } else {

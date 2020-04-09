@@ -262,7 +262,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         PlainGraph neq = graphBuilder.cloneGraph(vars);
         for (int i = 0; i < n-1; i++) {
             for (int j = i + 1; j < n; j++) {
-                graphBuilder.addEdge(neq, varNames.get(i), String.format("%s:%s", NOT, EQ) ,varNames.get(j));
+                graphBuilder.addEdge(neq, varNames.get(i), NEQ ,varNames.get(j));
             }
         }
         LaxCondition neqCon = new LaxCondition(Quantifier.EXISTS, neq);
