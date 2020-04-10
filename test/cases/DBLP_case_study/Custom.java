@@ -373,10 +373,13 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void exists2() throws Exception {
-        assert false;
-        String ocl = "context Person inv exists1: self.publication->exists(p1:Publication, p2:Publication | p1.title <> p2.title)";
+        String ocl = "context Person inv exists2: self.publication->exists(p1,p2:Publication | p1.title <> p2.title)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([p1--type:Publication-->p1, p1--title-->N1, p2--type:Publication-->p2, p2--title-->N3, N1--type:string-->N1, N3--type:string-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--string:neq-->N5, N5--bool:true-->N5, self--type:Person-->self, self--publication-->p1, self--publication-->p2]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

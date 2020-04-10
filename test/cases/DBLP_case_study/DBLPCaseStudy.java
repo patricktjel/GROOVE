@@ -38,6 +38,7 @@ public class DBLPCaseStudy {
 
     @Test
     public void theSamePublisher() throws Exception {
+        // negation of self.oclIsTypeOf() creates a negated forAll
         assert false;
         String ocl ="context Book inv theSamePublisher: " +
                             "if self.oclIsTypeOf(BookSeriesIssue) " +
