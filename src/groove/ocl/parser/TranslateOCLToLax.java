@@ -480,10 +480,17 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
 
-    private LaxCondition applyOclIsTypeOf(Node node, String expr1, String T) {
-        PlainGraph var = graphBuilder.createVar(String.format("%s%s", SHARP_TYPE, T));
+    private LaxCondition applyOclIsTypeOf(Node node, String expr, String T) {
+        // create v:T`
+        PlainGraph var = graphBuilder.createGraph();
+        String v = graphBuilder.addNode(var, determineType(node, expr).text());
+        // connect it with expr1
+        Condition trn = tr_N(node, expr, graphBuilder.cloneGraph(var));
 
-        Condition trn = tr_N(node, expr1, graphBuilder.cloneGraph(var));
+        // make sure that v OclIsTypeOf T
+        String sharpNode = graphBuilder.addNode(var, String.format("%s%s", SHARP_TYPE, T));
+        graphBuilder.addEdge(var, v, EQ, sharpNode);
+
         return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
 

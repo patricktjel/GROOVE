@@ -204,27 +204,29 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void oclIsTypeOf() throws Exception {
-        String ocl = "context Person inv oclIsTypeOf: self.authoredPublication.oclIsTypeOf(AuthoredPublication)";
+        String ocl = "context Person inv oclIsTypeOf: self.authoredPublication.oclIsTypeOf(BookChapter)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N0--type:#AuthoredPublication-->N0, self--type:Person-->self, self--authoredPublication-->N0]))";
+                "∃([N0--type:AuthoredPublication-->N0, N0--=-->N2, N2--type:#BookChapter-->N2, self--type:Person-->self, self--authoredPublication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
     public void oclIsTypeOf2() throws Exception {
-        assert false;
         String ocl = "context Book inv oclIsTypeOf2: self.oclIsTypeOf(BookSeriesIssue)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Book-->self], " +
+                "∃([self--type:Book-->self, self--=-->N1, N1--type:#BookSeriesIssue-->N1]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test
     public void oclAsType() throws Exception {
-        String ocl ="context Person " +
-                        "inv oclAsType: " +
+        String ocl ="context Person inv oclAsType: " +
                             "if self.publication.oclIsTypeOf(Book) " +
                                 "then self.numPublications = self.publication.oclAsType(Book).numPages " +
                                 "else true " +
@@ -233,8 +235,8 @@ public class Custom extends DBLPCaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N0--type:#Book-->N0, self--type:Person-->self, self--publication-->N0, self--numPublications-->N3, self--publication-->N4, N3--type:int-->N3, N4--type:Book-->N4, N4--numPages-->N5, N5--type:int-->N5, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--int:eq-->N7, N7--bool:true-->N7]) " +
-                "∨ ∃([N0--type:#Book-->N0, N0--not:-->N0, self--type:Person-->self, self--publication-->N0]))";
+                "∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:#Book-->N2, self--type:Person-->self, self--publication-->N0, self--numPublications-->N4, self--publication-->N5, N4--type:int-->N4, N5--type:Book-->N5, N5--numPages-->N6, N6--type:int-->N6, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N8--bool:true-->N8]) " +
+                "∨ ∃([N0--type:Publication-->N0, N0--=-->N2, N0--not:-->N0, N2--type:#Book-->N2, N2--not:-->N2, self--type:Person-->self, self--publication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -482,7 +484,7 @@ public class Custom extends DBLPCaseStudy {
     @Test
     public void one() throws Exception {
         assert false;
-        String ocl = "context Person inv one: self.publication.year->max() > 5";
+        String ocl = "context Person inv one: self.publication->one(p:Publication | p.year = 2000)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
     }
