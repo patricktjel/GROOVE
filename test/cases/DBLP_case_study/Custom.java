@@ -193,12 +193,23 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void oclIsKindOf() throws Exception {
-        String ocl = "context Person inv oclIsKindOf: self.authoredPublication.oclIsKindOf(AuthoredPublication)";
+        String ocl = "context Person inv oclIsKindOf: self.publication.oclIsKindOf(Book)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N0--type:AuthoredPublication-->N0, self--type:Person-->self, self--authoredPublication-->N0]))";
+                "∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:Book-->N2, self--type:Person-->self, self--publication-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void oclIsKindOf2() throws Exception {
+        String ocl = "context Publication inv oclIsKindOf2: self.oclIsKindOf(Book)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Publication-->self], " +
+                "∃([self--type:Publication-->self, self--=-->N1, N1--type:Book-->N1]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }
 
@@ -226,16 +237,37 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void oclAsType() throws Exception {
-        String ocl ="context Person inv oclAsType: " +
-                            "if self.publication.oclIsTypeOf(Book) " +
-                                "then self.numPublications = self.publication.oclAsType(Book).numPages " +
-                                "else true " +
-                        "endif";
+        String ocl ="context Person inv oclAsType: self.publication.oclAsType(Book).numPages > 1";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
 
         String expected = "∀([self--type:Person-->self], " +
-                "∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:#Book-->N2, self--type:Person-->self, self--publication-->N0, self--numPublications-->N4, self--publication-->N5, N4--type:int-->N4, N5--type:Book-->N5, N5--numPages-->N6, N6--type:int-->N6, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N8--bool:true-->N8]) " +
+                "∃([N0--type:Book-->N0, N0--numPages-->N1, N1--type:int-->N1, N2--int:1-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:gt-->N4, N4--bool:true-->N4, N5--type:Publication-->N5, N5--=-->N0, self--type:Person-->self, self--publication-->N5]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+    @Test
+    public void oclAsType2() throws Exception {
+        String ocl ="context Publication inv oclAsType2: self.oclAsType(Book).numPages > 1";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Publication-->self], " +
+                "∃([N0--type:Book-->N0, N0--numPages-->N1, N1--type:int-->N1, N2--int:1-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:gt-->N4, N4--bool:true-->N4, self--type:Publication-->self, self--=-->N0]))";
+        assertEquals(expected, map.get(condition).conToString(condition));
+    }
+
+    @Test
+    public void oclAsType3() throws Exception {
+        String ocl ="context Person inv oclAsType3: " +
+                            "if self.publication.oclIsTypeOf(Book) " +
+                                "then self.numPublications = self.publication.oclAsType(Book).numPages " +
+                                "else true " +
+                            "endif";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:#Book-->N2, self--type:Person-->self, self--publication-->N0, self--numPublications-->N4, self--publication-->N9, N4--type:int-->N4, N5--type:Book-->N5, N5--numPages-->N6, N6--type:int-->N6, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N8--bool:true-->N8, N9--type:Publication-->N9, N9--=-->N5]) " +
                 "∨ ∃([N0--type:Publication-->N0, N0--=-->N2, N0--not:-->N0, N2--type:#Book-->N2, N2--not:-->N2, self--type:Person-->self, self--publication-->N0]))";
         assertEquals(expected, map.get(condition).conToString(condition));
     }

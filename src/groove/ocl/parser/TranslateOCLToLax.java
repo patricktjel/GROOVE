@@ -473,23 +473,30 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, var, trs);
     }
 
-    private LaxCondition applyOclIsKindOf(Node node, String expr1, String T) {
-        PlainGraph var = graphBuilder.createVar(T);
-
-        Condition trn = tr_N(node, expr1, graphBuilder.cloneGraph(var));
-        return new LaxCondition(Quantifier.EXISTS, var, trn);
+    private LaxCondition applyOclIsKindOf(Node node, String expr, String T) {
+        return applyTypeCheck(node, expr, T, false);
     }
 
     private LaxCondition applyOclIsTypeOf(Node node, String expr, String T) {
+        return applyTypeCheck(node, expr, T, true);
+    }
+
+    private LaxCondition applyTypeCheck(Node node, String expr, String T, boolean sharpType) {
         // create v:T`
         PlainGraph var = graphBuilder.createGraph();
         String v = graphBuilder.addNode(var, determineType(node, expr).text());
         // connect it with expr1
         Condition trn = tr_N(node, expr, graphBuilder.cloneGraph(var));
 
-        // make sure that v OclIsTypeOf T
-        String sharpNode = graphBuilder.addNode(var, String.format("%s%s", SHARP_TYPE, T));
-        graphBuilder.addEdge(var, v, EQ, sharpNode);
+        String typeCheck;
+        if (sharpType){
+            // make sure that v OclIsTypeOf T
+            typeCheck = graphBuilder.addNode(var, String.format("%s%s", SHARP_TYPE, T));
+        } else {
+            // make sure that v OclIsKindOf T
+            typeCheck = graphBuilder.addNode(var, String.format("%s", T));
+        }
+        graphBuilder.addEdge(var, v, EQ, typeCheck);
 
         return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
@@ -851,7 +858,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
                 // rule38
-                return tr_N(node, expr, graph);
+                return applyOclAsType(node, expr, graph);
             } else {
                 //rule39
                 return applyNavigationRole(node, expr, role, graph);
@@ -891,6 +898,21 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         LaxCondition tre = new LaxCondition(Quantifier.EXISTS, c);
 
         return new LaxCondition(Quantifier.FORALL, var2, new ImpliesCondition(trs, tre));
+    }
+
+    private LaxCondition applyOclAsType(Node node, String expr, PlainGraph graph) {
+        //create v:T`
+        PlainGraph var = graphBuilder.createGraph();
+        String v = graphBuilder.addNode(var, determineType(node, expr).text());
+
+        Condition trn = tr_N(node, expr, graphBuilder.cloneGraph(var));
+
+        // create expr.oclAsType()
+        String vt = graphBuilder.getVarNameOfNoden0(graph);
+        var = graphBuilder.mergeGraphs(graph, var);
+        graphBuilder.addEdge(var, v, EQ, vt);
+
+        return new LaxCondition(Quantifier.EXISTS, var, trn);
     }
 
     private LaxCondition applyNavigationRole(Node node, String expr, String role, PlainGraph graph) {
