@@ -137,7 +137,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     con1 = new OrCondition(con1, con2);
                 } else if (op instanceof AXorBooleanOperator) {
                     // rule7 (a xor b = (a v b) ^ -(a ^ b)
-                    con1 = new AndCondition(new OrCondition(con1, con2), negate(new AndCondition(con1, con2)));
+                    Condition clCon1 = graphBuilder.cloneCondition(con1);
+                    Condition clCon2 = graphBuilder.cloneCondition(con2);
+
+                    con1 = new AndCondition(new OrCondition(con1, con2), negate(new AndCondition(clCon1, clCon2)));
                 } else {
                     // makes sure that we do not miss one of the (new) operations
                     assert false;

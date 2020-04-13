@@ -102,10 +102,16 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void xor() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv xorTest: self.numPages > 0 xor self.year > 0";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                    "∃([self--type:EditedBook-->self, self--numPages-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:gt-->N4, N4--bool:true-->N4]) " +
+                    "∨ ∃([self--type:EditedBook-->self, self--year-->N6, N6--type:int-->N6, N7--int:0-->N7, N8--prod:-->N8, N8--arg:0-->N6, N8--arg:1-->N7, N8--int:gt-->N9, N9--bool:true-->N9]) " +
+                "∧ ∀([], ∃([self--type:EditedBook-->self, self--numPages-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:gt-->N4, N4--bool:false-->N4]) " +
+                "∨ ∃([self--type:EditedBook-->self, self--year-->N6, N6--type:int-->N6, N7--int:0-->N7, N8--prod:-->N8, N8--arg:0-->N6, N8--arg:1-->N7, N8--int:gt-->N9, N9--bool:false-->N9])))";
+        assertEquals(expected, map.get(condition).conToString(condition));
     }
 
     @Test

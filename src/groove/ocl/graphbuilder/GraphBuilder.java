@@ -6,12 +6,15 @@ import groove.graph.plain.PlainEdge;
 import groove.graph.plain.PlainGraph;
 import groove.graph.plain.PlainNode;
 import groove.ocl.lax.Operator;
+import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.*;
 import groove.ocl.lax.graph.constants.BooleanConstant;
 import groove.ocl.lax.graph.constants.Constant;
+import groove.util.Log;
 import groovy.lang.Tuple2;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static groove.ocl.Groove.*;
@@ -20,6 +23,8 @@ import static groove.ocl.Groove.*;
  * A singleton class based on the static principle instead of using the GraphBuilder.getInstance() principle
  */
 public class GraphBuilder {
+    private final static Logger LOGGER = Log.getLogger(GraphBuilder.class.getName());
+
     private static int uniqueGraph = 0;
 
     // <Graph, <nodeName, PlainNode>>
@@ -109,12 +114,20 @@ public class GraphBuilder {
      * A method that makes sure that the correct renameVar method is called
      */
     public void renameVar(Condition condition, String o, String n) {
-        if (condition instanceof LaxCondition) {
-            renameVar(((LaxCondition) condition).getGraph(), o, n);
-        } else if (condition instanceof OperatorCondition) {
-            renameVar((OperatorCondition) condition, o, n);
-        } else {
-            assert false;
+        if (condition != null) {
+            // ignore if the condition is null
+            if (condition instanceof LaxCondition) {
+                renameVar(((LaxCondition) condition).getGraph(), o, n);
+
+                // recursively also rename the conditions inside a lax condition
+                if (((LaxCondition) condition).getCondition() != null) {
+                    renameVar(((LaxCondition) condition).getCondition(), o, n);
+                }
+            } else if (condition instanceof OperatorCondition) {
+                renameVar((OperatorCondition) condition, o, n);
+            } else {
+                assert false;
+            }
         }
     }
 
@@ -414,8 +427,15 @@ public class GraphBuilder {
      * @return      The resulting graph
      */
     public PlainGraph laxToGraph(LaxCondition c) {
-        validate(c, new HashSet<>());
+        validate(c);
         return laxToGraph(c.getGraph(), c, 0, null);
+    }
+
+    private void validate(LaxCondition c) {
+        validateNodeNames(c, new HashSet<>());
+        validateQuantification(c, c.getQuantifier());
+
+        LOGGER.info("After validation:" + conToString(c));
     }
 
     /**
@@ -423,17 +443,17 @@ public class GraphBuilder {
      * are different nodes with the same name, so we have to validate the Condition and rename the variables
      * If we can find such a name collision
      */
-    private Set<String> validate(Condition c, Set<String> vars) {
+    private Set<String> validateNodeNames(Condition c, Set<String> vars) {
         if (c instanceof LaxCondition) {
             vars.addAll(graphNodeMap.get(((LaxCondition) c).getGraph()).keySet());
             if (((LaxCondition) c).getCondition() != null) {
-                Set<String> val = validate(((LaxCondition) c).getCondition(), new HashSet<>(vars));
+                Set<String> val = validateNodeNames(((LaxCondition) c).getCondition(), new HashSet<>(vars));
                 vars.addAll(val);
             }
             return vars;
         } else if (c instanceof OperatorCondition){
-            Set<String> val1 = validate(((OperatorCondition) c).getExpr1(), new HashSet<>(vars));
-            Set<String> val2 = validate(((OperatorCondition) c).getExpr2(), new HashSet<>(vars));
+            Set<String> val1 = validateNodeNames(((OperatorCondition) c).getExpr1(), new HashSet<>(vars));
+            Set<String> val2 = validateNodeNames(((OperatorCondition) c).getExpr2(), new HashSet<>(vars));
             Set<String> intersection = intersection(val1, val2);
             intersection.removeAll(vars);
             if (!intersection.isEmpty()) {
@@ -443,7 +463,7 @@ public class GraphBuilder {
                     renameVar(((OperatorCondition) c).getExpr2(), i, getUniqueNodeName());
                 }
                 // reset val2 since node names are renamed
-                val2 = validate(((OperatorCondition) c).getExpr2(), new HashSet<>(vars));
+                val2 = validateNodeNames(((OperatorCondition) c).getExpr2(), new HashSet<>(vars));
             }
             vars.addAll(val1);
             vars.addAll(val2);
@@ -452,6 +472,46 @@ public class GraphBuilder {
             assert false; //shouldn't happen
         }
         return vars;
+    }
+
+    private void validateQuantification(Condition c, Quantifier curQ) {
+        if (c instanceof LaxCondition && ((LaxCondition) c).getCondition() != null) {
+            // a Laxcondition has only one condition, check for this condition if our quantification is correct.
+            curQ  = ((LaxCondition) c).getQuantifier();
+            Condition con = isQuantifierCorrect(((LaxCondition) c).getCondition(), curQ);
+            if (con != null) {
+                ((LaxCondition) c).setCondition(con);
+            }
+            validateQuantification(((LaxCondition) c).getCondition(), curQ);
+        } else if (c instanceof OperatorCondition) {
+            // a OperatorCondition has two conditions, check for both conditions if the current quantification (curQ) is correct.
+            Condition expr1 = isQuantifierCorrect(((OperatorCondition) c).getExpr1(), curQ);
+            if (expr1 != null) {
+                ((OperatorCondition) c).setExpr1(expr1);
+            }
+            validateQuantification(((OperatorCondition) c).getExpr1(), curQ);
+
+            Condition expr2 = isQuantifierCorrect(((OperatorCondition) c).getExpr2(), curQ);
+            if (expr2 != null) {
+                ((OperatorCondition) c).setExpr2(expr2);
+            }
+            validateQuantification(((OperatorCondition) c).getExpr2(), curQ);
+        }
+    }
+
+    /**
+     * Checks if the current quantification (curQ) is correct for the given Condition (c)
+     * @return  null if the quantification is correct
+     *          else a new Condition which sets the quantification correct for Condition c
+     */
+    private Condition isQuantifierCorrect(Condition c, Quantifier curQ) {
+        Condition toAdd = null;
+        if (c instanceof OrCondition && curQ != Quantifier.FORALL) {
+            toAdd = new LaxCondition(Quantifier.FORALL, createGraph(), c);
+        } else if (c instanceof AndCondition && curQ != Quantifier.EXISTS) {
+            toAdd = new LaxCondition(Quantifier.EXISTS, createGraph(), c);
+        }
+        return toAdd;
     }
 
     /**
@@ -483,13 +543,7 @@ public class GraphBuilder {
             }
         }
 
-        PlainNode quantifier = graphNodeMap.get(graph).get(quantLvl);
-        if (graph.inEdgeSet(quantifier).size() == 1) {
-            // if no node is connected with the quantifier, we can remove the quantifier
-            // the one incoming edge is the self loop which contains the label of the quantifier
-            removeNode(graph, quantifier);
-            quantLvl = prevQuant;
-        } else if (level > 0) {
+        if (level > 0) {
             // create connection between the current quantification level and the previous quantification level
             addEdge(graph, quantLvl, IN, prevQuant);
         }
