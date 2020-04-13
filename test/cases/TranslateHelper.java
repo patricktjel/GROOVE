@@ -63,7 +63,6 @@ public class TranslateHelper {
 
         PlainGraph graph = graphBuilder.laxToGraph(condition);
         grammarStorage.saveGraph(graph);
-
     }
 
     public static class TreePrinter extends DepthFirstAdapter {

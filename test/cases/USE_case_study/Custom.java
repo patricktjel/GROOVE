@@ -16,10 +16,14 @@ public class Custom extends USECaseStudy {
         String ocl = "context Project inv excludesAll: self.department.employee->excludesAll(self.employee)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([self--type:Project-->self, self--employee-->N0, N0--type:Employee-->N0], " +
                 "∃([N0--type:Employee-->N0, N1--type:Department-->N1, N1--not:employee-->N0, self--type:Project-->self, self--department-->N1]))";
-        assertEquals(expected, map.get(condition).conToString(condition));
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Project-->self, self--employee-->N0, self--@-->N4, self--department-->N1, N0--type:Employee-->N0, N0--@-->N4, N4--forall:-->N4, N1--type:Department-->N1, N1--not:employee-->N0, N1--@-->N5, N5--exists:-->N5, N5--in-->N4]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
@@ -27,19 +31,28 @@ public class Custom extends USECaseStudy {
         String ocl = "context Project inv excludes: self.department.employee->excludes(self.employee)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([self--type:Project-->self, self--employee-->N0, N0--type:Employee-->N0], " +
                 "∃([N0--type:Employee-->N0, N1--type:Department-->N1, N1--not:employee-->N0, self--type:Project-->self, self--department-->N1]))";
-        assertEquals(expected, map.get(condition).conToString(condition));
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Project-->self, self--employee-->N0, self--@-->N4, self--department-->N1, N0--type:Employee-->N0, N0--@-->N4, N4--forall:-->N4, N1--type:Department-->N1, N1--not:employee-->N0, N1--@-->N5, N5--exists:-->N5, N5--in-->N4]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
     public void inv_includes() throws Exception {
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph("context Project inv includes: self.department.employee->includes(self.employee)", GRAPH_LOCATION);
+        String ocl = "context Project inv includes: self.department.employee->includes(self.employee)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([self--type:Project-->self, self--employee-->N0, N0--type:Employee-->N0], " +
                 "∃([N0--type:Employee-->N0, N1--type:Department-->N1, N1--employee-->N0, self--type:Project-->self, self--department-->N1]))";
-        assertEquals(expected, map.get(condition).conToString(condition));
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Project-->self, self--employee-->N0, self--@-->N4, self--department-->N1, N0--type:Employee-->N0, N0--@-->N4, N4--forall:-->N4, N1--type:Department-->N1, N1--employee-->N0, N1--@-->N5, N5--exists:-->N5, N5--in-->N4]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 }

@@ -49,10 +49,14 @@ public class BARTCaseStudy {
         String ocl = "context Segment inv fitting: self.next <> null implies self.next.segBegin = self.segEnd";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([N0--type:Segment-->N0, self--type:Segment-->self, self--next-->N0], " +
                 "∃([N2--type:Segment-->N2, N2--segBegin-->N3, N3--type:int-->N3, self--type:Segment-->self, self--segEnd-->N5, self--next-->N2, N5--type:int-->N5, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--int:eq-->N7, N7--bool:true-->N7]))";
-        assertEquals(expected, map.get(condition).conToString(condition));
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[N0--type:Segment-->N0, N0--@-->N9, self--type:Segment-->self, self--next-->N0, self--@-->N9, self--segEnd-->N5, self--next-->N2, N9--forall:-->N9, N2--type:Segment-->N2, N2--segBegin-->N3, N2--@-->N10, N3--type:int-->N3, N3--@-->N10, N5--type:int-->N5, N5--@-->N10, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--int:eq-->N7, N6--@-->N10, N7--bool:true-->N7, N7--@-->N10, N10--exists:-->N10, N10--in-->N9]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
@@ -68,10 +72,14 @@ public class BARTCaseStudy {
         String ocl = "context Segment inv track: self.next <> null implies self.track = self.next.track";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([N0--type:Segment-->N0, self--type:Segment-->self, self--next-->N0], " +
                 "∃([N2--type:Track-->N2, N2--=-->N3, N3--type:Track-->N3, N5--type:Segment-->N5, N5--track-->N3, self--type:Segment-->self, self--track-->N2, self--next-->N5]))";
-        assertEquals(expected, map.get(condition).conToString(condition));
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[N0--type:Segment-->N0, N0--@-->N7, self--type:Segment-->self, self--next-->N0, self--@-->N7, self--track-->N2, self--next-->N5, N7--forall:-->N7, N2--type:Track-->N2, N2--=-->N3, N2--@-->N8, N3--type:Track-->N3, N3--@-->N8, N5--type:Segment-->N5, N5--track-->N3, N5--@-->N8, N8--exists:-->N8, N8--in-->N7]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test

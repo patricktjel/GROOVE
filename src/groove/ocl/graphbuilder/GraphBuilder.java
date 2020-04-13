@@ -543,7 +543,13 @@ public class GraphBuilder {
             }
         }
 
-        if (level > 0) {
+        PlainNode quantifier = graphNodeMap.get(graph).get(quantLvl);
+        if (graph.inEdgeSet(quantifier).size() == 1 && isSameQuant(graph, quantLvl, prevQuant)) {
+            // if no node is connected with the quantifier, and the quantifier is the same as its parent, then this quantifier can be removed
+            // the one incoming edge is the self loop which contains the label of the quantifier
+            removeNode(graph, quantifier);
+            quantLvl = prevQuant;
+        } else if (level > 0) {
             // create connection between the current quantification level and the previous quantification level
             addEdge(graph, quantLvl, IN, prevQuant);
         }
@@ -554,6 +560,20 @@ public class GraphBuilder {
         } else {
             return graph;
         }
+    }
+
+    /**
+     * Determines if the quantifications of quantLvl and prevQuant are the same
+     *      Exists == Exists and Forall == Forall
+     */
+    private boolean isSameQuant(PlainGraph graph, String quantLvl, String prevQuant) {
+        PlainNode q = graphNodeMap.get(graph).get(quantLvl);
+        PlainNode prevQ = graphNodeMap.get(graph).get(prevQuant);
+
+        String quantName = graph.inEdgeSet(q).stream().filter(e -> e.target() == e.source()).map(e -> e.label().text()).collect(Collectors.toList()).get(0);
+        String prevQuantName = graph.inEdgeSet(prevQ).stream().filter(e -> e.target() == e.source()).map(e -> e.label().text()).collect(Collectors.toList()).get(0);
+
+        return quantName.equals(prevQuantName);
     }
 
     /**
