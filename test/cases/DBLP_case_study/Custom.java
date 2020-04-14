@@ -716,11 +716,20 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void max() throws Exception {
-        assert false;
-        String ocl = "context Person inv max: self.publication.year->max() > 5";
+        String ocl = "context Person inv max: self.publication.year->max() < 5";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--year-->N1, N1--type:int-->N1, N2--int:5-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:lt-->N4, N4--bool:true-->N4], " +
+                "∃([N0--type:Publication-->N0, N0--year-->N1, N1--type:int-->N1, N2--int:5-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:lt-->N4, N4--bool:true-->N4, self--type:Person-->self, self--publication-->N0]) " +
+                "∧ ∀([N5--type:Publication-->N5, N5--year-->N6, N6--type:int-->N6, self--type:Person-->self, self--publication-->N5], " +
+                "∃([N0--type:Publication-->N0, N0--year-->N1, N1--type:int-->N1, N2--int:5-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:lt-->N4, N4--bool:true-->N4, N5--type:Publication-->N5, N5--year-->N6, N6--type:int-->N6, N8--prod:-->N8, N8--arg:0-->N1, N8--arg:1-->N6, N8--int:ge-->N9, N9--bool:true-->N9]))))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N11, self--publication-->N0, self--publication-->N5, N11--forall:-->N11, N0--type:Publication-->N0, N0--year-->N1, N0--@-->N12, N1--type:int-->N1, N1--@-->N12, N2--int:5-->N2, N2--@-->N12, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:lt-->N4, N3--@-->N12, N4--bool:true-->N4, N4--@-->N12, N12--exists:-->N12, N12--in-->N11, N5--type:Publication-->N5, N5--year-->N6, N5--@-->N111, N6--type:int-->N6, N6--@-->N111, N111--forall:-->N111, N111--in-->N12, N8--prod:-->N8, N8--arg:0-->N1, N8--arg:1-->N6, N8--int:ge-->N9, N8--@-->N114, N9--bool:true-->N9, N9--@-->N114, N114--exists:-->N114, N114--in-->N111]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test

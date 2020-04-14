@@ -843,14 +843,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private Condition tr_N(Node node, String expr, PlainGraph graph) {
         if (expr.contains(OCL.MIN)) {
             // rule40
-            LaxCondition min = applyMin(node, expr, graphBuilder.cloneGraph(graph));
+            LaxCondition min = applyMinMax(node, expr, graphBuilder.cloneGraph(graph), Operator.LTEQ);
             expr = determineTypeAndAttribute(node, expr).getFirst().getFirst();
             Condition trn = tr_N(node, expr, graph);
             return new AndCondition(trn, min);
         } else if (expr.contains(OCL.MAX)) {
             // rule41
-            //TODO fix MAX
-            LaxCondition min = applyMin(node, expr, graphBuilder.cloneGraph(graph));
+            LaxCondition min = applyMinMax(node, expr, graphBuilder.cloneGraph(graph), Operator.GTEQ);
             expr = determineTypeAndAttribute(node, expr).getFirst().getFirst();
             Condition trn = tr_N(node, expr, graph);
             return new AndCondition(trn, min);
@@ -876,7 +875,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
     }
 
-    private LaxCondition applyMin(Node node, String expr, PlainGraph graph) {
+    private LaxCondition applyMinMax(Node node, String expr, PlainGraph graph, Operator op) {
         // determine type and name of first variable
         Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> exprAttrType = determineTypeAndAttribute(node, expr);
 
@@ -895,9 +894,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         graphBuilder.addEdge(var2, var2Name, exprAttrType.getSecond().getFirst(), attr2Name);
         Condition trs = tr_N(node, expr, graphBuilder.cloneGraph(var2));
 
-        // create the var1 <> var2 -> var1.attr < var2.attr
+        // create the var1 <> var2 -> var1.attr op var2.attr
         PlainGraph c = graphBuilder.mergeGraphs(graph, var2);
-        graphBuilder.addProductionRule(c, attr1Name, exprAttrType.getSecond().getSecond().text(), Operator.LTEQ, attr2Name);
+        graphBuilder.addProductionRule(c, attr1Name, exprAttrType.getSecond().getSecond().text(), op, attr2Name);
         LaxCondition tre = new LaxCondition(Quantifier.EXISTS, c);
 
         return new LaxCondition(Quantifier.FORALL, var2, new ImpliesCondition(trs, tre));
