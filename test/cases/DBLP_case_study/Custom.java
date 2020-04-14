@@ -200,29 +200,58 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void ifthenelseAnd1() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv ifthenelseand: if self.conferenceEdition->notEmpty() and self.bookSection->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--bookSection-->N2, self--year-->N5, N2--type:BookSection-->N2, N5--type:int-->N5, N6--int:0-->N6, N7--prod:-->N7, N7--arg:0-->N5, N7--arg:1-->N6, N7--int:gt-->N8, N8--bool:true-->N8]) " +
+                "∨ ∀([], " +
+                    "∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0]) " +
+                    "∨ ∃([N2--type:BookSection-->N2, N2--not:-->N2, self--type:EditedBook-->self, self--bookSection-->N2])) " +
+                "∧ ∃([self--type:EditedBook-->self, self--publicationYear-->N10, N10--type:int-->N10, N11--int:0-->N11, N12--prod:-->N12, N12--arg:0-->N10, N12--arg:1-->N11, N12--int:gt-->N13, N13--bool:true-->N13]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:EditedBook-->self, self--@-->N16, self--conferenceEdition-->N0, self--bookSection-->N2, self--year-->N5, self--conferenceEdition-->N14, self--bookSection-->N163, self--publicationYear-->N10, N16--forall:-->N16, N0--type:ConferenceEdition-->N0, N0--@-->N17, N2--type:BookSection-->N2, N2--@-->N17, N5--type:int-->N5, N5--@-->N17, N6--int:0-->N6, N6--@-->N17, N7--prod:-->N7, N7--arg:0-->N5, N7--arg:1-->N6, N7--int:gt-->N8, N7--@-->N17, N8--bool:true-->N8, N8--@-->N17, N17--exists:-->N17, N17--in-->N16, N18--exists:-->N18, N18--in-->N16, N160--forall:-->N160, N160--in-->N18, N14--type:ConferenceEdition-->N14, N14--not:-->N14, N14--@-->N20, N20--exists:-->N20, N20--in-->N160, N163--type:BookSection-->N163, N163--not:-->N163, N163--@-->N21, N21--exists:-->N21, N21--in-->N160, N13--bool:true-->N13, N13--@-->N22, N10--type:int-->N10, N10--@-->N22, N12--prod:-->N12, N12--arg:0-->N10, N12--arg:1-->N11, N12--int:gt-->N13, N12--@-->N22, N11--int:0-->N11, N11--@-->N22, N22--exists:-->N22, N22--in-->N18]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
     public void ifthenelseOr() throws Exception {
-        assert false;
-        String ocl = "context EditedBook inv ifthenelseand: if self.conferenceEdition->notEmpty() or self.bookSection->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
+        String ocl = "context EditedBook inv ifthenelseor: if self.conferenceEdition->notEmpty() or self.bookSection->notEmpty() then self.year > 0 else self.publicationYear > 0 endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0]) " +
+                "∨ ∃([N2--type:BookSection-->N2, self--type:EditedBook-->self, self--bookSection-->N2]) " +
+                "∧ ∃([self--type:EditedBook-->self, self--year-->N5, N5--type:int-->N5, N6--int:0-->N6, N7--prod:-->N7, N7--arg:0-->N5, N7--arg:1-->N6, N7--int:gt-->N8, N8--bool:true-->N8]) " +
+                "∨ ∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--bookSection-->N2, self--publicationYear-->N10, N2--type:BookSection-->N2, N2--not:-->N2, N13--bool:true-->N13, N10--type:int-->N10, N12--prod:-->N12, N12--arg:0-->N10, N12--arg:1-->N11, N12--int:gt-->N13, N11--int:0-->N11]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:EditedBook-->self, self--@-->N16, self--conferenceEdition-->N0, self--bookSection-->N2, self--year-->N5, self--conferenceEdition-->N14, self--bookSection-->N165, self--publicationYear-->N10, N16--forall:-->N16, N17--exists:-->N17, N17--in-->N16, N18--forall:-->N18, N18--in-->N17, N0--type:ConferenceEdition-->N0, N0--@-->N19, N19--exists:-->N19, N19--in-->N18, N2--type:BookSection-->N2, N2--@-->N20, N20--exists:-->N20, N20--in-->N18, N5--type:int-->N5, N5--@-->N21, N6--int:0-->N6, N6--@-->N21, N7--prod:-->N7, N7--arg:0-->N5, N7--arg:1-->N6, N7--int:gt-->N8, N7--@-->N21, N8--bool:true-->N8, N8--@-->N21, N21--exists:-->N21, N21--in-->N17, N14--type:ConferenceEdition-->N14, N14--not:-->N14, N14--@-->N22, N13--bool:true-->N13, N13--@-->N22, N165--type:BookSection-->N165, N165--not:-->N165, N165--@-->N22, N10--type:int-->N10, N10--@-->N22, N12--prod:-->N12, N12--arg:0-->N10, N12--arg:1-->N11, N12--int:gt-->N13, N12--@-->N22, N11--int:0-->N11, N11--@-->N22, N22--exists:-->N22, N22--in-->N16]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
     public void ifthenelseAnd2() throws Exception {
-        assert false;
         String ocl = "context EditedBook inv ifthenelseEmpty: if self.conferenceEdition->notEmpty() and self.numPages > 0 then self.year > 0 else self.publicationYear > 0 endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0, self--numPages-->N3, self--year-->N8, N3--type:int-->N3, N4--int:0-->N4, N5--prod:-->N5, N5--arg:0-->N3, N5--arg:1-->N4, N5--int:gt-->N6, N6--bool:true-->N6, N8--type:int-->N8, N9--int:0-->N9, N10--prod:-->N10, N10--arg:0-->N8, N10--arg:1-->N9, N10--int:gt-->N11, N11--bool:true-->N11]) " +
+                "∨ ∀([], " +
+                    "∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0]) " +
+                    "∨ ∃([self--type:EditedBook-->self, self--numPages-->N3, N3--type:int-->N3, N4--int:0-->N4, N5--prod:-->N5, N5--arg:0-->N3, N5--arg:1-->N4, N5--int:gt-->N6, N6--bool:false-->N6])) " +
+                "∧ ∃([self--type:EditedBook-->self, self--publicationYear-->N13, N13--type:int-->N13, N14--int:0-->N14, N15--prod:-->N15, N15--arg:0-->N13, N15--arg:1-->N14, N15--int:gt-->N16, N16--bool:true-->N16]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:EditedBook-->self, self--@-->N22, self--conferenceEdition-->N0, self--numPages-->N3, self--year-->N8, self--conferenceEdition-->N224, self--numPages-->N226, self--publicationYear-->N02, N22--forall:-->N22, N0--type:ConferenceEdition-->N0, N0--@-->N23, N3--type:int-->N3, N3--@-->N23, N4--int:0-->N4, N4--@-->N23, N5--prod:-->N5, N5--arg:0-->N3, N5--arg:1-->N4, N5--int:gt-->N6, N5--@-->N23, N6--bool:true-->N6, N6--@-->N23, N8--type:int-->N8, N8--@-->N23, N9--int:0-->N9, N9--@-->N23, N10--prod:-->N10, N10--arg:0-->N8, N10--arg:1-->N9, N10--int:gt-->N220, N10--@-->N23, N220--bool:true-->N220, N220--@-->N23, N23--exists:-->N23, N23--in-->N22, N222--exists:-->N222, N222--in-->N22, N223--forall:-->N223, N223--in-->N222, N224--type:ConferenceEdition-->N224, N224--not:-->N224, N224--@-->N225, N225--exists:-->N225, N225--in-->N223, N226--type:int-->N226, N226--@-->N27, N227--int:0-->N227, N227--@-->N27, N21--bool:false-->N21, N21--@-->N27, N20--prod:-->N20, N20--arg:0-->N226, N20--arg:1-->N227, N20--int:gt-->N21, N20--@-->N27, N27--exists:-->N27, N27--in-->N223, N01--int:0-->N01, N01--@-->N28, N02--type:int-->N02, N02--@-->N28, N03--bool:true-->N03, N03--@-->N28, N04--prod:-->N04, N04--arg:0-->N02, N04--arg:1-->N01, N04--int:gt-->N03, N04--@-->N28, N28--exists:-->N28, N28--in-->N222]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
