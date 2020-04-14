@@ -341,7 +341,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             if (op.equals(Operator.NEQ)) {
                 // rule12
-                graphBuilder.addEdge(var, vn, String.format("%s:%s", NOT, EQ), vpn);
+                graphBuilder.addEdge(var, vn, NEQ, vpn);
             } else {
                 // rule10
                 graphBuilder.addEdge(var, vn, EQ, vpn);
