@@ -347,60 +347,102 @@ public class GraphBuilder {
     public void negate(PlainGraph graph, boolean negateNodes, boolean negateEdges) {
         if (negateNodes) {
             if (graph.edgeSet().stream().anyMatch(e -> e.label().text().equals(String.format("%s:", PROD)))) {
-                // we are talking about negating a comparison if there is a prod rule:
-                // therefore: replace all TRUE boolean for FALSE and vice versa.
-                List<? extends PlainEdge> bools = graph.edgeSet().stream().filter(e ->
-                        e.label().text().equals(String.format("%s:%s", BOOL, TRUE_STRING)) ||
-                                e.label().text().equals(String.format("%s:%s", BOOL, FALSE_STRING))
-                ).collect(Collectors.toList());
-
-                for (PlainEdge bool : bools) {
-                    if (bool.label().text().contains(TRUE_STRING)) {
-                        addEdge(graph, bool.source(), String.format("%s:%s", BOOL, FALSE_STRING), bool.target());
-                    } else {
-                        addEdge(graph, bool.source(), String.format("%s:%s", BOOL, TRUE_STRING), bool.target());
-                    }
-                    removeEdge(graph, bool);
-                }
+                // if there exists an label with prod: than negate the production rule
+                negateProduction(graph);
+            } else if (graph.edgeSet().stream().anyMatch(e -> e.label().text().contains(EQ))) {
+                // If there is an label with =, then negate the OclIs/OclAs rule
+                negateOclIsOps(graph);
             } else {
-                // if we are talking about negating type edges of nodes:
-                for (PlainEdge edge : graph.edgeSet()) {
-                    if (labelContainsType(edge.label().text())) {
-                        // if there exists a type edge check whether the not edge exists already;
-                        List<PlainEdge> notEdge = getNotEdge(graph, edge);
-                        if (notEdge.isEmpty()) {
-                            // add not edge
-                            addEdge(graph, edge.source(), String.format("%s:", NOT), edge.target());
-                        } else {
-                            // remove not edge
-                            removeEdge(graph, notEdge.get(0));
-                        }
-                    }
-                }
+                // negate the type edges
+                negateTypeEdges(graph);
             }
         }
         if (negateEdges) {
             // if we are talking about negating edges
-            for (PlainEdge edge : graph.edgeSet()) {
-                if (!labelContainsType(edge.label().text())) {
-                    // if there exists an edge check whether the not edge exists already
-                    if (edge.label().text().contains(EQ)) {
-                        // the edges = and != are different and should be replaced for each other
-                        // TODO verify this implementation
-                        if (edge.label().text().equals(NEQ)) {
-                            addEdge(graph, edge.source(), EQ, edge.target());
-                        } else {
-                            addEdge(graph, edge.source(), NEQ, edge.target());
-                        }
-                    } else if (edge.label().text().contains(NOT)) {
-                        // remove not edge
-                        addEdge(graph, edge.source(), String.format("%s", edge.label().text().split(":")[1]), edge.target());
-                    } else {
-                        // add not edge
-                        addEdge(graph, edge.source(), String.format("%s:%s", NOT, edge.label().text()), edge.target());
-                    }
-                    removeEdge(graph, edge);
+            negateEdges(graph);
+        }
+    }
+
+    private void negateProduction(PlainGraph graph) {
+        // we are talking about negating a comparison if there is a prod rule:
+        // therefore: replace all TRUE boolean for FALSE and vice versa.
+        List<? extends PlainEdge> bools = graph.edgeSet().stream().filter(e ->
+                e.label().text().equals(String.format("%s:%s", BOOL, TRUE_STRING)) ||
+                        e.label().text().equals(String.format("%s:%s", BOOL, FALSE_STRING))
+        ).collect(Collectors.toList());
+
+        for (PlainEdge bool : bools) {
+            if (bool.label().text().contains(TRUE_STRING)) {
+                addEdge(graph, bool.source(), String.format("%s:%s", BOOL, FALSE_STRING), bool.target());
+            } else {
+                addEdge(graph, bool.source(), String.format("%s:%s", BOOL, TRUE_STRING), bool.target());
+            }
+            removeEdge(graph, bool);
+        }
+    }
+
+    private void negateOclIsOps(PlainGraph graph) {
+        // we are talking about negating an oclIsTypeOf || oclIsKindOf || oclAsType
+
+        // first find the type edges and sort them on node number, with the biggest number first
+        List<PlainEdge> typeEdges = graph.edgeSet().stream()
+                .filter(e -> labelContainsType(e.label().text()))
+                .sorted((i1, i2) ->
+                        Integer.compare(i2.source().getNumber(), i1.source().getNumber()))
+                .collect(Collectors.toList());
+
+        // negate all except for the first, starting node
+        for (int i = 0; i < typeEdges.size() - 1; i++) {
+            PlainEdge edge = typeEdges.get(i);
+            // negate the first edge
+            List<PlainEdge> notEdge = getNotEdge(graph, edge);
+            if (notEdge.isEmpty()) {
+                // add not edge
+                addEdge(graph, edge.source(), String.format("%s:", NOT), edge.target());
+            } else {
+                // remove not edge
+                removeEdge(graph, notEdge.get(0));
+            }
+        }
+    }
+
+    private void negateTypeEdges(PlainGraph graph) {
+        // if we are talking about negating type edges of nodes:
+        for (PlainEdge edge : graph.edgeSet()) {
+            if (labelContainsType(edge.label().text())) {
+                // if there exists a type edge check whether the not edge exists already;
+                List<PlainEdge> notEdge = getNotEdge(graph, edge);
+                if (notEdge.isEmpty()) {
+                    // add not edge
+                    addEdge(graph, edge.source(), String.format("%s:", NOT), edge.target());
+                } else {
+                    // remove not edge
+                    removeEdge(graph, notEdge.get(0));
                 }
+            }
+        }
+    }
+
+    private void negateEdges(PlainGraph graph) {
+        for (PlainEdge edge : graph.edgeSet()) {
+            if (!labelContainsType(edge.label().text())) {
+                // if there exists an edge check whether the not edge exists already
+                if (edge.label().text().contains(EQ)) {
+                    // the edges = and != are different and should be replaced for each other
+                    // TODO verify this implementation
+                    if (edge.label().text().equals(NEQ)) {
+                        addEdge(graph, edge.source(), EQ, edge.target());
+                    } else {
+                        addEdge(graph, edge.source(), NEQ, edge.target());
+                    }
+                } else if (edge.label().text().contains(NOT)) {
+                    // remove not edge
+                    addEdge(graph, edge.source(), String.format("%s", edge.label().text().split(":")[1]), edge.target());
+                } else {
+                    // add not edge
+                    addEdge(graph, edge.source(), String.format("%s:%s", NOT, edge.label().text()), edge.target());
+                }
+                removeEdge(graph, edge);
             }
         }
     }
@@ -427,15 +469,15 @@ public class GraphBuilder {
      * @return      The resulting graph
      */
     public PlainGraph laxToGraph(LaxCondition c) {
-        validate(c);
+        laxToGROOVE(c);
         return laxToGraph(c.getGraph(), c, 0, null);
     }
 
-    private void validate(LaxCondition c) {
+    private void laxToGROOVE(LaxCondition c) {
         validateNodeNames(c, new HashSet<>());
         validateQuantification(c, c.getQuantifier());
 
-        LOGGER.info("After validation:" + conToString(c));
+        LOGGER.info("After GROOVE translation:" + conToString(c));
     }
 
     /**

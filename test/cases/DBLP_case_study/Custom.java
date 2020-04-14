@@ -387,10 +387,10 @@ public class Custom extends DBLPCaseStudy {
 
         String expected = "∀([self--type:Person-->self], " +
                 "∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:#Book-->N2, self--type:Person-->self, self--publication-->N0, self--numPublications-->N4, self--publication-->N9, N4--type:int-->N4, N5--type:Book-->N5, N5--numPages-->N6, N6--type:int-->N6, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N8--bool:true-->N8, N9--type:Publication-->N9, N9--=-->N5]) " +
-                "∨ ∃([N0--type:Publication-->N0, N0--=-->N2, N0--not:-->N0, N2--type:#Book-->N2, N2--not:-->N2, self--type:Person-->self, self--publication-->N0]))";
+                "∨ ∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:#Book-->N2, N2--not:-->N2, self--type:Person-->self, self--publication-->N0]))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:Person-->self, self--@-->N13, self--publication-->N0, self--numPublications-->N4, self--publication-->N9, self--publication-->N11, N13--forall:-->N13, N0--type:Publication-->N0, N0--=-->N2, N0--@-->N14, N2--type:#Book-->N2, N2--@-->N14, N4--type:int-->N4, N4--@-->N14, N5--type:Book-->N5, N5--numPages-->N6, N5--@-->N14, N6--type:int-->N6, N6--@-->N14, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N7--@-->N14, N8--bool:true-->N8, N8--@-->N14, N9--type:Publication-->N9, N9--=-->N5, N9--@-->N14, N14--exists:-->N14, N14--in-->N13, N12--type:#Book-->N12, N12--not:-->N12, N12--@-->N133, N11--type:Publication-->N11, N11--=-->N12, N11--not:-->N11, N11--@-->N133, N133--exists:-->N133, N133--in-->N13]";
+        String grooveExpected = "[self--type:Person-->self, self--@-->N13, self--publication-->N0, self--numPublications-->N4, self--publication-->N9, self--publication-->N11, N13--forall:-->N13, N0--type:Publication-->N0, N0--=-->N2, N0--@-->N14, N2--type:#Book-->N2, N2--@-->N14, N4--type:int-->N4, N4--@-->N14, N5--type:Book-->N5, N5--numPages-->N6, N5--@-->N14, N6--type:int-->N6, N6--@-->N14, N7--prod:-->N7, N7--arg:0-->N4, N7--arg:1-->N6, N7--int:eq-->N8, N7--@-->N14, N8--bool:true-->N8, N8--@-->N14, N9--type:Publication-->N9, N9--=-->N5, N9--@-->N14, N14--exists:-->N14, N14--in-->N13, N12--type:#Book-->N12, N12--not:-->N12, N12--@-->N133, N11--type:Publication-->N11, N11--=-->N12, N11--@-->N133, N133--exists:-->N133, N133--in-->N13]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 

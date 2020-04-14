@@ -46,8 +46,6 @@ public class DBLPCaseStudy {
 
     @Test
     public void theSamePublisher() throws Exception {
-        // negation of self.oclIsTypeOf() creates a negated forAll
-        assert false;
         String ocl ="context Book inv theSamePublisher: " +
                             "if self.oclIsTypeOf(BookSeriesIssue) " +
                                 "then self.publisher = self.oclAsType(BookSeriesIssue).bookSeries.publisher " +
@@ -55,6 +53,15 @@ public class DBLPCaseStudy {
                             "endif";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Book-->self], " +
+                "∃([self--type:Book-->self, self--=-->N1, self--publisher-->N3, self--=-->N8, N1--type:#BookSeriesIssue-->N1, N3--type:string-->N3, N4--type:BookSeries-->N4, N4--publisher-->N5, N5--type:string-->N5, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--string:eq-->N7, N7--bool:true-->N7, N8--type:BookSeriesIssue-->N8, N8--bookSeries-->N4]) " +
+                "∨ ∃([self--type:Book-->self, self--=-->N1, N1--type:#BookSeriesIssue-->N1, N1--not:-->N1]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Book-->self, self--@-->N11, self--=-->N1, self--publisher-->N3, self--=-->N8, self--=-->N10, N11--forall:-->N11, N1--type:#BookSeriesIssue-->N1, N1--@-->N12, N3--type:string-->N3, N3--@-->N12, N4--type:BookSeries-->N4, N4--publisher-->N5, N4--@-->N12, N5--type:string-->N5, N5--@-->N12, N6--prod:-->N6, N6--arg:0-->N3, N6--arg:1-->N5, N6--string:eq-->N7, N6--@-->N12, N7--bool:true-->N7, N7--@-->N12, N8--type:BookSeriesIssue-->N8, N8--bookSeries-->N4, N8--@-->N12, N12--exists:-->N12, N12--in-->N11, N10--type:#BookSeriesIssue-->N10, N10--not:-->N10, N10--@-->N13, N13--exists:-->N13, N13--in-->N11]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
