@@ -980,6 +980,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 return new AndCondition(union, negate(intersect));
             } else if (OCL.SELECT.equals(operation)) {
                 return applySelect(node, expr1, (APropertyCall) propertyCall, graph);
+            } else if (OCL.REJECT.equals(operation)) {
+                return applyReject(node, expr1, (APropertyCall) propertyCall, graph);
             }
         } else if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
@@ -1022,6 +1024,21 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         // expr2 is already translated
         Condition expr2 = (Condition) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
         expr2 = graphBuilder.cloneAndRenameCondition(expr2);
+
+        // rename v to vp in expr2
+        String vp = graphBuilder.getVarNameOfNoden0(graph);
+        String v = ((AConcreteDeclarator) ((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getDeclarator()).getActualParameterList().toString().trim();
+        graphBuilder.renameVar(expr2, v, vp);
+
+        return new AndCondition(trs1, expr2);
+    }
+
+    private Condition applyReject(APostfixExpression node, String expr1, APropertyCall propertyCall, PlainGraph graph) {
+        Condition trs1 = tr_S(node, expr1, graph);
+
+        // expr2 is already translated
+        Condition expr2 = (Condition) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+        expr2 = negate(graphBuilder.cloneAndRenameCondition(expr2));
 
         // rename v to vp in expr2
         String vp = graphBuilder.getVarNameOfNoden0(graph);
