@@ -33,9 +33,11 @@ public class OCL {
     public final static String SYMMETRICDIFFERENCE  = "symmetricDifference";
     public final static String SELECT               = "select";
     public final static String REJECT               = "reject";
+    public final static String SELECTBYKIND         = "selectByKind";
+    public final static String SELECTBYTYPE         = "selectByType";
     public final static String UNION                = "union";
     public final static Set<String> SET_OPERATIONS = new HashSet<>(Arrays.asList(
-            ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, SELECT, REJECT, UNION,
+            ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, SELECT, REJECT, SELECTBYKIND, SELECTBYTYPE, UNION,
             MIN, MAX
     ));
 }

@@ -979,9 +979,17 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 Condition intersect = applyIntersection(node, expr1, expr2, graph);
                 return new AndCondition(union, negate(intersect));
             } else if (OCL.SELECT.equals(operation)) {
+                // rule51
                 return applySelect(node, expr1, (APropertyCall) propertyCall, graph);
             } else if (OCL.REJECT.equals(operation)) {
+                // rule52
                 return applyReject(node, expr1, (APropertyCall) propertyCall, graph);
+            } else if (OCL.SELECTBYKIND.equals(operation)) {
+                // rule53
+                return applySelectType(node, expr1, expr2, graph, false);
+            } else if (OCL.SELECTBYTYPE.equals(operation)) {
+                // rule54
+                return applySelectType(node, expr1, expr2, graph, true);
             }
         } else if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
@@ -1046,6 +1054,25 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         graphBuilder.renameVar(expr2, v, vp);
 
         return new AndCondition(trs1, expr2);
+    }
+
+    private Condition applySelectType(APostfixExpression node, String expr1, String expr2, PlainGraph graph, boolean sharpType) {
+        PlainGraph type = graphBuilder.cloneGraph(graph);
+        String v = graphBuilder.getVarNameOfNoden0(type);
+        String typeCheck;
+        if (sharpType){
+            // make sure that v OclIsTypeOf T
+            typeCheck = graphBuilder.addNode(type, String.format("%s%s", SHARP_TYPE, expr2));
+        } else {
+            // make sure that v OclIsKindOf T
+            typeCheck = graphBuilder.addNode(type, String.format("%s", expr2));
+        }
+        graphBuilder.addEdge(type, v, EQ, typeCheck);
+        LaxCondition typeCon = new LaxCondition(Quantifier.EXISTS, type);
+
+        Condition trs = tr_S(node, expr1, graph);
+
+        return new AndCondition(typeCon, trs);
     }
 
     public Map<LaxCondition, GraphBuilder> getResults() {
