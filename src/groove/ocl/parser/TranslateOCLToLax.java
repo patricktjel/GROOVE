@@ -160,7 +160,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             Object expr2 = getOut(node.getEquation());
             Operator op = (Operator) getOut(((AEquation) node.getEquation()).getEquationOperator());
 
-            resetOut(node, applyComparison(node, expr1, op, expr2));
+            resetOut(node, applyComparison((ACompareableExpression) node.getCompareableExpression(), expr1, op, expr2));
         } else {
             defaultOut(node);
         }
@@ -180,20 +180,20 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
     }
 
-    private Condition applyComparison(Node node, String expr1, Operator op, Object expr2) {
+    private Condition applyComparison(ACompareableExpression node, String expr1, Operator op, Object expr2) {
         if (expr1.contains(OCL.SIZE)){
             // it's one of the size rules
-            return applySize(node, expr1, (IntConstant) expr2, op);
+            return applySize(node, (IntConstant) expr2, op);
         } else if (expr2 instanceof Constant) {
             // so its rule15
             return applyRule15(node, expr1, op, (Constant) expr2);
         } else if (OCL.NULL.equals(expr2)) {
             if (op.equals(Operator.EQ)){
                 // rule13 (= null is equal to isEmpty)
-                return applyIsEmpty(node, expr1);
+                return applyIsEmpty(getPostfixExpression(node), expr1);
             } else if (op.equals(Operator.NEQ)){
                 // rule14 (<> null is equal to notEmpty)
-                return applyNotEmpty(node, expr1);
+                return applyNotEmpty(getPostfixExpression(node), expr1);
             } else {
                 assert false; //shouldn't happen
                 return null;
@@ -207,26 +207,26 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
     }
 
-    private Condition applySize(Node node, String expr1, IntConstant expr2, Operator op) {
+    private Condition applySize(ACompareableExpression node, IntConstant expr2, Operator op) {
         int n = expr2.getConstant();
         if (op.equals(Operator.GTEQ)){
             // rule26
-            return applySize(node, expr1, n);
+            return applySize(node, n);
         } else if (op.equals(Operator.GT)){
             // rule27
-            return applySize(node, expr1, n+1);
+            return applySize(node, n+1);
         } else if (op.equals(Operator.EQ)){
             // rule28
-            return new AndCondition(applySize(node, expr1, n), negate(applySize(node, expr1, n+1)));
+            return new AndCondition(applySize(node, n), negate(applySize(node, n+1)));
         } else if (op.equals(Operator.LTEQ)){
             // rule29
-            return negate(applySize(node, expr1, n+1));
+            return negate(applySize(node, n+1));
         } else if (op.equals(Operator.LT)){
             // rule30
-            return negate(applySize(node, expr1, n));
+            return negate(applySize(node, n));
         } else if (op.equals(Operator.NEQ)){
             // rule31
-            return negate(new AndCondition(applySize(node, expr1, n), negate(applySize(node, expr1, n+1))));
+            return negate(new AndCondition(applySize(node, n), negate(applySize(node, n+1))));
         } else {
             assert false; //shouldn't happen
             return null;
@@ -234,11 +234,33 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     /**
+     * Given ACompareableExpression, return its APostfixExpression
+     * TODO: this should be fixed in an initial parse stroke
+     */
+    private APostfixExpression getPostfixExpression(ACompareableExpression node) {
+        return ((APostfixExpression) ((AUnaryExpression) ((AMultiplicativeExpression) ((AAdditiveExpression) node
+                .getAdditiveExpression())
+                .getMultiplicativeExpression())
+                .getUnaryExpression())
+                .getPostfixExpression());
+    }
+
+    /**
      * Given the expr1, and constant n
      * Apply transformation rule26
      */
-    private LaxCondition applySize(Node node, String expr1, int n) {
-        expr1 = expr1.split(OCL.ARROW)[0];
+    private LaxCondition applySize(ACompareableExpression node, int n) {
+        APostfixExpression propertyInvocation = getPostfixExpression(node);
+
+        // set expr1, this removes the ->size() part
+        String expr1 = propertyInvocation.getPrimaryExpression().toString();
+        for (PPropertyInvocation invocation : propertyInvocation.getPropertyInvocation()) {
+            String inv = invocation.toString();
+            if (!inv.contains(OCL.SIZE)) {
+                expr1 = expr1.concat(invocation.toString());
+            }
+        }
+        expr1 = expr1.replaceAll(" ", "");
         TypeNode t = determineType(node, expr1);
 
         // Create all nodes in vars
@@ -254,7 +276,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             varNames.add(varName);
 
             // connect it
-            Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(var));
+            Condition trs = tr_S(propertyInvocation, expr1, graphBuilder.cloneGraph(var));
             con = new AndCondition(con, trs);
 
             // merge the vars
@@ -440,7 +462,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return (String) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
     }
 
-    private LaxCondition applyIncludes(Node node, String expr1, String expr2) {
+    private LaxCondition applyIncludes(APostfixExpression node, String expr1, String expr2) {
         PlainGraph var = graphBuilder.createVar(determineType(node, expr1).text());
 
         Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var));
@@ -450,7 +472,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.FORALL, var, condition);
     }
 
-    private LaxCondition applyExcludes(Node node, String expr1, String expr2) {
+    private LaxCondition applyExcludes(APostfixExpression node, String expr1, String expr2) {
         PlainGraph var = graphBuilder.createVar(determineType(node, expr1).text());
 
         Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var));
@@ -460,14 +482,14 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.FORALL, var, condition);
     }
 
-    private LaxCondition applyNotEmpty(Node node, String expr) {
+    private LaxCondition applyNotEmpty(APostfixExpression node, String expr) {
         PlainGraph var = graphBuilder.createVar(determineType(node, expr).text());
 
         Condition trs = tr_S(node, expr, graphBuilder.cloneGraph(var));
         return new LaxCondition(Quantifier.EXISTS, var, trs);
     }
 
-    private LaxCondition applyIsEmpty(Node node, String expr) {
+    private LaxCondition applyIsEmpty(APostfixExpression node, String expr) {
         PlainGraph var = graphBuilder.createGraph();
         String varn = graphBuilder.addNode(var, determineType(node, expr).text());
 
@@ -881,7 +903,6 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
         // split of attr
         String[] split = expr.split("\\.");
-        String attr = split[split.length-1];
         expr = String.join(".", Arrays.copyOfRange(split, 0, split.length - 1));
 
         // var1
@@ -930,33 +951,35 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, graph, trn);
     }
 
-    private Condition tr_S(Node node, String expr, PlainGraph graph) {
+    private Condition tr_S(APostfixExpression node, String expr, PlainGraph graph) {
         if (expr.contains(OCL.ARROW)) {
-            List<String> split = new ArrayList<>(Arrays.asList(expr.split(OCL.ARROW)));
+            LinkedList<PPropertyInvocation> propertyInvocation = node.getPropertyInvocation();
+            PPropertyCall propertyCall = ((ACollectionPropertyInvocation) propertyInvocation.get(1)).getPropertyCall();
 
-            // determine the operation and expr2
-            String[] operationCall = split.remove(split.size() - 1).split("([()])+");
-            String operation =  operationCall[0];
-            String expr2 = operationCall[1];
-
-            // remove the selected operation from expr
-            expr = StringUtils.join(split, OCL.ARROW);
+            String expr1 = (node.getPrimaryExpression().toString() + propertyInvocation.get(0).toString()).replace(" ", "");
+            String expr2 = ((APropertyCallParameters) ((APropertyCall) propertyCall)
+                    .getPropertyCallParameters())
+                    .getActualParameterList()
+                    .toString().replaceAll(" ", "");
+            String operation = ((APropertyCall) propertyCall).getPathName().toString().trim();
 
             // determine which translation rule to apply
             if (OCL.UNION.equals(operation) || OCL.INCLUDING.equals(operation)) {
                 // rule45 || rule49
-                return applyUnion(node, expr, expr2, graph);
+                return applyUnion(node, expr1, expr2, graph);
             } else if (OCL.INTERSECTION.equals(operation) || OCL.EXCLUDING.equals(operation)) {
                 // rule46 || rule50
-                return applyIntersection(node, expr, expr2, graph);
+                return applyIntersection(node, expr1, expr2, graph);
             } else if (OCL.MINUS.equals(operation)) {
                 // rule47
-                return applyMinus(node, expr, expr2, graph);
+                return applyMinus(node, expr1, expr2, graph);
             } else if (OCL.SYMMETRICDIFFERENCE.equals(operation)) {
                 // rule48
-                Condition union = applyUnion(node, expr, expr2, graph);
-                Condition intersect = applyIntersection(node, expr, expr2, graph);
+                Condition union = applyUnion(node, expr1, expr2, graph);
+                Condition intersect = applyIntersection(node, expr1, expr2, graph);
                 return new AndCondition(union, negate(intersect));
+            } else if (OCL.SELECT.equals(operation)) {
+                return applySelect(node, expr1, (APropertyCall) propertyCall, graph);
             }
         } else if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
@@ -975,22 +998,37 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return null;
     }
 
-    private Condition applyUnion(Node node, String expr1, String expr2, PlainGraph graph) {
+    private Condition applyUnion(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
         Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
         Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
         return new OrCondition(trs1, trs2);
     }
 
-    private Condition applyIntersection(Node node, String expr1, String expr2, PlainGraph graph) {
+    private Condition applyIntersection(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
         Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
         Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
         return new AndCondition(trs1, trs2);
     }
 
-    private Condition applyMinus(Node node, String expr1, String expr2, PlainGraph graph) {
+    private Condition applyMinus(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
         Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
         Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
         return new AndCondition(trs1, negate(trs2));
+    }
+
+    private Condition applySelect(APostfixExpression node, String expr1, APropertyCall propertyCall, PlainGraph graph) {
+        Condition trs1 = tr_S(node, expr1, graph);
+
+        // expr2 is already translated
+        Condition expr2 = (Condition) getOut(((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getActualParameterList());
+        expr2 = graphBuilder.cloneAndRenameCondition(expr2);
+
+        // rename v to vp in expr2
+        String vp = graphBuilder.getVarNameOfNoden0(graph);
+        String v = ((AConcreteDeclarator) ((APropertyCallParameters) propertyCall.getPropertyCallParameters()).getDeclarator()).getActualParameterList().toString().trim();
+        graphBuilder.renameVar(expr2, v, vp);
+
+        return new AndCondition(trs1, expr2);
     }
 
     public Map<LaxCondition, GraphBuilder> getResults() {

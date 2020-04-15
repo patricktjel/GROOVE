@@ -264,6 +264,14 @@ public class GraphBuilder {
      * Given a Condition, create a clone
      */
     public Condition cloneCondition(Condition con) {
+        return cloneCondition(con, false);
+    }
+
+    public Condition cloneAndRenameCondition(Condition con) {
+        return cloneCondition(con, true);
+    }
+
+    private Condition cloneCondition(Condition con, boolean renameVars) {
         if (con instanceof OperatorCondition) {
             // clone both conditions
             Condition expr1 = cloneCondition(((OperatorCondition) con).getExpr1());
@@ -284,7 +292,14 @@ public class GraphBuilder {
                 // if the laxcondition has a condition clone the condition
                 condition = cloneCondition(((LaxCondition) con).getCondition());
             }
-            return new LaxCondition(((LaxCondition) con).getQuantifier(), graph, condition);
+            Condition clone = new LaxCondition(((LaxCondition) con).getQuantifier(), graph, condition);
+
+            if (renameVars) {
+                Set<String> vars = new HashSet<>(graphNodeMap.get(graph).keySet());
+                vars.forEach(var -> renameVar(clone, var, getUniqueNodeName()));
+            }
+
+            return clone;
         }
         assert false;   // shouldn't happen
         return null;

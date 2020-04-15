@@ -771,7 +771,7 @@ public class Custom extends DBLPCaseStudy {
     @Test
     public void symmetricDifference() throws Exception {
         assert false;
-        String ocl = "context Person inv symmtericDifference: self.editedBook->symmetricDifference(self.publication)->notEmpty()";
+        String ocl = "context Person inv symmetricDifference: self.editedBook->symmetricDifference(self.publication)->notEmpty()";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
@@ -807,5 +807,46 @@ public class Custom extends DBLPCaseStudy {
 
         String grooveExpected = "[self--type:Person-->self, self--@-->N1, N1--forall:-->N1, N0--type:EditedBook-->N0, N0--@-->N2, N2--exists:-->N2, N2--in-->N1]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
+    public void selectNotEmpty() throws Exception {
+        String ocl = "context Person inv selectNotEmpty: self.editedBook->select(e:EditedBook | e.bookSection->notEmpty())->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N2--type:EditedBook-->N2, N2--bookSection-->N4, self--type:Person-->self, self--editedBook-->N2, N4--type:BookSection-->N4]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N2, N5--forall:-->N5, N2--type:EditedBook-->N2, N2--bookSection-->N4, N2--@-->N6, N4--type:BookSection-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
+    public void selectSizeGT() throws Exception {
+        String ocl = "context Person inv selectSize: self.editedBook->select(e:EditedBook | e.year > 0)->size() > 1";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N5--type:EditedBook-->N5, N5--!=-->N12, N5--year-->N8, N12--type:EditedBook-->N12, N12--year-->N15, N16--int:0-->N16, N15--type:int-->N15, N18--bool:true-->N18, N17--prod:-->N17, N17--arg:0-->N15, N17--arg:1-->N16, N17--int:gt-->N18, self--type:Person-->self, self--editedBook-->N5, self--editedBook-->N12, N8--type:int-->N8, N9--int:0-->N9, N10--prod:-->N10, N10--arg:0-->N8, N10--arg:1-->N9, N10--int:gt-->N120, N120--bool:true-->N120]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N19, self--editedBook-->N5, self--editedBook-->N12, N19--forall:-->N19, N16--int:0-->N16, N16--@-->N20, N15--type:int-->N15, N15--@-->N20, N18--bool:true-->N18, N18--@-->N20, N17--prod:-->N17, N17--arg:0-->N15, N17--arg:1-->N16, N17--int:gt-->N18, N17--@-->N20, N5--type:EditedBook-->N5, N5--!=-->N12, N5--year-->N8, N5--@-->N20, N8--type:int-->N8, N8--@-->N20, N9--int:0-->N9, N9--@-->N20, N10--prod:-->N10, N10--arg:0-->N8, N10--arg:1-->N9, N10--int:gt-->N11, N10--@-->N20, N12--type:EditedBook-->N12, N12--year-->N15, N12--@-->N20, N11--bool:true-->N11, N11--@-->N20, N20--exists:-->N20, N20--in-->N19]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
+    public void selectIsEmpty() throws Exception {
+        // TODO; translation limitation??
+        // negating of the EB is not possible in GROOVE
+        assert false;
+        String ocl = "context Person inv selectIsEmpty: self.editedBook->select(e:EditedBook | e.bookSection->notEmpty())->isEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
     }
 }
