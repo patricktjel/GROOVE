@@ -35,6 +35,7 @@ import groove.util.Groove;
 public enum ResourceKind {
     /** Host graph resources; in other words, potential start graphs of the grammar. */
     HOST("Graph", "host graph", GraphRole.HOST, FileType.STATE, Groove.DEFAULT_START_GRAPH_NAME),
+    OCL("OCL", "ocl", GraphRole.RULE, FileType.RULE, null),
     /** Transformation rule resources. */
     RULE("Rule", "rule", GraphRole.RULE, FileType.RULE, null),
     /** Type graph resources. */

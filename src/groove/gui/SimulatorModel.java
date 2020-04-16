@@ -1319,6 +1319,7 @@ public class SimulatorModel implements Cloneable {
          * The selected rule set has changed.
          */
         RULE(ResourceKind.RULE),
+        OCL(ResourceKind.OCL),
         /**
          * The selected and/or active state has changed.
          * @see SimulatorModel#getState()

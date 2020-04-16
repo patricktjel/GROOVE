@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -256,6 +257,18 @@ public abstract class SimulatorAction extends AbstractAction implements Refresha
                 }
             };
         nameDialog.showDialog(getFrame(), title);
+        return nameDialog.getName();
+    }
+
+    final protected String askOClConstraint(String name) {
+        FreshNameDialog<String> nameDialog =
+            new FreshNameDialog<String>(new HashSet<>(), name, false) {
+                @Override
+                protected String createName(String name) {
+                    return name;
+                }
+            };
+        nameDialog.showDialog(getFrame(), "Insert the OCL constraint.");
         return nameDialog.getName();
     }
 
