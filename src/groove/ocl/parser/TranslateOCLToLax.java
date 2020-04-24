@@ -722,12 +722,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             return typeGraph.getNode(((Constant) expr).getTypeString());
         }
 
-        List<String> split = new ArrayList<>();
-        Collections.addAll(split, ((String) expr).split("(\\.|->|\\(|\\))+"));
+        List<String> split = splitExpr((String) expr);
 
         String curType = graphBuilder.getVariableType(split.get(0));
         if (curType == null){
-            if (split.size() > 1 && OCL.ALL_INSTANCES.equals(split.get(1))) {
+            if (split.size() > 1 && split.get(1).contains(OCL.ALL_INSTANCES)) {
                 // if the expression does not start with an custom variable, check if it starts with allInstances
                 curType = split.get(0);
                 split.remove(split.get(1));
@@ -752,32 +751,42 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
 
         TypeNode type = types.get(0);
-        for (Iterator<String> i = split.iterator(); i.hasNext();) {
-            String path = i.next();
+        for (String path : split) {
+            String element = null;
+            if (path.contains("(")) {
+                String[] temp = path.split("([()])+");
+                path = temp[0];
+                if (temp.length > 1) {
+                    element = temp[1];
+                }
+            }
             // check if the path is an OCL cast, because that will change the way we have to follow the edges
-            if (path.equals(OCL.OCL_AS_TYPE)){
-                String t = split.get(split.indexOf(path) + 1);
-                type = typeGraph.getNode(String.format("%s:%s", TYPE, t));
-
-                // the next is handled already, skip it
-                i.next();
-            } else if(OCL.SET_OPERATIONS.contains(path)) {
-                return type;
+            if (path.equals(OCL.OCL_AS_TYPE)) {
+                type = typeGraph.getNode(String.format("%s:%s", TYPE, element));
+            } else if (OCL.UNION.contains(path)) {
+                assert type != null;
+                TypeNode t2 = determineType(node, element);
+                if (!t2.equals(type)) {
+                    type = determineLowestType(type, t2);
+                }
+            } else //noinspection StatementWithEmptyBody
+                if (OCL.SET_OPERATIONS.contains(path)) {
+                //ignore
             } else {
                 // follow the edges to the final type node
                 List<TypeEdge> typeEdges = getTypeNodeOfAttribute(type, path);
 
-                if (typeEdges.isEmpty()){
+                if (typeEdges.isEmpty()) {
                     // the type does not have the path edge, does one of its super types contain the path edge?
                     assert type != null;
-                    for (TypeNode superType: Collections.unmodifiableSet(type.getSupertypes())) {
+                    for (TypeNode superType : Collections.unmodifiableSet(type.getSupertypes())) {
                         typeEdges = getTypeNodeOfAttribute(superType, path);
-                        if (!typeEdges.isEmpty()){
+                        if (!typeEdges.isEmpty()) {
                             break;
                         }
                     }
                     // if the edge does not exist in the type graph and neither in the supertypes, the given OCL expression is not correct
-                    if (typeEdges.isEmpty()){
+                    if (typeEdges.isEmpty()) {
                         LOGGER.severe(String.format("The outgoing edge %s does not exist for class %s", path, type));
                         throw new InvalidOCLException();
                     }
@@ -789,6 +798,58 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
 
         return type;
+    }
+
+    private ArrayList<String> splitExpr(String expr) {
+        ArrayList<String> split = new ArrayList<>();
+        String word = "";
+        int inBracket = 0;
+        for (int i = 0; i < expr.length(); i++) {
+            char c = expr.charAt(i);
+
+            if (c == '(') {
+                // 1 level deeper
+                inBracket++;
+            } else if (c == ')') {
+                // 1 level up
+                inBracket--;
+            } else if (inBracket == 0 &&
+                    (c == '.' || (c == '-' && expr.charAt(i+1) == '>'))) {
+                // if we are not nested and we see a dot(.) or arrow(->) add the word to split and continue
+                split.add(word);
+                word = "";
+
+                if (c == '-' && expr.charAt(i+1) == '>') {
+                    //skip the next character in case of the arrow
+                    i++;
+                }
+                continue;
+            }
+            // keep creating the word
+            word = word.concat(String.valueOf(c));
+        }
+        // add the final word
+        split.add(word);
+        return split;
+    }
+
+    /**
+     * Determine the lowest equal parent if there is nothing common, then Object is the only one
+     */
+    private TypeNode determineLowestType(TypeNode type1, TypeNode type2) {
+        Set<TypeNode> s1 = type1.getSupertypes();
+        Set<TypeNode> s2 = type2.getSupertypes();
+        s1.retainAll(s2);
+
+        TypeNode parent = null;
+        for (TypeNode t : s1) {
+            Set<TypeNode> st = t.getSubtypes();
+            st.retainAll(s1);
+            if (st.size() == 1) {
+                parent = t;
+            }
+        }
+        return parent;
     }
 
     private String getTypeOfDeclarator(Node node) {
@@ -981,9 +1042,33 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     private Condition applyUnion(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
-        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
-        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
-        return new OrCondition(trs1, trs2);
+        TypeNode t1 = determineType(node, expr1);
+        TypeNode t2 = determineType(node, expr2);
+        String varName = graphBuilder.getVarNameOfNoden0(graph);
+
+        // create the real type of expr1
+        PlainGraph var1 = graphBuilder.createGraph();
+        String var1Name = graphBuilder.addNode(var1, t1.text());
+
+        // create the real type of expr2
+        PlainGraph var2 = graphBuilder.createGraph();
+        String var2Name = graphBuilder.addNode(var2, t2.text());
+
+        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var1));
+        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(var2));
+
+        // real type of expr 1 should be equal to varname
+        var1 = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(graph), var1);
+        graphBuilder.addEdge(var1, varName, EQ, var1Name);
+
+        // real type of expr 2 should be equal to varname
+        var2 = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(graph), var2);
+        graphBuilder.addEdge(var2, varName, EQ, var2Name);
+
+        LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, var1, trs1);
+        LaxCondition l2 = new LaxCondition(Quantifier.EXISTS, var2, trs2);
+
+        return new OrCondition(l1, l2);
     }
 
     private Condition applyIntersection(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
