@@ -21,4 +21,9 @@ public class StringConstant implements Constant {
     public String getGrooveString() {
         return String.format("string:%s", getConstant());
     }
+
+    @Override
+    public String getTypeString() {
+        return "type:string";
+    }
 }

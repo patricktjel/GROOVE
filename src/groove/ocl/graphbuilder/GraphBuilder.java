@@ -1,6 +1,5 @@
 package groove.ocl.graphbuilder;
 
-import groove.grammar.type.TypeNode;
 import groove.graph.GraphRole;
 import groove.graph.plain.PlainEdge;
 import groove.graph.plain.PlainGraph;
@@ -9,9 +8,7 @@ import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.*;
 import groove.ocl.lax.graph.constants.BooleanConstant;
-import groove.ocl.lax.graph.constants.Constant;
 import groove.util.Log;
-import groovy.lang.Tuple2;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -28,7 +25,7 @@ public class GraphBuilder {
     private static int uniqueGraph = 0;
 
     // <Graph, <nodeName, PlainNode>>
-    private Map<PlainGraph, Map<String, PlainNode>> graphNodeMap = new HashMap<>();
+    private final Map<PlainGraph, Map<String, PlainNode>> graphNodeMap = new HashMap<>();
     private int uniqueNode = 0;
 
     /**
@@ -306,24 +303,6 @@ public class GraphBuilder {
     }
 
     /**
-     * Given a graph in which v:T is already defined add the attributed graph components
-     * (rule15)
-     */
-    public void addAttributedGraph(PlainGraph graph, String varName, Tuple2<String, TypeNode> attrType, Operator op, Constant n) {
-        String aType = attrType.getSecond().text();
-        String attr = addNode(graph, aType);
-
-        // connect attribute to the v:T
-        addEdge(graph, varName, attrType.getFirst(), attr);
-
-        // create the constant node
-        String attr2 = addNode(graph, n.getGrooveString());
-
-        // create production nodes
-        addProductionRule(graph, attr, aType, op, attr2);
-    }
-
-    /**
      * Create the production component according to GROOVE notation
      */
     public void addProductionRule(PlainGraph graph, String attr1, String attrType, Operator op, String attr2) {
@@ -336,20 +315,6 @@ public class GraphBuilder {
         addEdge(graph, prod, "arg:0", attr1);
         addEdge(graph, prod, "arg:1", attr2);
         addEdge(graph, prod, operator, bool);
-    }
-
-    /**
-     * Given an empty graph, create a Node with its Attribute,
-     * given the double tuple which contains <code><<String, TypeNode>, <String, TypeNode>>></code>
-     * And creates 2 nodes, given the 2 typeNodes as type and the association given the name in the second String
-     *
-     * @return The name of the created attribute node.
-     */
-    public String addNodeWithAttribute(PlainGraph graph, Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> exprAttrType) {
-        String varName = addNode(graph, exprAttrType.getFirst().getSecond().text());
-        String attrName = addNode(graph, exprAttrType.getSecond().getSecond().text());
-        addEdge(graph, varName, exprAttrType.getSecond().getFirst(), attrName);
-        return attrName;
     }
 
     /**

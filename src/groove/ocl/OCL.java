@@ -6,7 +6,7 @@ public class OCL {
     public final static String NULL                 = "null";
     public final static String ARROW                = "->";
 
-    public final static Set<String> PRIMARY_OPERATIONS = new HashSet<>(Arrays.asList("bool", "int", "real", "string"));
+    public final static Set<String> PRIMITIVE_TYPES = new HashSet<>(Arrays.asList("bool", "int", "real", "string"));
 
     public final static String EXCLUDES_ALL         = "excludesAll";
     public final static String EXCLUDES             = "excludes";

@@ -36,11 +36,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private final static Logger LOGGER = Log.getLogger(TranslateOCLToLax.class.getName());
 
     // The defined type graphs
-    private TypeGraph typeGraph;
+    private final TypeGraph typeGraph;
     
     private GraphBuilder graphBuilder;
 
-    private Map<LaxCondition, GraphBuilder> results;
+    private final Map<LaxCondition, GraphBuilder> results;
 
     public TranslateOCLToLax(TypeGraph typeGraph) {
         this.typeGraph = typeGraph;
@@ -156,7 +156,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     public void outARelationalExpression(ARelationalExpression node) {
         // operators are {=, <>}
         if (node.getEquation() != null) {
-            String expr1 = getOut(node.getCompareableExpression()).toString();
+            Object expr1 = getOut(node.getCompareableExpression());
             Object expr2 = getOut(node.getEquation());
             Operator op = (Operator) getOut(((AEquation) node.getEquation()).getEquationOperator());
 
@@ -170,7 +170,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     public void outACompareableExpression(ACompareableExpression node) {
         // operators are {<, <=, =>, >}
         if (node.getComparison() != null){
-            String expr1 = getOut(node.getAdditiveExpression()).toString();
+            Object expr1 = getOut(node.getAdditiveExpression());
             Object expr2 = getOut(((AComparison) node.getComparison()).getAdditiveExpression());
             Operator op = (Operator) getOut(((AComparison) node.getComparison()).getCompareOperator());
 
@@ -180,52 +180,46 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
     }
 
-    private Condition applyComparison(ACompareableExpression node, String expr1, Operator op, Object expr2) {
-        if (expr1.contains(OCL.SIZE)){
+    private Condition applyComparison(ACompareableExpression node, Object expr1, Operator op, Object expr2) {
+        if (expr1 instanceof String && ((String) expr1).contains(OCL.SIZE)){
             // it's one of the size rules
             return applySize(node, (IntConstant) expr2, op);
-        } else if (expr2 instanceof Constant) {
-            // so its rule15
-            return applyRule15(node, expr1, op, (Constant) expr2);
-        } else if (OCL.NULL.equals(expr2)) {
+        } else if (expr1 instanceof String && OCL.NULL.equals(expr2)) {
             if (op.equals(Operator.EQ)){
-                // rule13 (= null is equal to isEmpty)
-                return applyIsEmpty(getPostfixExpression(node), expr1);
+                // rule10 (= null is equal to isEmpty)
+                return applyIsEmpty(getPostfixExpression(node), (String) expr1);
             } else if (op.equals(Operator.NEQ)){
-                // rule14 (<> null is equal to notEmpty)
-                return applyNotEmpty(getPostfixExpression(node), expr1);
+                // rule11 (<> null is equal to notEmpty)
+                return applyNotEmpty(getPostfixExpression(node), (String) expr1);
             } else {
                 assert false; //shouldn't happen
                 return null;
             }
-        } else if (OCL.PRIMARY_OPERATIONS.contains(determineType(node, expr1).text())) {
-            // its rule16
-            return applyRule16(node, expr1, expr2.toString(), op);
         } else {
-            // rule10, rule11 or rule12
-            return applyEquals(node, expr1, expr2.toString(), op);
+            // rule12
+            return applyExprOpExpr(node, expr1, op, expr2);
         }
     }
 
     private Condition applySize(ACompareableExpression node, IntConstant expr2, Operator op) {
         int n = expr2.getConstant();
         if (op.equals(Operator.GTEQ)){
-            // rule26
+            // rule22
             return applySize(node, n);
         } else if (op.equals(Operator.GT)){
-            // rule27
+            // rule23
             return applySize(node, n+1);
         } else if (op.equals(Operator.EQ)){
-            // rule28
+            // rule24
             return new AndCondition(applySize(node, n), negate(applySize(node, n+1)));
         } else if (op.equals(Operator.LTEQ)){
-            // rule29
+            // rule25
             return negate(applySize(node, n+1));
         } else if (op.equals(Operator.LT)){
-            // rule30
+            // rule26
             return negate(applySize(node, n));
         } else if (op.equals(Operator.NEQ)){
-            // rule31
+            // rule27
             return negate(new AndCondition(applySize(node, n), negate(applySize(node, n+1))));
         } else {
             assert false; //shouldn't happen
@@ -247,7 +241,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     /**
      * Given the expr1, and constant n
-     * Apply transformation rule26
+     * Apply transformation rule22
      */
     private LaxCondition applySize(ACompareableExpression node, int n) {
         APostfixExpression propertyInvocation = getPostfixExpression(node);
@@ -294,86 +288,38 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, vars, new AndCondition(neqCon, con));
     }
 
-    /**
-     * Given the expr1, operator and constant
-     * Apply transformation rule15
-     */
-    private LaxCondition applyRule15(Node node, String expr1, Operator op, Constant expr2) {
-        Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(node, expr1);
-        if (!(expr1.contains(OCL.MIN) || expr1.contains(OCL.MAX))) {
-            expr1 = expr1AttrType.getFirst().getFirst();
-        }
+    private LaxCondition applyExprOpExpr(Node node, Object expr1, Operator op, Object expr2) {
+        // TODO support for set equallity (forall rule)
+        TypeNode t1 = determineType(node, expr1);
+        TypeNode t2 = determineType(node, expr2);
 
-        PlainGraph attrGraph = graphBuilder.createGraph();
-        String varName = graphBuilder.addNode(attrGraph, expr1AttrType.getFirst().getSecond().text());
-        graphBuilder.addAttributedGraph(attrGraph, varName, expr1AttrType.getSecond(), op, expr2);
+        // t1 and t2 should be the same type
+        assert t1.equals(t2);
 
-        Condition trn = tr_N(node, expr1, graphBuilder.cloneGraph(attrGraph));
+        PlainGraph varX = graphBuilder.createGraph();
+        String x = graphBuilder.addNode(varX, t1.text());
+        Condition trv1 = tr_N(node, expr1, graphBuilder.cloneGraph(varX));
 
-        // given the values create the right LaxCondition
-        return new LaxCondition(Quantifier.EXISTS, attrGraph, trn);
-    }
+        PlainGraph varY = graphBuilder.createGraph();
+        String y = graphBuilder.addNode(varY, t2.text());
+        Condition trv2 = tr_N(node, expr2, graphBuilder.cloneGraph(varY));
 
-    /**
-     * Given the expr1, operator and expr2
-     * Apply transformation rule16
-     */
-    private Condition applyRule16(Node node, String expr1, String expr2, Operator op) {
-        Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr1AttrType = determineTypeAndAttribute(node, expr1);
-        expr1 = expr1AttrType.getFirst().getFirst();
-        Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> expr2AttrType = determineTypeAndAttribute(node, expr2);
-        expr2 = expr2AttrType.getFirst().getFirst();
-
-        PlainGraph var = graphBuilder.createGraph();
-        String attr1Name = graphBuilder.addNodeWithAttribute(var, expr1AttrType);
-
-        PlainGraph attrGraph1 = graphBuilder.cloneGraph(var);
-
-        PlainGraph varp = graphBuilder.createGraph();
-        String attr2Name = graphBuilder.addNodeWithAttribute(varp, expr2AttrType);
-
-        // instead of using a variable x, just connect with attr1Name
-        graphBuilder.addNode(varp, attr1Name, expr1AttrType.getSecond().getSecond().text());
-        graphBuilder.addProductionRule(varp, attr1Name, expr2AttrType.getSecond().getSecond().text(), op, attr2Name);
-
-        PlainGraph attrGraph2 = graphBuilder.cloneGraph(varp);
-
-        Condition trn1 = tr_N(node, expr1, attrGraph1);
-        Condition trn2 = tr_N(node, expr2, attrGraph2);
-        AndCondition andCon = new AndCondition(trn1, trn2);
-
-        return new LaxCondition(Quantifier.EXISTS, graphBuilder.mergeGraphs(var, varp), andCon);
-    }
-
-    private Condition applyEquals(Node node, String expr1, String expr2, Operator op) {
-        String t1 = determineType(node, expr1).text();
-        String t2 = determineType(node, expr2).text();
-        if (t1.equals(t2)) {
-            PlainGraph var = graphBuilder.createGraph();
-            String vn = graphBuilder.addNode(var, t1);
-
-            PlainGraph varp = graphBuilder.createGraph();
-            String vpn = graphBuilder.addNode(varp, t2);
-
-            Condition trn1 = tr_N(node, expr1, graphBuilder.cloneGraph(var));
-            Condition trn2 = tr_N(node, expr2, graphBuilder.cloneGraph(varp));
-            AndCondition andCon = new AndCondition(trn1, trn2);
-
-            var = graphBuilder.mergeGraphs(var, varp);
-
-            if (op.equals(Operator.NEQ)) {
-                // rule12
-                graphBuilder.addEdge(var, vn, NEQ, vpn);
-            } else {
-                // rule10
-                graphBuilder.addEdge(var, vn, EQ, vpn);
-            }
-            return new LaxCondition(Quantifier.EXISTS, var, andCon);
-            // TODO: implement rule 11 T is Set(T)
+        // merge the graphs and create the operator
+        PlainGraph vars = graphBuilder.mergeGraphs(varX, varY);
+        if (OCL.PRIMITIVE_TYPES.contains(t1.text())) {
+            // if its a primitive type, then you need a production rule
+            graphBuilder.addProductionRule(vars, x, t1.text(), op, y);
         } else {
-            assert false; //shouln't happen
-            return null;
+            // else it is an = or !=  edge between them
+            if (op.equals(Operator.EQ)) {
+                graphBuilder.addEdge(vars, x, EQ, y);
+            } else {
+                graphBuilder.addEdge(vars, x, NEQ, y);
+            }
         }
+
+        AndCondition trv = new AndCondition(trv1, trv2);
+        return new LaxCondition(Quantifier.EXISTS, vars, trv);
     }
 
     @Override
@@ -416,34 +362,35 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
             // apply the correct translation rule
             if (OCL.INCLUDES_ALL.equals(operation) || OCL.INCLUDES.equals(operation)) {
-                // rule20 || rule22
+                // rule16 || rule18
                 resetOut(node, applyIncludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.EXCLUDES_ALL.equals(operation) || OCL.EXCLUDES.equals(operation)) {
-                //rule21 || rule23
+                //rule17 || rule19
                 resetOut(node, applyExcludes(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.NOT_EMPTY.equals(operation)) {
-                // rule24
+                // rule20
                 resetOut(node, applyNotEmpty(node, expr1));
             } else if (OCL.IS_EMPTY.equals(operation)) {
-                // rule25
+                // rule21
                 resetOut(node, applyIsEmpty(node, expr1));
             } else if (OCL.OCL_IS_KIND_OF.equals(operation)) {
-                //rule34
+                //rule30
                 resetOut(node, applyOclIsKindOf(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.OCL_IS_TYPE_OF.equals(operation)) {
-                // rule35
+                // rule31
                 resetOut(node, applyOclIsTypeOf(node, expr1, getExpr2FromPropertyCall(propertyCall)));
             } else if (OCL.EXISTS.equals(operation)) {
-                // rule18
+                // rule13
                 resetOut(node, applyExists(node, expr1, propertyCall));
             } else if (OCL.FORALL.equals(operation)) {
-                // rule19 || rule20
+                // rule14 || rule15
                 resetOut(node, applyForall(node, expr1, propertyCall));
             } else if (OCL.IS_UNIQUE.equals(operation)) {
-                // rule33
+                // rule29
                 resetOut(node, applyIsUnique(node, expr1, (String) getOut(node)));
             } else if (OCL.SIZE.equals(operation) || OCL.MIN.equals(operation) || OCL.MAX.equals(operation)) {
-                // operation size has to be compared with a constant, the constant is not available at this point in the tree
+                // operation SIZE has to be compared with a constant, the constant is not available at this point in the tree
+                // the same for MIN and MAX
                 resetOut(node);
             } else {
                 assert false; //This operation is not implemented
@@ -556,8 +503,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         PlainGraph vars = graphBuilder.mergeGraphs(var1, var2);
 
         // create the expr1 <> expr2 -> expr1.attr <> expr2.attr
-        Condition neq1 = applyEquals(node, var1Name, var2Name, Operator.NEQ);
-        Condition neq2 = applyRule16(node, String.format("%s.%s", var1Name, attr), String.format("%s.%s", var2Name, attr), Operator.NEQ);
+        Condition neq1 = applyExprOpExpr(node, var1Name, Operator.NEQ, var2Name);
+        Condition neq2 = applyExprOpExpr(node, String.format("%s.%s", var1Name, attr), Operator.NEQ, String.format("%s.%s", var2Name, attr));
         Condition tre = new ImpliesCondition(neq1, neq2);
 
         return new LaxCondition(Quantifier.FORALL, vars, new ImpliesCondition(new AndCondition(trs1, trs2), tre));
@@ -581,7 +528,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Condition trs = tr_S(node, expr1, graphBuilder.cloneGraph(vars));
         for (PNextExpr expr : actualParameterList.getNextExpr()) {
             // if there are more declared variables create the variable graph and create the path according expr1
-            // apply rule20
+            // apply rule15
             PlainGraph var2 = graphBuilder.createVar(((ANextExpr) expr).getExpression().toString().trim(), T);
             Condition trs2 = tr_S(node, expr1, graphBuilder.cloneGraph(var2));
 
@@ -770,9 +717,13 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
      * @param expr      A navigation expression String, separated by dots
      * @return          The corresponding TypeNode from the TypeGraph
      */
-    private TypeNode determineType(Node node, String expr) {
+    private TypeNode determineType(Node node, Object expr) {
+        if (expr instanceof Constant) {
+            return typeGraph.getNode(((Constant) expr).getTypeString());
+        }
+
         List<String> split = new ArrayList<>();
-        Collections.addAll(split, expr.split("(\\.|->|\\(|\\))+"));
+        Collections.addAll(split, ((String) expr).split("(\\.|->|\\(|\\))+"));
 
         String curType = graphBuilder.getVariableType(split.get(0));
         if (curType == null){
@@ -818,7 +769,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
                 if (typeEdges.isEmpty()){
                     // the type does not have the path edge, does one of its super types contain the path edge?
-                    for (TypeNode superType: type.getSupertypes()) {
+                    assert type != null;
+                    for (TypeNode superType: Collections.unmodifiableSet(type.getSupertypes())) {
                         typeEdges = getTypeNodeOfAttribute(superType, path);
                         if (!typeEdges.isEmpty()){
                             break;
@@ -862,33 +814,34 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     /**
      * The tr_N translation rules
      */
-    private Condition tr_N(Node node, String expr, PlainGraph graph) {
+    private Condition tr_N(Node node, Object exprO, PlainGraph graph) {
+        if (exprO instanceof Constant) {
+            //rule34
+            String x = graphBuilder.getVarNameOfNoden0(graph);
+            PlainGraph var = graphBuilder.createVar(x, ((Constant) exprO).getGrooveString());
+            return new LaxCondition(Quantifier.EXISTS, var);
+        }
+        String expr = (String) exprO;
         if (expr.contains(OCL.MIN)) {
-            // rule40
-            LaxCondition min = applyMinMax(node, expr, graphBuilder.cloneGraph(graph), Operator.LTEQ);
-            expr = determineTypeAndAttribute(node, expr).getFirst().getFirst();
-            Condition trn = tr_N(node, expr, graph);
-            return new AndCondition(trn, min);
-        } else if (expr.contains(OCL.MAX)) {
-            // rule41
-            LaxCondition min = applyMinMax(node, expr, graphBuilder.cloneGraph(graph), Operator.GTEQ);
-            expr = determineTypeAndAttribute(node, expr).getFirst().getFirst();
-            Condition trn = tr_N(node, expr, graph);
-            return new AndCondition(trn, min);
+            // rule37
+            return applyMinMax(node, expr, graph, Operator.LTEQ);
+        } else if (expr. contains(OCL.MAX)) {
+            // rule38
+            return applyMinMax(node, expr, graph, Operator.GTEQ);
         } else if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
             String role = split.remove(split.size() - 1);
             expr = StringUtils.join(split, ".");
 
             if (role.contains(OCL.OCL_AS_TYPE)) {
-                // rule38
+                // rule35
                 return applyOclAsType(node, expr, graph);
             } else {
-                //rule39
+                //rule36
                 return applyNavigationRole(node, expr, role, graph);
             }
         } else {
-            // rule37
+            // rule33
             String vp = graphBuilder.getVarNameOfNoden0(graph);
             graphBuilder.addNode(graph, expr, graphBuilder.getVariableType(vp));
             graphBuilder.addEdge(graph, vp, EQUIV, expr);
@@ -897,30 +850,46 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         }
     }
 
-    private LaxCondition applyMinMax(Node node, String expr, PlainGraph graph, Operator op) {
+    private LaxCondition applyMinMax(Node node, String expr, PlainGraph varX, Operator minMaxOp) {
         // determine type and name of first variable
         Tuple2<Tuple2<String, TypeNode>, Tuple2<String, TypeNode>> exprAttrType = determineTypeAndAttribute(node, expr);
+        String attrType = exprAttrType.getSecond().getSecond().text();
+        String attr = exprAttrType.getSecond().getFirst();
+        String nameX = graphBuilder.getVarNameOfNoden0(varX);
 
-        // split of attr
-        String[] split = expr.split("\\.");
-        expr = String.join(".", Arrays.copyOfRange(split, 0, split.length - 1));
+        expr = exprAttrType.getFirst().getFirst();
 
-        // var1
-        String attr1Name = graphBuilder.getVarNameOfNodeN(graph, 1);
+        // create v1:T
+        PlainGraph v1 = graphBuilder.createGraph();
+        String v1Name = graphBuilder.addNode(v1, exprAttrType.getFirst().getSecond().text());
 
-        //create var2
-        PlainGraph var2 = graphBuilder.createGraph();
-        String var2Name = graphBuilder.addNode(var2, exprAttrType.getFirst().getSecond().text());
-        String attr2Name = graphBuilder.addNode(var2, exprAttrType.getSecond().getSecond().text());
-        graphBuilder.addEdge(var2, var2Name, exprAttrType.getSecond().getFirst(), attr2Name);
-        Condition trs = tr_N(node, expr, graphBuilder.cloneGraph(var2));
+        Condition trn1 = tr_N(node, expr, graphBuilder.cloneGraph(v1));
 
-        // create the var1 <> var2 -> var1.attr op var2.attr
-        PlainGraph c = graphBuilder.mergeGraphs(graph, var2);
-        graphBuilder.addProductionRule(c, attr1Name, exprAttrType.getSecond().getSecond().text(), op, attr2Name);
-        LaxCondition tre = new LaxCondition(Quantifier.EXISTS, c);
+        // connect v1:T with attr x:T
+        v1 = graphBuilder.mergeGraphs(v1, graphBuilder.cloneGraph(varX));
+        graphBuilder.addEdge(v1, v1Name, exprAttrType.getSecond().getFirst(), nameX);
 
-        return new LaxCondition(Quantifier.FORALL, var2, new ImpliesCondition(trs, tre));
+        //create v2:T
+        PlainGraph v2 = graphBuilder.createGraph();
+        String v2Name = graphBuilder.addNode(v2, exprAttrType.getFirst().getSecond().text());
+
+        Condition trn2 = tr_N(node, expr, graphBuilder.cloneGraph(v2));
+
+        // create attr v3:T
+        PlainGraph v3 = graphBuilder.createGraph();
+        String v3Name = graphBuilder.addNode(v3, attrType);
+
+        // create the production
+        PlainGraph minMax = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(varX), graphBuilder.cloneGraph(v3));
+        graphBuilder.addProductionRule(minMax, nameX, attrType, minMaxOp, v3Name);
+
+        // connect v2:T with v3:T
+        v2 = graphBuilder.mergeGraphs(v2, v3);
+        graphBuilder.addEdge(v2, v2Name, attr, v3Name);
+
+        LaxCondition tre = new LaxCondition(Quantifier.EXISTS, minMax);
+        LaxCondition forAll = new LaxCondition(Quantifier.FORALL, v2, new ImpliesCondition(trn2, tre));
+        return new LaxCondition(Quantifier.EXISTS, v1, new AndCondition(trn1, forAll));
     }
 
     private LaxCondition applyOclAsType(Node node, String expr, PlainGraph graph) {
@@ -964,32 +933,35 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             String operation = ((APropertyCall) propertyCall).getPathName().toString().trim();
 
             // determine which translation rule to apply
-            if (OCL.UNION.equals(operation) || OCL.INCLUDING.equals(operation)) {
-                // rule45 || rule49
-                return applyUnion(node, expr1, expr2, graph);
-            } else if (OCL.INTERSECTION.equals(operation) || OCL.EXCLUDING.equals(operation)) {
-                // rule46 || rule50
-                return applyIntersection(node, expr1, expr2, graph);
-            } else if (OCL.MINUS.equals(operation)) {
-                // rule47
-                return applyMinus(node, expr1, expr2, graph);
-            } else if (OCL.SYMMETRICDIFFERENCE.equals(operation)) {
-                // rule48
-                Condition union = applyUnion(node, expr1, expr2, graph);
-                Condition intersect = applyIntersection(node, expr1, expr2, graph);
-                return new AndCondition(union, negate(intersect));
-            } else if (OCL.SELECT.equals(operation)) {
-                // rule51
-                return applySelect(node, expr1, (APropertyCall) propertyCall, graph);
-            } else if (OCL.REJECT.equals(operation)) {
-                // rule52
-                return applyReject(node, expr1, (APropertyCall) propertyCall, graph);
-            } else if (OCL.SELECTBYKIND.equals(operation)) {
-                // rule53
-                return applySelectType(node, expr1, expr2, graph, false);
-            } else if (OCL.SELECTBYTYPE.equals(operation)) {
-                // rule54
-                return applySelectType(node, expr1, expr2, graph, true);
+            switch (operation) {
+                case OCL.UNION:
+                case OCL.INCLUDING:
+                    // rule42 || rule46
+                    return applyUnion(node, expr1, expr2, graph);
+                case OCL.INTERSECTION:
+                case OCL.EXCLUDING:
+                    // rule43 || rule47
+                    return applyIntersection(node, expr1, expr2, graph);
+                case OCL.MINUS:
+                    // rule44
+                    return applyMinus(node, expr1, expr2, graph);
+                case OCL.SYMMETRICDIFFERENCE:
+                    // rule45
+                    Condition union = applyUnion(node, expr1, expr2, graph);
+                    Condition intersect = applyIntersection(node, expr1, expr2, graph);
+                    return new AndCondition(union, negate(intersect));
+                case OCL.SELECT:
+                    // rule48
+                    return applySelect(node, expr1, (APropertyCall) propertyCall, graph);
+                case OCL.REJECT:
+                    // rule49
+                    return applyReject(node, expr1, (APropertyCall) propertyCall, graph);
+                case OCL.SELECTBYKIND:
+                    // rule50
+                    return applySelectType(node, expr1, expr2, graph, false);
+                case OCL.SELECTBYTYPE:
+                    // rule51
+                    return applySelectType(node, expr1, expr2, graph, true);
             }
         } else if (expr.contains(".")) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
@@ -997,10 +969,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             expr = StringUtils.join(split, ".");
 
             if (role.contains(OCL.ALL_INSTANCES)){
-                //rule43
+                //rule40
                 return new LaxCondition(Quantifier.EXISTS, graph);
             } else {
-                //rule42
+                //rule39
                 return applyNavigationRole(node, expr, role, graph);
             }
         }

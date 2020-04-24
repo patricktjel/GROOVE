@@ -21,4 +21,9 @@ public class IntConstant implements Constant {
     public String getGrooveString() {
         return String.format("int:%s", getConstant());
     }
+
+    @Override
+    public String getTypeString() {
+        return "type:int";
+    }
 }

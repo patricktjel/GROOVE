@@ -9,7 +9,7 @@ public enum Quantifier implements Comparable<Quantifier> {
     FORALL(Util.FORALL);
 
     // Unicode hex string
-    private String symbol;
+    private final String symbol;
 
     Quantifier(char symbol) {
         this("" + symbol);

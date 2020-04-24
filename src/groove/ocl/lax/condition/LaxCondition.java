@@ -5,7 +5,7 @@ import groove.ocl.lax.Quantifier;
 
 public class LaxCondition implements Condition {
 
-    private Quantifier quantifier;
+    private final Quantifier quantifier;
     private PlainGraph graph;
     private Condition condition;
 

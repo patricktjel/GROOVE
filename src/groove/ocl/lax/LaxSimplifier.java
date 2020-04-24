@@ -15,7 +15,7 @@ import static groove.ocl.Groove.EQUIV;
  */
 public class LaxSimplifier {
 
-    private GraphBuilder graphBuilder;
+    private final GraphBuilder graphBuilder;
 
     public LaxSimplifier(GraphBuilder graphBuilder) {
         this.graphBuilder = graphBuilder;
@@ -150,11 +150,24 @@ public class LaxSimplifier {
             LaxCondition expr2L = (LaxCondition) andCon.getExpr2();
             if (expr1L.getQuantifier().equals(expr2L.getQuantifier())) {
                 PlainGraph graph = graphBuilder.mergeGraphs(expr1L.getGraph(), expr2L.getGraph());
-                return new LaxCondition(expr1L.getQuantifier(), graph);
+
+                // besides the graphs, the conditions have to be merged too
+                Condition cons = mergeConditions(expr1L.getCondition(), expr2L.getCondition());
+                return new LaxCondition(expr1L.getQuantifier(), graph, cons);
             }
         }
         // we can't simplify according to E3 so return the current AndCondition
         return andCon;
+    }
+
+    private Condition mergeConditions(Condition con1, Condition con2) {
+        if (con1 != null && con2 != null) {
+            return simplify(new AndCondition(con1, con2));
+        } else if (con1 != null) {
+            return con1;
+        } else {
+            return con2;
+        }
     }
 
     /**

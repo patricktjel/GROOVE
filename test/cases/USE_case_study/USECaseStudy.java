@@ -23,10 +23,10 @@ public class USECaseStudy {
         GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([self--type:Department-->self], " +
-                "∃([self--type:Department-->self, self--budget-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+                "∃([N0--type:int-->N0, N2--type:int-->N2, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N0, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4, self--type:Department-->self, self--budget-->N0]))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:Department-->self, self--@-->N5, self--budget-->N1, N5--forall:-->N5, N1--type:int-->N1, N1--@-->N6, N2--int:0-->N2, N2--@-->N6, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N3--@-->N6, N4--bool:true-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        String grooveExpected = "[self--type:Department-->self, self--@-->N5, self--budget-->N0, N5--forall:-->N5, N0--type:int-->N0, N0--@-->N6, N2--type:int-->N2, N2--int:0-->N2, N2--@-->N6, N3--prod:-->N3, N3--arg:0-->N0, N3--arg:1-->N2, N3--int:ge-->N4, N3--@-->N6, N4--bool:true-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
@@ -43,10 +43,10 @@ public class USECaseStudy {
         GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([self--type:Employee-->self], " +
-                "∃([self--type:Employee-->self, self--salary-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+                "∃([N0--type:int-->N0, N2--type:int-->N2, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N0, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4, self--type:Employee-->self, self--salary-->N0]))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:Employee-->self, self--@-->N5, self--salary-->N1, N5--forall:-->N5, N1--type:int-->N1, N1--@-->N6, N2--int:0-->N2, N2--@-->N6, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N3--@-->N6, N4--bool:true-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        String grooveExpected = "[self--type:Employee-->self, self--@-->N5, self--salary-->N0, N5--forall:-->N5, N0--type:int-->N0, N0--@-->N6, N2--type:int-->N2, N2--int:0-->N2, N2--@-->N6, N3--prod:-->N3, N3--arg:0-->N0, N3--arg:1-->N2, N3--int:ge-->N4, N3--@-->N6, N4--bool:true-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
@@ -63,10 +63,10 @@ public class USECaseStudy {
         GraphBuilder graphBuilder = map.get(condition);
 
         String expected = "∀([self--type:Project-->self], " +
-                "∃([self--type:Project-->self, self--budget-->N1, N1--type:int-->N1, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4]))";
+                "∃([N0--type:int-->N0, N2--type:int-->N2, N2--int:0-->N2, N3--prod:-->N3, N3--arg:0-->N0, N3--arg:1-->N2, N3--int:ge-->N4, N4--bool:true-->N4, self--type:Project-->self, self--budget-->N0]))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:Project-->self, self--@-->N5, self--budget-->N1, N5--forall:-->N5, N1--type:int-->N1, N1--@-->N6, N2--int:0-->N2, N2--@-->N6, N3--prod:-->N3, N3--arg:0-->N1, N3--arg:1-->N2, N3--int:ge-->N4, N3--@-->N6, N4--bool:true-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        String grooveExpected = "[self--type:Project-->self, self--@-->N5, self--budget-->N0, N5--forall:-->N5, N0--type:int-->N0, N0--@-->N6, N2--type:int-->N2, N2--int:0-->N2, N2--@-->N6, N3--prod:-->N3, N3--arg:0-->N0, N3--arg:1-->N2, N3--int:ge-->N4, N3--@-->N6, N4--bool:true-->N4, N4--@-->N6, N6--exists:-->N6, N6--in-->N5]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
@@ -76,11 +76,10 @@ public class USECaseStudy {
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
 
-        String expected = "∀([self--type:Project-->self], " +
-                            "∃([self--type:Project-->self, self--budget-->N1, self--department-->N2, N1--type:int-->N1, N2--type:Department-->N2, N2--budget-->N3, N3--type:int-->N3, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:le-->N5, N5--bool:true-->N5]))";
+        String expected = "∀([self--type:Project-->self], ∃([N0--type:int-->N0, N2--type:int-->N2, N5--prod:-->N5, N5--arg:0-->N0, N5--arg:1-->N2, N5--int:le-->N6, N6--bool:true-->N6, N3--type:Department-->N3, N3--budget-->N2, self--type:Project-->self, self--budget-->N0, self--department-->N3]))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:Project-->self, self--@-->N7, self--budget-->N1, self--department-->N2, N7--forall:-->N7, N1--type:int-->N1, N1--@-->N8, N2--type:Department-->N2, N2--budget-->N3, N2--@-->N8, N3--type:int-->N3, N3--@-->N8, N4--prod:-->N4, N4--arg:0-->N1, N4--arg:1-->N3, N4--int:le-->N5, N4--@-->N8, N5--bool:true-->N5, N5--@-->N8, N8--exists:-->N8, N8--in-->N7]";
+        String grooveExpected = "[self--type:Project-->self, self--@-->N7, self--budget-->N0, self--department-->N3, N7--forall:-->N7, N0--type:int-->N0, N0--@-->N8, N2--type:int-->N2, N2--@-->N8, N3--type:Department-->N3, N3--budget-->N2, N3--@-->N8, N5--prod:-->N5, N5--arg:0-->N0, N5--arg:1-->N2, N5--int:le-->N6, N5--@-->N8, N6--bool:true-->N6, N6--@-->N8, N8--exists:-->N8, N8--in-->N7]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 

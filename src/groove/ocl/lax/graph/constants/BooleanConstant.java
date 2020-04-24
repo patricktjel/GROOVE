@@ -23,4 +23,9 @@ public enum BooleanConstant implements Constant {
     public String getGrooveString() {
         return String.format("bool:%s", getConstant());
     }
+
+    @Override
+    public String getTypeString() {
+        return "type:bool";
+    }
 }
