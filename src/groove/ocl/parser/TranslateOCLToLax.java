@@ -322,6 +322,44 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, vars, trv);
     }
 
+    private Condition applyExprOpExprSet(Node node, Object expr1, Operator op, Object expr2) {
+        Condition n1 = applyOneSideSet(node, expr1, op, expr2);
+        Condition n2 = applyOneSideSet(node, expr2, op, expr1);
+        return new LaxCondition(Quantifier.EXISTS, graphBuilder.createGraph(), new AndCondition(n1, n2));
+    }
+
+    private Condition applyOneSideSet(Node node, Object expr1, Operator op, Object expr2) {
+        TypeNode t1 = determineType(node, expr1);
+        TypeNode t2 = determineType(node, expr2);
+
+        // t1 and t2 should be the same type
+        assert t1.equals(t2);
+
+        PlainGraph varX = graphBuilder.createGraph();
+        String x = graphBuilder.addNode(varX, t1.text());
+        Condition trv1 = tr_N(node, expr1, graphBuilder.cloneGraph(varX));
+
+        PlainGraph varY = graphBuilder.createGraph();
+        String y = graphBuilder.addNode(varY, t2.text());
+        Condition trv2 = tr_N(node, expr2, graphBuilder.cloneGraph(varY));
+
+        // merge the graphs and create the operator
+        PlainGraph vars = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(varX), graphBuilder.cloneGraph(varY));
+        if (OCL.PRIMITIVE_TYPES.contains(t1.text())) {
+            // if its a primitive type, then you need a production rule
+            graphBuilder.addProductionRule(vars, x, t1.text(), op, y);
+        } else {
+            // else it is an = or !=  edge between them
+            if (op.equals(Operator.EQ)) {
+                graphBuilder.addEdge(vars, x, EQ, y);
+            } else {
+                graphBuilder.addEdge(vars, x, NEQ, y);
+            }
+        }
+
+        return new LaxCondition(Quantifier.FORALL, varX, new AndCondition(new LaxCondition(Quantifier.EXISTS, vars, trv2), trv1));
+    }
+
     @Override
     public void outAPrefixedUnaryExpression(APrefixedUnaryExpression node) {
         if (node.getUnaryOperator() != null) {

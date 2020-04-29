@@ -371,10 +371,10 @@ public class GraphBuilder {
                         Integer.compare(i2.source().getNumber(), i1.source().getNumber()))
                 .collect(Collectors.toList());
 
-        // negate all except for the first, starting node
+        // negate all except for the first, starting node (which is on the last index)
         for (int i = 0; i < typeEdges.size() - 1; i++) {
             PlainEdge edge = typeEdges.get(i);
-            // negate the first edge
+            // negate the edge
             List<PlainEdge> notEdge = getNotEdge(graph, edge);
             if (notEdge.isEmpty()) {
                 // add not edge

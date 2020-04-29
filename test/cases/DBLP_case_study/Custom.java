@@ -935,4 +935,22 @@ public class Custom extends DBLPCaseStudy {
         String grooveExpected = "[self--type:Person-->self, self--@-->N3, self--publication-->N0, N3--forall:-->N3, N0--type:Publication-->N0, N0--=-->N1, N0--@-->N4, N1--type:Book-->N1, N1--@-->N4, N4--exists:-->N4, N4--in-->N3]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
+
+    @Test
+    public void setEquals() throws Exception {
+        assert false;
+        String ocl = "context EditedBook inv setEquals: self.bookSection.bookChapter = self.bookChapter";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+    }
+
+    @Test
+    public void setEquals2() throws Exception {
+        assert false;
+        String ocl = "context Person inv setEquals2: self.publication = self.editedBook";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+    }
 }

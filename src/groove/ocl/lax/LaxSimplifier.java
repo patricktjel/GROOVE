@@ -148,7 +148,10 @@ public class LaxSimplifier {
             // check if the quantifiers are the same then try to apply E3
             LaxCondition expr1L = (LaxCondition) andCon.getExpr1();
             LaxCondition expr2L = (LaxCondition) andCon.getExpr2();
-            if (expr1L.getQuantifier().equals(expr2L.getQuantifier())) {
+
+            // an AndCondition can only be merged if both conditions are existential quantified
+            if (expr1L.getQuantifier().equals(expr2L.getQuantifier())
+                    && expr1L.getQuantifier().equals(Quantifier.EXISTS)) {
                 PlainGraph graph = graphBuilder.mergeGraphs(expr1L.getGraph(), expr2L.getGraph());
 
                 // besides the graphs, the conditions have to be merged too
