@@ -39,7 +39,10 @@ public class OCL {
     public final static String UNION                = "union";
     public final static String OCL_AS_SET           = "oclAsSet";
     public final static Set<String> SET_OPERATIONS = new HashSet<>(Arrays.asList(
-            ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, SELECT, REJECT, SELECTBYKIND, SELECTBYTYPE, UNION,
+            ALL_INSTANCES, SELECT, REJECT, SELECTBYKIND, SELECTBYTYPE,
             MIN, MAX, OCL_AS_SET
+    ));
+    public final static Set<String> SET_OPERATIONS_SUPER_TYPE = new HashSet<>(Arrays.asList(
+            UNION, INTERSECTION, SYMMETRICDIFFERENCE, EXCLUDING, INCLUDING
     ));
 }

@@ -371,6 +371,15 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     }
 
     @Override
+    public void outAAdditiveExpression(AAdditiveExpression node) {
+        if (!node.getAddition().isEmpty()) {
+            resetOut(node);
+        } else {
+            defaultOut(node);
+        }
+    }
+
+    @Override
     public void outAPostfixExpression(APostfixExpression node) {
         if (getOut(node) instanceof Constant) {
             super.outAPostfixExpression(node);
@@ -656,6 +665,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return laxCon;
     }
 
+
     @Override
     public void outAEquationOperator(AEquationOperator node) {
         resetOut(node, Operator.EQ);
@@ -801,7 +811,15 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             // check if the path is an OCL cast, because that will change the way we have to follow the edges
             if (path.equals(OCL.OCL_AS_TYPE)) {
                 type = typeGraph.getNode(String.format("%s:%s", TYPE, element));
-            } else if (OCL.UNION.contains(path)) {
+            } else if (OCL.MINUS.equals(path)) {
+                // the important type is at the front side of the equation
+                assert type != null;
+                TypeNode t2 = determineType(node, ((String) expr).split(OCL.MINUS)[1]);
+                if (!t2.equals(type)) {
+                    type = determineLowestType(type, t2);
+                }
+                return type;
+            } else if (OCL.SET_OPERATIONS_SUPER_TYPE.contains(path)) {
                 assert type != null;
                 TypeNode t2 = determineType(node, element);
                 if (!t2.equals(type)) {
@@ -852,14 +870,19 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 // 1 level up
                 inBracket--;
             } else if (inBracket == 0 &&
-                    (c == '.' || (c == '-' && expr.charAt(i+1) == '>'))) {
-                // if we are not nested and we see a dot(.) or arrow(->) add the word to split and continue
+                    (c == '.' || (c == '-'))) {
+                // if we are not nested and we see a dot(.) or minus(-) add the word to split and continue
                 split.add(word);
                 word = "";
 
-                if (c == '-' && expr.charAt(i+1) == '>') {
-                    //skip the next character in case of the arrow
-                    i++;
+                if (c == '-') {
+                    if (expr.charAt(i+1) == '>') {
+                        //skip the next character in case the minus appears to be an arrow (->)
+                        i++;
+                    } else {
+                        // minus is also an operator that should be part of the split
+                        split.add(OCL.MINUS);
+                    }
                 }
                 continue;
             }
@@ -1038,11 +1061,10 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     // rule42 || rule46
                     return applyUnion(node, expr1, expr2, graph);
                 case OCL.INTERSECTION:
-                case OCL.EXCLUDING:
-                    // rule43 || rule47
+                    // rule43
                     return applyIntersection(node, expr1, expr2, graph);
-                case OCL.MINUS:
-                    // rule44
+                case OCL.EXCLUDING:
+                    // rule47
                     return applyMinus(node, expr1, expr2, graph);
                 case OCL.SYMMETRICDIFFERENCE:
                     // rule45
@@ -1062,6 +1084,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     // rule51
                     return applySelectType(node, expr1, expr2, graph, true);
             }
+        } else if (expr.contains(OCL.MINUS)) {
+            String[] split = expr.split(OCL.MINUS);
+            return applyMinus(node, split[0], split[1], graph);
         } else if (expr.contains(OCL.DOT)) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
             String role = split.remove(split.size() - 1);
@@ -1082,45 +1107,38 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return null;
     }
 
-    private Condition applyUnion(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
-        TypeNode t1 = determineType(node, expr1);
-        TypeNode t2 = determineType(node, expr2);
-        String varName = graphBuilder.getVarNameOfNoden0(graph);
+    private Condition tr_S_special(APostfixExpression node, String expr, PlainGraph graph) {
+        TypeNode t = determineType(node, expr);
+        String objectName = graphBuilder.getVarNameOfNoden0(graph);
 
         // create the real type of expr1
-        PlainGraph var1 = graphBuilder.createGraph();
-        String var1Name = graphBuilder.addNode(var1, t1.text());
+        PlainGraph var = graphBuilder.createGraph();
+        String varName = graphBuilder.addNode(var, t.text());
 
-        // create the real type of expr2
-        PlainGraph var2 = graphBuilder.createGraph();
-        String var2Name = graphBuilder.addNode(var2, t2.text());
-
-        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(var1));
-        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(var2));
+        Condition trs = tr_S(node, expr, graphBuilder.cloneGraph(var));
 
         // real type of expr 1 should be equal to varname
-        var1 = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(graph), var1);
-        graphBuilder.addEdge(var1, varName, EQ, var1Name);
+        var = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(graph), var);
+        graphBuilder.addEdge(var, objectName, EQ, varName);
 
-        // real type of expr 2 should be equal to varname
-        var2 = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(graph), var2);
-        graphBuilder.addEdge(var2, varName, EQ, var2Name);
+        return new LaxCondition(Quantifier.EXISTS, var, trs);
+    }
 
-        LaxCondition l1 = new LaxCondition(Quantifier.EXISTS, var1, trs1);
-        LaxCondition l2 = new LaxCondition(Quantifier.EXISTS, var2, trs2);
-
+    private Condition applyUnion(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
+        Condition l1 = tr_S_special(node, expr1, graph);
+        Condition l2 = tr_S_special(node, expr2, graph);
         return new OrCondition(l1, l2);
     }
 
     private Condition applyIntersection(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
-        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
-        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+        Condition trs1 = tr_S_special(node, expr1, graph);
+        Condition trs2 = tr_S_special(node, expr2, graph);
         return new AndCondition(trs1, trs2);
     }
 
     private Condition applyMinus(APostfixExpression node, String expr1, String expr2, PlainGraph graph) {
-        Condition trs1 = tr_S(node, expr1, graphBuilder.cloneGraph(graph));
-        Condition trs2 = tr_S(node, expr2, graphBuilder.cloneGraph(graph));
+        Condition trs1 = tr_S_special(node, expr1, graph);
+        Condition trs2 = tr_S_special(node, expr2, graph);
         return new AndCondition(trs1, negate(trs2));
     }
 

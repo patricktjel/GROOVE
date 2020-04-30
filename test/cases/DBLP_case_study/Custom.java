@@ -767,10 +767,10 @@ public class Custom extends DBLPCaseStudy {
         String expected = "∀([self--type:Person-->self], " +
                 "∃([N0--type:Publication-->N0], " +
                     "∃([N0--type:Publication-->N0, N0--=-->N1, N1--type:EditedBook-->N1, self--type:Person-->self, self--editedBook-->N1]) " +
-                    "∨ ∃([N0--type:Publication-->N0, N0--=-->N2, N2--type:AuthoredPublication-->N2, self--type:Person-->self, self--authoredPublication-->N2])))";
+                    "∨ ∃([N0--type:Publication-->N0, N0--=-->N3, N3--type:AuthoredPublication-->N3, self--type:Person-->self, self--authoredPublication-->N3])))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N1, self--authoredPublication-->N2, N5--forall:-->N5, N0--type:Publication-->N0, N0--@-->N6, N0--=-->N1, N0--=-->N2, N6--exists:-->N6, N6--in-->N5, N7--forall:-->N7, N7--in-->N6, N1--type:EditedBook-->N1, N1--@-->N8, N8--exists:-->N8, N8--in-->N7, N2--type:AuthoredPublication-->N2, N2--@-->N9, N9--exists:-->N9, N9--in-->N7]";
+        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N1, self--authoredPublication-->N3, N5--forall:-->N5, N0--type:Publication-->N0, N0--@-->N6, N0--=-->N1, N0--=-->N3, N6--exists:-->N6, N6--in-->N5, N7--forall:-->N7, N7--in-->N6, N1--type:EditedBook-->N1, N1--@-->N8, N8--exists:-->N8, N8--in-->N7, N3--type:AuthoredPublication-->N3, N3--@-->N9, N9--exists:-->N9, N9--in-->N7]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
@@ -784,56 +784,93 @@ public class Custom extends DBLPCaseStudy {
         String expected = "∀([self--type:EditedBook-->self], " +
                 "∃([N0--type:Object-->N0], " +
                     "∃([N0--type:Object-->N0, N0--=-->N1, N1--type:BookSection-->N1, self--type:EditedBook-->self, self--bookSection-->N1]) " +
-                    "∨ ∃([N0--type:Object-->N0, N0--=-->N2, N2--type:BookChapter-->N2, self--type:EditedBook-->self, self--bookChapter-->N2])))";
+                "∨ ∃([N0--type:Object-->N0, N0--=-->N3, N3--type:BookChapter-->N3, self--type:EditedBook-->self, self--bookChapter-->N3])))";
         assertEquals(expected, graphBuilder.conToString(condition));
 
-        String grooveExpected = "[self--type:EditedBook-->self, self--@-->N5, self--bookSection-->N1, self--bookChapter-->N2, N5--forall:-->N5, N0--type:Object-->N0, N0--@-->N6, N0--=-->N1, N0--=-->N2, N6--exists:-->N6, N6--in-->N5, N7--forall:-->N7, N7--in-->N6, N1--type:BookSection-->N1, N1--@-->N8, N8--exists:-->N8, N8--in-->N7, N2--type:BookChapter-->N2, N2--@-->N9, N9--exists:-->N9, N9--in-->N7]";
+        String grooveExpected = "[self--type:EditedBook-->self, self--@-->N5, self--bookSection-->N1, self--bookChapter-->N3, N5--forall:-->N5, N0--type:Object-->N0, N0--@-->N6, N0--=-->N1, N0--=-->N3, N6--exists:-->N6, N6--in-->N5, N7--forall:-->N7, N7--in-->N6, N1--type:BookSection-->N1, N1--@-->N8, N8--exists:-->N8, N8--in-->N7, N3--type:BookChapter-->N3, N3--@-->N9, N9--exists:-->N9, N9--in-->N7]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
+    public void including() throws Exception {
+        String ocl = "context Person inv including: self.editedBook->including(self.authoredPublication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0], " +
+                "∃([N0--type:Publication-->N0, N0--=-->N1, N1--type:EditedBook-->N1, self--type:Person-->self, self--editedBook-->N1]) " +
+                "∨ ∃([N0--type:Publication-->N0, N0--=-->N3, N3--type:AuthoredPublication-->N3, self--type:Person-->self, self--authoredPublication-->N3])))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N1, self--authoredPublication-->N3, N5--forall:-->N5, N0--type:Publication-->N0, N0--@-->N6, N0--=-->N1, N0--=-->N3, N6--exists:-->N6, N6--in-->N5, N7--forall:-->N7, N7--in-->N6, N1--type:EditedBook-->N1, N1--@-->N8, N8--exists:-->N8, N8--in-->N7, N3--type:AuthoredPublication-->N3, N3--@-->N9, N9--exists:-->N9, N9--in-->N7]";
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
     public void intersect() throws Exception {
-        assert false;
         String ocl = "context Person inv intersect: self.editedBook->intersection(self.publication)->notEmpty()";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION, true);
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--=-->N1, N0--=-->N3, N1--type:EditedBook-->N1, self--type:Person-->self, self--editedBook-->N1, self--publication-->N3, N3--type:Publication-->N3]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N1, self--publication-->N3, N5--forall:-->N5, N0--type:Publication-->N0, N0--=-->N1, N0--=-->N3, N0--@-->N6, N1--type:EditedBook-->N1, N1--@-->N6, N3--type:Publication-->N3, N3--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
     public void minus() throws Exception {
-        assert false;
         String ocl = "context Person inv minus: (self.editedBook - self.publication)->notEmpty()";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
-    }
 
-    @Test
-    public void symmetricDifference() throws Exception {
-        assert false;
-        String ocl = "context Person inv symmetricDifference: self.editedBook->symmetricDifference(self.publication)->notEmpty()";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
-        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
-        GraphBuilder graphBuilder = map.get(condition);
-    }
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--=-->N1, N0--=-->N3, N1--type:EditedBook-->N1, self--type:Person-->self, self--editedBook-->N1, self--publication-->N3, N3--type:Publication-->N3, N3--not:-->N3]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
 
-    @Test
-    public void including() throws Exception {
-        assert false;
-        String ocl = "context Person inv including: self.editedBook->including(self.publication)->notEmpty()";
-        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
-        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
-        GraphBuilder graphBuilder = map.get(condition);
+        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N1, self--publication-->N3, N5--forall:-->N5, N0--type:Publication-->N0, N0--=-->N1, N0--=-->N3, N0--@-->N6, N1--type:EditedBook-->N1, N1--@-->N6, N3--type:Publication-->N3, N3--not:-->N3, N3--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
     public void excluding() throws Exception {
-        assert false;
         String ocl = "context Person inv excluding: self.editedBook->excluding(self.publication)->notEmpty()";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
         GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0, N0--=-->N1, N0--=-->N3, N1--type:EditedBook-->N1, self--type:Person-->self, self--editedBook-->N1, self--publication-->N3, N3--type:Publication-->N3, N3--not:-->N3]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N5, self--editedBook-->N1, self--publication-->N3, N5--forall:-->N5, N0--type:Publication-->N0, N0--=-->N1, N0--=-->N3, N0--@-->N6, N1--type:EditedBook-->N1, N1--@-->N6, N3--type:Publication-->N3, N3--not:-->N3, N3--@-->N6, N6--exists:-->N6, N6--in-->N5]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
+    public void symmetricDifference() throws Exception {
+        String ocl = "context Person inv symmetricDifference: self.editedBook->symmetricDifference(self.publication)->notEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:Person-->self], " +
+                "∃([N0--type:Publication-->N0], " +
+                    "∃([N0--type:Publication-->N0, N0--=-->N1, N1--type:EditedBook-->N1, self--type:Person-->self, self--editedBook-->N1]) " +
+                    "∨ ∃([N0--type:Publication-->N0, N0--=-->N3, N3--type:Publication-->N3, self--type:Person-->self, self--publication-->N3]) " +
+                    "∧ ∀([], " +
+                        "∃([N0--type:Publication-->N0, N0--=-->N5, N5--type:EditedBook-->N5, N5--not:-->N5, self--type:Person-->self, self--editedBook-->N5]) " +
+                        "∨ ∃([N0--type:Publication-->N0, N0--=-->N7, N7--type:Publication-->N7, N7--not:-->N7, self--type:Person-->self, self--publication-->N7]))))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:Person-->self, self--@-->N9, self--editedBook-->N1, self--publication-->N3, self--editedBook-->N5, self--publication-->N7, N9--forall:-->N9, N0--type:Publication-->N0, N0--@-->N10, N0--=-->N1, N0--=-->N3, N0--=-->N5, N0--=-->N7, N10--exists:-->N10, N10--in-->N9, N11--forall:-->N11, N11--in-->N10, N1--type:EditedBook-->N1, N1--@-->N12, N12--exists:-->N12, N12--in-->N11, N3--type:Publication-->N3, N3--@-->N13, N13--exists:-->N13, N13--in-->N11, N14--forall:-->N14, N14--in-->N10, N5--type:EditedBook-->N5, N5--not:-->N5, N5--@-->N91, N91--exists:-->N91, N91--in-->N14, N7--type:Publication-->N7, N7--not:-->N7, N7--@-->N93, N93--exists:-->N93, N93--in-->N14]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
     @Test
