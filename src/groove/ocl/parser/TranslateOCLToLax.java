@@ -255,7 +255,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             }
         }
         expr1 = expr1.replaceAll(" ", "");
-        TypeNode t = determineType(node, expr1);
+        return applySize(propertyInvocation, expr1, n);
+    }
+
+    private LaxCondition applySize(APostfixExpression node, String expr, int n) {
+        TypeNode t = determineType(node, expr);
 
         // Create all nodes in vars
         PlainGraph vars = graphBuilder.createGraph();
@@ -270,7 +274,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             varNames.add(varName);
 
             // connect it
-            Condition trs = tr_S(propertyInvocation, expr1, graphBuilder.cloneGraph(var));
+            Condition trs = tr_S(node, expr, graphBuilder.cloneGraph(var));
             con = new AndCondition(con, trs);
 
             // merge the vars
@@ -432,6 +436,9 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             } else if (OCL.FORALL.equals(operation)) {
                 // rule14 || rule15
                 resetOut(node, applyForall(node, expr1, propertyCall));
+            } else if (OCL.ONE.equals(operation)) {
+                // rule28
+                resetOut(node, applyOne(node, expr1));
             } else if (OCL.IS_UNIQUE.equals(operation)) {
                 // rule29
                 resetOut(node, applyIsUnique(node, expr1, (String) getOut(node)));
@@ -555,6 +562,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         Condition tre = new ImpliesCondition(neq1, neq2);
 
         return new LaxCondition(Quantifier.FORALL, vars, new ImpliesCondition(new AndCondition(trs1, trs2), tre));
+    }
+
+    private Condition applyOne(APostfixExpression node, String expr1) {
+        expr1 = expr1.concat("->select()");
+        return new AndCondition(applySize(node, expr1, 1), negate(applySize(node, expr1, 2)));
     }
 
     /**
@@ -1071,6 +1083,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     Condition union = applyUnion(node, expr1, expr2, graph);
                     Condition intersect = applyIntersection(node, expr1, expr2, graph);
                     return new AndCondition(union, negate(intersect));
+                case OCL.ONE:
                 case OCL.SELECT:
                     // rule48
                     return applySelect(node, expr1, (APropertyCall) propertyCall, graph);

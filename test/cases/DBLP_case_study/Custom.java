@@ -750,7 +750,6 @@ public class Custom extends DBLPCaseStudy {
 
     @Test
     public void one() throws Exception {
-        assert false;
         String ocl = "context Person inv one: self.publication->one(p:Publication | p.year = 2000)";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
         LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
