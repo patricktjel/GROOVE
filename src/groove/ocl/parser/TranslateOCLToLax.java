@@ -1062,14 +1062,17 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                     // rule51
                     return applySelectType(node, expr1, expr2, graph, true);
             }
-        } else if (expr.contains(".")) {
+        } else if (expr.contains(OCL.DOT)) {
             List<String> split = new ArrayList<>(Arrays.asList(expr.split("\\.")));
             String role = split.remove(split.size() - 1);
-            expr = StringUtils.join(split, ".");
+            expr = StringUtils.join(split, OCL.DOT);
 
             if (role.contains(OCL.ALL_INSTANCES)){
                 //rule40
                 return new LaxCondition(Quantifier.EXISTS, graph);
+            } else if (role.contains(OCL.OCL_AS_SET)) {
+                //rule52
+                return tr_N(node, expr, graph);
             } else {
                 //rule39
                 return applyNavigationRole(node, expr, role, graph);

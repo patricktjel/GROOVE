@@ -42,6 +42,21 @@ public class Custom extends DBLPCaseStudy {
     }
 
     @Test
+    public void oclAsSet() throws Exception {
+        String ocl = "context EditedBook inv oclAsSet: self.conferenceEdition.oclAsSet()->isEmpty()";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:EditedBook-->self], " +
+                "∃([N0--type:ConferenceEdition-->N0, N0--not:-->N0, self--type:EditedBook-->self, self--conferenceEdition-->N0]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:EditedBook-->self, self--@-->N2, self--conferenceEdition-->N0, N2--forall:-->N2, N0--type:ConferenceEdition-->N0, N0--not:-->N0, N0--@-->N3, N3--exists:-->N3, N3--in-->N2]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
     public void not() throws Exception {
         String ocl = "context EditedBook inv notTest: not self.conferenceEdition->notEmpty()";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);

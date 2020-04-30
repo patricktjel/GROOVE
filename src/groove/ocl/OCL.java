@@ -5,6 +5,7 @@ import java.util.*;
 public class OCL {
     public final static String NULL                 = "null";
     public final static String ARROW                = "->";
+    public final static String DOT                  = ".";
 
     public final static Set<String> PRIMITIVE_TYPES = new HashSet<>(Arrays.asList("bool", "int", "real", "string"));
 
@@ -36,8 +37,9 @@ public class OCL {
     public final static String SELECTBYKIND         = "selectByKind";
     public final static String SELECTBYTYPE         = "selectByType";
     public final static String UNION                = "union";
+    public final static String OCL_AS_SET           = "oclAsSet";
     public final static Set<String> SET_OPERATIONS = new HashSet<>(Arrays.asList(
             ALL_INSTANCES, EXCLUDING, INCLUDING, INTERSECTION, MINUS, SYMMETRICDIFFERENCE, SELECT, REJECT, SELECTBYKIND, SELECTBYTYPE, UNION,
-            MIN, MAX
+            MIN, MAX, OCL_AS_SET
     ));
 }
