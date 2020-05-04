@@ -30,11 +30,11 @@ public class USECaseStudy {
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
-//    @Test
-//    public void inv_i2() throws Exception {
-//        assert false;
-//        TranslateHelper.translateOCLToGraph("context Department inv i2: self.employee->size() >= self.project->size()", GRAPH_LOCATION);
-//    }
+    @Test
+    public void inv_i2() throws Exception {
+        assert false;
+        TranslateHelper.translateOCLToGraph("context Department inv i2: self.employee->size() >= self.project->size()", GRAPH_LOCATION);
+    }
 
     @Test
     public void inv_i1b() throws Exception {
@@ -50,11 +50,11 @@ public class USECaseStudy {
         assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
     }
 
-//    @Test
-//    public void inv_i3() throws Exception {
-//        assert false;
-//        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances()->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
-//    }
+    @Test
+    public void inv_i3() throws Exception {
+        assert false;
+        TranslateHelper.translateOCLToGraph("context Employee inv i3: Employee.allInstances()->forAll(e1, e2 | e1.project->size() > e2.project->size() implies e1.salary > e2.salary)", GRAPH_LOCATION);
+    }
 
     @Test
     public void inv_i1c() throws Exception {

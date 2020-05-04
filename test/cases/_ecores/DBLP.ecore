@@ -1,41 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
-    name="example" nsURI="http://www.example.org/examples/example.ecore" nsPrefix="ex">
-  <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-    <details key="invocationDelegates" value="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot"/>
-    <details key="settingDelegates" value="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot"/>
-    <details key="validationDelegates" value="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot"/>
-  </eAnnotations>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="example" nsURI="http://www.example.org/examples/example.ecore"
+    nsPrefix="ex">
   <eClassifiers xsi:type="ecore:EClass" name="Person">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="nameIsKey"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="nameIsKey" value="Person.allInstances()->isUnique(name)"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="homePage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="numPublictions" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="publication" ordered="false" lowerBound="1" upperBound="-1" eType="#//Publication"
-        eOpposite="#//Publication/person"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="editedbook" ordered="false" upperBound="-1" eType="#//EditedBook" eOpposite="#//EditedBook/editor"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="authoredpublication" ordered="false" upperBound="-1" eType="#//AuthoredPublication"
-        eOpposite="#//AuthoredPublication/author"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="numPublications" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publication" ordered="false"
+        upperBound="-1" eType="#//Publication" eOpposite="#//Publication/person"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editedBook" ordered="false"
+        upperBound="-1" eType="#//EditedBook" eOpposite="#//EditedBook/editor"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="authoredPublication" ordered="false"
+        upperBound="-1" eType="#//AuthoredPublication" eOpposite="#//AuthoredPublication/author"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Publication">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="edition" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="person" ordered="false" lowerBound="1" upperBound="-1" eType="#//Person" eOpposite="#//Person/publication"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="person" ordered="false"
+        upperBound="-1" eType="#//Person" eOpposite="#//Person/publication"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Book" eSuperTypes="#//Publication">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="isbnIsKey theSamePublisher"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="isbnIsKey" value="Book.allInstances()->isUnique(isbn)"/>
-      <details key="theSamePublisher" value="if self.oclIsTypeOf(BookSeriesIssue) then self.publisher = self.oclAsType(BookSeriesIssue).bookSeries.publisher else true endif"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="numPages" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="homePage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="publisher" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
@@ -43,182 +28,134 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="isbn" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="EditedBook" eSuperTypes="#//Publication #//Book">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="correctPagination compatibleYear editedBookWithoutRepetitions"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="correctPagination" value="self.bookChapter->forAll(c1, c2 | c1&lt;>c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage)"/>
-      <details key="compatibleYear" value="(self.conferenceEdition->notEmpty()) implies self.publicationYear >= self.conferenceEdition.year"/>
-      <details key="editedBookWithoutRepetitions" value="self.bookSection->isUnique(title)"/>
-    </eAnnotations>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false" lowerBound="1" upperBound="-1" eType="#//Person" eOpposite="#//Person/editedbook"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSection" ordered="false" upperBound="-1" eType="#//BookSection" containment="true"
-        eOpposite="#//BookSection/editedbook"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookChapter" ordered="false" lowerBound="1" upperBound="-1" eType="#//BookChapter"
-        containment="true" eOpposite="#//BookChapter/editedbook"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" eType="#//ConferenceEdition" eOpposite="#//ConferenceEdition/editedBook"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editor" ordered="false"
+        upperBound="-1" eType="#//Person" eOpposite="#//Person/editedBook"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSection" ordered="false"
+        upperBound="-1" eType="#//BookSection" containment="true" eOpposite="#//BookSection/editedBook"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookChapter" ordered="false"
+        upperBound="-1" eType="#//BookChapter" containment="true" eOpposite="#//BookChapter/editedBook"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" ordered="false"
+        eType="#//ConferenceEdition" eOpposite="#//ConferenceEdition/editedBook"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="AuthoredBook" eSuperTypes="#//Book #//AuthoredPublication"/>
   <eClassifiers xsi:type="ecore:EClass" name="AuthoredPublication" eSuperTypes="#//Publication">
-    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false" lowerBound="1" upperBound="-1" eType="#//Person" eOpposite="#//Person/authoredpublication"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="author" ordered="false"
+        upperBound="-1" eType="#//Person" eOpposite="#//Person/authoredPublication"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="BookChapter" eSuperTypes="#//AuthoredPublication">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="correctPagination"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="correctPagination" value="self.iniPage &lt;= self.endPage"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="iniPage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="endPage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="conferencePaper" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBooleanObject"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="booksection" eType="#//BookSection" eOpposite="#//BookSection/bookChapter"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="editedbook" eType="#//EditedBook" eOpposite="#//EditedBook/bookChapter"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookseriesissue" eType="#//BookSeriesIssue" eOpposite="#//BookSeriesIssue/bookChapter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSection" ordered="false"
+        eType="#//BookSection" eOpposite="#//BookSection/bookChapter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editedBook" ordered="false"
+        eType="#//EditedBook" eOpposite="#//EditedBook/bookChapter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeriesIssue" ordered="false"
+        eType="#//BookSeriesIssue" eOpposite="#//BookSeriesIssue/bookChapter"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="JournalPaper" eSuperTypes="#//AuthoredPublication">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="correctPagination"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="correctPagination" value="self.iniPage &lt;= self.endPage"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="iniPage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="endPage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="conferencePaper" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBooleanObject"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalsection" eType="#//JournalSection" eOpposite="#//JournalSection/journalPaper"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalissue" lowerBound="1" eType="#//JournalIssue" eOpposite="#//JournalIssue/journalPaper"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalSection" ordered="false"
+        eType="#//JournalSection" eOpposite="#//JournalSection/journalPaper"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalIssue" ordered="false"
+        lowerBound="1" eType="#//JournalIssue" eOpposite="#//JournalIssue/journalPaper"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="BookSection">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="bookSectionWithoutRepetitions"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="bookSectionWithoutRepetitions" value="self.bookChapter->isUnique(title)"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="order" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="editedbook" eType="#//EditedBook" eOpposite="#//EditedBook/bookSection"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookChapter" ordered="false" lowerBound="1" upperBound="-1" eType="#//BookChapter"
-        containment="true" eOpposite="#//BookChapter/booksection"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookseriesissue" eType="#//BookSeriesIssue" eOpposite="#//BookSeriesIssue/booksection"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editedBook" ordered="false"
+        eType="#//EditedBook" eOpposite="#//EditedBook/bookSection"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookChapter" ordered="false"
+        upperBound="-1" eType="#//BookChapter" containment="true" eOpposite="#//BookChapter/bookSection"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeriesIssue" ordered="false"
+        eType="#//BookSeriesIssue" eOpposite="#//BookSeriesIssue/bookSection"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="JournalSection">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="journalSectionWithoutRepetitions"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="journalSectionWithoutRepetitions" value="self.journalPaper->isUnique(title)"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="order" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalPaper" ordered="false" lowerBound="1" upperBound="-1" eType="#//JournalPaper"
-        containment="true" eOpposite="#//JournalPaper/journalsection"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalissue" lowerBound="1" eType="#//JournalIssue" eOpposite="#//JournalIssue/journalSection"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalPaper" ordered="false"
+        lowerBound="1" upperBound="-1" eType="#//JournalPaper" eOpposite="#//JournalPaper/journalSection"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalIssue" lowerBound="1"
+        eType="#//JournalIssue" eOpposite="#//JournalIssue/journalSection"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="JournalIssue">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="journalIssueAndTitleIdentifyJournalSection correctPagination compatibleYear"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="journalIssueAndTitleIdentifyJournalSection" value="self.journalSection->isUnique(title)"/>
-      <details key="correctPagination" value="self.journalPaper->forAll(p1,p2 | p1&lt;>p2 implies p1.iniPage > p2.endPage or p2.iniPage > p1.endPage)"/>
-      <details key="compatibleYear" value="(self.conferenceEdition->notEmpty()) implies self.year >= self.conferenceEdition.year"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="month" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="numPages" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalSection" ordered="false" upperBound="-1" eType="#//JournalSection" containment="true"
-        eOpposite="#//JournalSection/journalissue"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalPaper" ordered="false" lowerBound="1" upperBound="-1" eType="#//JournalPaper"
-        containment="true" eOpposite="#//JournalPaper/journalissue"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalVolume" lowerBound="1" eType="#//JournalVolume" eOpposite="#//JournalVolume/journalIssue"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" eType="#//ConferenceEdition" eOpposite="#//ConferenceEdition/journalIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalSection" ordered="false"
+        upperBound="-1" eType="#//JournalSection" containment="true" eOpposite="#//JournalSection/journalIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalPaper" ordered="false"
+        lowerBound="1" upperBound="-1" eType="#//JournalPaper" containment="true"
+        eOpposite="#//JournalPaper/journalIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalVolume" lowerBound="1"
+        eType="#//JournalVolume" eOpposite="#//JournalVolume/journalIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" eType="#//ConferenceEdition"
+        eOpposite="#//ConferenceEdition/journalIssue"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="BookSeriesIssue" eSuperTypes="#//Book">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="correctPagination compatibleYear"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="correctPagination" value="self.bookChapter->forAll(c1, c2 | c1&lt;>c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage)"/>
-      <details key="compatibleYear" value="(self.conferenceEdition->notEmpty()) implies self.publicationYear >= self.conferenceEdition.year"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="number" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="booksection" ordered="false" upperBound="-1" eType="#//BookSection" containment="true"
-        eOpposite="#//BookSection/bookseriesissue"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookChapter" ordered="false" lowerBound="1" upperBound="-1" eType="#//BookChapter"
-        containment="true" eOpposite="#//BookChapter/bookseriesissue"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeries" lowerBound="1" eType="#//BookSeries" eOpposite="#//BookSeries/bookSeriesIssue"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" eType="#//ConferenceEdition" eOpposite="#//ConferenceEdition/bookSeriesIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSection" ordered="false"
+        upperBound="-1" eType="#//BookSection" containment="true" eOpposite="#//BookSection/bookSeriesIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookChapter" ordered="false"
+        upperBound="-1" eType="#//BookChapter" containment="true" eOpposite="#//BookChapter/bookSeriesIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeries" lowerBound="1"
+        eType="#//BookSeries" eOpposite="#//BookSeries/bookSeriesIssue"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" eType="#//ConferenceEdition"
+        eOpposite="#//ConferenceEdition/bookSeriesIssue"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="BookSeries">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="idIsKey BookSeriesAndNumberIdentifyBookSeriesIssue"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="idIsKey" value="BookSeries.allInstances()->isUnique(id)"/>
-      <details key="BookSeriesAndNumberIdentifyBookSeriesIssue" value="self.bookSeriesIssue->isUnique(number)"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="id" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="publisher" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeriesIssue" ordered="false" upperBound="-1" eType="#//BookSeriesIssue"
-        containment="true" eOpposite="#//BookSeriesIssue/bookSeries"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeriesIssue" ordered="false"
+        upperBound="-1" eType="#//BookSeriesIssue" containment="true" eOpposite="#//BookSeriesIssue/bookSeries"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ConferenceEdition">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="titleIsKey conferenceIsPublished"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="titleIsKey" value="ConferenceEdition.allInstances()->isUnique(title)"/>
-      <details key="conferenceIsPublished" value="self.editedBook->notEmpty() or self.bookSeriesIssue->notEmpty() or self.journalIssue->notEmpty()"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="year" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="city" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="country" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="homePage" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="editedBook" eType="#//EditedBook" eOpposite="#//EditedBook/conferenceEdition"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeriesIssue" eType="#//BookSeriesIssue" eOpposite="#//BookSeriesIssue/conferenceEdition"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalIssue" eType="#//JournalIssue" eOpposite="#//JournalIssue/conferenceEdition"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceseries" lowerBound="1" eType="#//ConferenceSeries" eOpposite="#//ConferenceSeries/conferenceedition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="editedBook" eType="#//EditedBook"
+        eOpposite="#//EditedBook/conferenceEdition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeriesIssue" eType="#//BookSeriesIssue"
+        eOpposite="#//BookSeriesIssue/conferenceEdition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalIssue" eType="#//JournalIssue"
+        eOpposite="#//JournalIssue/conferenceEdition"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceSeries" lowerBound="1"
+        eType="#//ConferenceSeries" eOpposite="#//ConferenceSeries/conferenceEdition"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="ConferenceSeries">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="nameIsKey"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="nameIsKey" value="ConferenceSeries.allInstances()->isUnique(name)"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="acronym" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceedition" ordered="false" upperBound="-1" eType="#//ConferenceEdition"
-        containment="true" eOpposite="#//ConferenceEdition/conferenceseries"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceEdition" ordered="false"
+        upperBound="-1" eType="#//ConferenceEdition" containment="true" eOpposite="#//ConferenceEdition/conferenceSeries"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="JournalVolume">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="journalVolumeAndNumberIdentifyJournalIssue"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="journalVolumeAndNumberIdentifyJournalIssue" value="self.journalIssue->isUnique(number)"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="volume" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBigInteger"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalIssue" ordered="false" upperBound="-1" eType="#//JournalIssue" containment="true"
-        eOpposite="#//JournalIssue/journalVolume"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journal" lowerBound="1" eType="#//Journal" eOpposite="#//Journal/journalVolume"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalIssue" ordered="false"
+        upperBound="-1" eType="#//JournalIssue" containment="true" eOpposite="#//JournalIssue/journalVolume"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journal" lowerBound="1"
+        eType="#//Journal" eOpposite="#//Journal/journalVolume"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Journal">
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore">
-      <details key="constraints" value="titleIsKey journalAndVolumeIdentifyJournalVolume consecutiveVolumes"/>
-    </eAnnotations>
-    <eAnnotations source="http://www.eclipse.org/emf/2002/Ecore/OCL/Pivot">
-      <details key="titleIsKey" value="Journal.allInstances()->isUnique(title)"/>
-      <details key="journalAndVolumeIdentifyJournalVolume" value="self.journalVolume->isUnique(volume)"/>
-      <details key="consecutiveVolumes" value="self.journalVolume->sortedBy(volume).volume = Sequence{1 .. self.journalVolume->size()}"/>
-    </eAnnotations>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="title" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="issn" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="journalVolume" ordered="false" upperBound="-1" eType="#//JournalVolume" containment="true"
-        eOpposite="#//JournalVolume/journal"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journalVolume" ordered="false"
+        upperBound="-1" eType="#//JournalVolume" containment="true" eOpposite="#//JournalVolume/journal"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Model">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conferenceSeries" upperBound="-1"
+        eType="#//ConferenceSeries" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="journal" upperBound="-1"
+        eType="#//Journal" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bookSeries" upperBound="-1"
+        eType="#//BookSeries" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publication" ordered="false"
+        upperBound="-1" eType="#//Publication" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="person" ordered="false"
+        upperBound="-1" eType="#//Person" containment="true"/>
   </eClassifiers>
 </ecore:EPackage>

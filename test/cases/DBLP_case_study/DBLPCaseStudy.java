@@ -66,6 +66,21 @@ public class DBLPCaseStudy {
     }
 
     @Test
+    public void correctPage() throws Exception {
+        String ocl = "context BookChapter inv correctPage: self.iniPage <= self.endPage ";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+        GraphBuilder graphBuilder = map.get(condition);
+
+        String expected = "∀([self--type:BookChapter-->self], " +
+                "∃([N0--type:int-->N0, N2--type:int-->N2, N4--prod:-->N4, N4--arg:0-->N0, N4--arg:1-->N2, N4--int:le-->N5, N5--bool:true-->N5, self--type:BookChapter-->self, self--iniPage-->N0, self--endPage-->N2]))";
+        assertEquals(expected, graphBuilder.conToString(condition));
+
+        String grooveExpected = "[self--type:BookChapter-->self, self--@-->N6, self--iniPage-->N0, self--endPage-->N2, N6--forall:-->N6, N0--type:int-->N0, N0--@-->N7, N2--type:int-->N2, N2--@-->N7, N4--prod:-->N4, N4--arg:0-->N0, N4--arg:1-->N2, N4--int:le-->N5, N4--@-->N7, N5--bool:true-->N5, N5--@-->N7, N7--exists:-->N7, N7--in-->N6]";
+        assertEquals(grooveExpected, graphBuilder.graphToString(graphBuilder.laxToGraph(condition)));
+    }
+
+    @Test
     public void correctPagination() throws Exception {
         String ocl = "context EditedBook inv correctPagination: self.bookChapter->forAll(c1, c2:BookChapter | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) ";
         Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
@@ -127,7 +142,6 @@ public class DBLPCaseStudy {
 
     @Test
     public void inv_all() throws Exception {
-        assert false;
         String ocl =
                 "context Person " +
                     "inv nameIsKey: Person.allInstances()->isUnique(name) " +
@@ -139,7 +153,7 @@ public class DBLPCaseStudy {
                             "else true " +
                         "endif " +
                 "context EditedBook " +
-                    "inv correctPagination: self.bookChapter->forAll(c1, c2 | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) " +
+                    "inv correctPagination: self.bookChapter->forAll(c1, c2:BookChapter | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) " +
                     "inv compatibleYear: self.conferenceEdition->notEmpty() implies self.publicationYear >= self.conferenceEdition.year " +
                     "inv editedBookWithoutRepetitions: self.bookSection->isUnique(title) " +
                 "context BookChapter " +
@@ -152,10 +166,10 @@ public class DBLPCaseStudy {
                     "inv journalSectionWithoutRepetitions: self.journalPaper->isUnique(title) " +
                 "context JournalIssue " +
                     "inv journalIssueAndTitleIdentifyJournalSection: self.journalSection->isUnique(title) " +
-                    "inv correctPagination: self.journalPaper->forAll(p1, p2 | p1 <> p2 implies p1.iniPage > p2.endPage or p2.iniPage > p1.endPage) " +
+                    "inv correctPagination: self.journalPaper->forAll(p1, p2:JournalPaper | p1 <> p2 implies p1.iniPage > p2.endPage or p2.iniPage > p1.endPage) " +
                     "inv compatibleYear:self.conferenceEdition->notEmpty() implies self.year >= self.conferenceEdition.year " +
                 "context BookSeriesIssue " +
-                    "inv correctPagination: self.bookChapter->forAll(c1, c2 | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) " +
+                    "inv correctPagination: self.bookChapter->forAll(c1, c2:BookChapter | c1 <> c2 implies c1.iniPage > c2.endPage or c2.iniPage > c1.endPage) " +
                     "inv compatibleYear:self.conferenceEdition->notEmpty() implies self.publicationYear >= self.conferenceEdition.year " +
                 "context BookSeries " +
                     "inv idIsKey: BookSeries.allInstances()->isUnique(id) " +
@@ -173,7 +187,8 @@ public class DBLPCaseStudy {
                 "context Journal " +
                     "inv titleIsKey:Journal.allInstances()->isUnique(title) " +
                     "inv journalAndVolumeIdentifyJournalVolume: self.journalVolume->isUnique(volume) " +
-                    "inv consecutiveVolumes:self.journalVolume->sortedBy(volume).volume = Sequence{1..self.journalVolume->size()}";
+//                    "inv consecutiveVolumes:self.journalVolume->sortedBy(volume).volume = Sequence{1..self.journalVolume->size()}" +
+                "";
         TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
     }
 }
