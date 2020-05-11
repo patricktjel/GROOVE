@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static groove.ocl.Groove.*;
+import static groove.ocl.OCL.PRIMITIVE_TYPES;
 
 /**
  * recursive tree visitor that uses the {@link de.tuberlin.cs.cis.ocl.parser.analysis.AnalysisAdapter#getOut(Node)} for the recursive return values
@@ -41,6 +42,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     private GraphBuilder graphBuilder;
 
     private final Map<LaxCondition, GraphBuilder> results;
+
+    private int curMult = 0;
 
     public TranslateOCLToLax(TypeGraph typeGraph) {
         this.typeGraph = typeGraph;
@@ -288,52 +291,20 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
         return new LaxCondition(Quantifier.EXISTS, vars, new AndCondition(neqCon, con));
     }
 
-    private LaxCondition applyExprOpExpr(Node node, Object expr1, Operator op, Object expr2) {
-        // TODO support for set equallity (forall rule)
-        TypeNode t1 = determineType(node, expr1);
-        TypeNode t2 = determineType(node, expr2);
-
-        // t1 and t2 should be the same type
-        assert t1.equals(t2);
-
-        PlainGraph varX = graphBuilder.createGraph();
-        String x = graphBuilder.addNode(varX, t1.text());
-        Condition trv1 = tr_N(node, expr1, graphBuilder.cloneGraph(varX));
-
-        PlainGraph varY = graphBuilder.createGraph();
-        String y = graphBuilder.addNode(varY, t2.text());
-        Condition trv2 = tr_N(node, expr2, graphBuilder.cloneGraph(varY));
-
-        // merge the graphs and create the operator
-        PlainGraph vars = graphBuilder.mergeGraphs(varX, varY);
-        if (OCL.PRIMITIVE_TYPES.contains(t1.text())) {
-            // if its a primitive type, then you need a production rule
-            graphBuilder.addProductionRule(vars, x, t1.text(), op, y);
+    private Condition applyExprOpExpr(Node node, Object expr1, Operator op, Object expr2) {
+        TypeNode t = determineType(node, expr1);
+        if (curMult  == 1){
+            return applyExprOpExpr(node, expr1, op, expr2, false);
         } else {
-            // else it is an = or !=  edge between them
-            if (op.equals(Operator.EQ)) {
-                graphBuilder.addEdge(vars, x, EQ, y);
-            } else {
-                graphBuilder.addEdge(vars, x, NEQ, y);
-            }
+            Condition n1 = applyExprOpExpr(node, expr1, op, expr2, true);
+            Condition n2 = applyExprOpExpr(node, expr2, op, expr1, true);
+            return new LaxCondition(Quantifier.EXISTS, graphBuilder.createGraph(), new AndCondition(n1, n2));
         }
-
-        AndCondition trv = new AndCondition(trv1, trv2);
-        return new LaxCondition(Quantifier.EXISTS, vars, trv);
     }
 
-    private Condition applyExprOpExprSet(Node node, Object expr1, Operator op, Object expr2) {
-        Condition n1 = applyOneSideSet(node, expr1, op, expr2);
-        Condition n2 = applyOneSideSet(node, expr2, op, expr1);
-        return new LaxCondition(Quantifier.EXISTS, graphBuilder.createGraph(), new AndCondition(n1, n2));
-    }
-
-    private Condition applyOneSideSet(Node node, Object expr1, Operator op, Object expr2) {
+    private LaxCondition applyExprOpExpr(Node node, Object expr1, Operator op, Object expr2, boolean setEquality) {
         TypeNode t1 = determineType(node, expr1);
         TypeNode t2 = determineType(node, expr2);
-
-        // t1 and t2 should be the same type
-        assert t1.equals(t2);
 
         PlainGraph varX = graphBuilder.createGraph();
         String x = graphBuilder.addNode(varX, t1.text());
@@ -345,7 +316,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
         // merge the graphs and create the operator
         PlainGraph vars = graphBuilder.mergeGraphs(graphBuilder.cloneGraph(varX), graphBuilder.cloneGraph(varY));
-        if (OCL.PRIMITIVE_TYPES.contains(t1.text())) {
+        if (PRIMITIVE_TYPES.contains(t1.text())) {
             // if its a primitive type, then you need a production rule
             graphBuilder.addProductionRule(vars, x, t1.text(), op, y);
         } else {
@@ -357,7 +328,11 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
             }
         }
 
-        return new LaxCondition(Quantifier.FORALL, varX, new AndCondition(new LaxCondition(Quantifier.EXISTS, vars, trv2), trv1));
+        if (setEquality) {
+            return new LaxCondition(Quantifier.FORALL, varX, new AndCondition(new LaxCondition(Quantifier.EXISTS, vars, trv2), trv1));
+        } else {
+            return new LaxCondition(Quantifier.EXISTS, vars, new AndCondition(trv1, trv2));
+        }
     }
 
     @Override
@@ -827,6 +802,7 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                 }
             } else //noinspection StatementWithEmptyBody
                 if (OCL.SET_OPERATIONS.contains(path)) {
+                    curMult = 2;
                 //ignore
             } else {
                 // follow the edges to the final type node
@@ -847,9 +823,8 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
                         throw new InvalidOCLException();
                     }
                 }
-                type = typeEdges
-                        .get(0)
-                        .target();
+                curMult = typeEdges.get(0).getOutMult() != null ? typeEdges.get(0).getOutMult().two() : 2;
+                type = typeEdges.get(0).target();
             }
         }
 
