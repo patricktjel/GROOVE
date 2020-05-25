@@ -13,10 +13,7 @@ import groove.ocl.graphbuilder.GraphBuilder;
 import groove.ocl.lax.Operator;
 import groove.ocl.lax.Quantifier;
 import groove.ocl.lax.condition.*;
-import groove.ocl.lax.graph.constants.BooleanConstant;
-import groove.ocl.lax.graph.constants.Constant;
-import groove.ocl.lax.graph.constants.IntConstant;
-import groove.ocl.lax.graph.constants.StringConstant;
+import groove.ocl.lax.graph.constants.*;
 import groove.util.Log;
 import groovy.lang.Tuple2;
 
@@ -363,8 +360,18 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
     @Override
     public void outAPrefixedUnaryExpression(APrefixedUnaryExpression node) {
         if (node.getUnaryOperator() != null) {
-            // rule4
-            resetOut(node, negate((Condition) getOut(node)));
+            Object obj = getOut(node);
+            //TODO should be replaced in the parser
+            if (obj instanceof IntConstant) {
+                Integer constant = ((IntConstant) obj).getConstant();
+                resetOut(node, new IntConstant(Integer.parseInt(String.format("-%d", constant))));
+            } else if (obj instanceof RealConstant){
+                Double constant = ((RealConstant) obj).getConstant();
+                resetOut(node, new RealConstant(Double.parseDouble(String.format("-%f", constant))));
+            } else {
+                // rule4
+                resetOut(node, negate((Condition) obj));
+            }
         } else {
             defaultOut(node);
         }
@@ -703,7 +710,12 @@ public class TranslateOCLToLax extends DepthFirstAdapter {
 
     @Override
     public void outANumberLiteral(ANumberLiteral node) {
-        resetOut(node, new IntConstant(Integer.parseInt(node.getNumberLiteral().getText())));
+        String number = node.getNumberLiteral().getText();
+        if (number.contains(".")) {
+            resetOut(node, new RealConstant(Double.parseDouble(number)));
+        } else {
+            resetOut(node, new IntConstant(Integer.parseInt(number)));
+        }
     }
 
     @Override

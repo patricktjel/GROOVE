@@ -1,6 +1,6 @@
 package groove.ocl.lax.graph.constants;
 
-public class StringConstant implements Constant {
+public class StringConstant implements Constant<String> {
 
     private final String constant;
 
@@ -8,6 +8,7 @@ public class StringConstant implements Constant {
         this.constant = constant;
     }
 
+    @Override
     public final String getConstant() {
         return constant;
     }

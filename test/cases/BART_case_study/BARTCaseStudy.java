@@ -91,20 +91,37 @@ public class BARTCaseStudy {
     }
 
     @Test
+    public void vcm() throws Exception {
+        String ocl = "context Train inv vcm: self.vcm >= 0.0 and self.vcm <= 80.0";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
+    public void acm() throws Exception {
+        String ocl = "context Train inv acm: (self.acm >= 0.0 and self.acm <= 3.0) or (self.acm >= -2.0 and self.acm <= -0.45)";
+        Map<LaxCondition, GraphBuilder> map = TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
+        LaxCondition condition = (LaxCondition) map.keySet().toArray()[0];
+    }
+
+    @Test
     public void inv_all() throws Exception {
         assert false;
         String ocl =
-                "context StationComputer " +
-                    "inv bounderies: self.sb.nextPlus()->includes(self.se) " +
-                    "inv civilSpeedSafety: self.trains()->forAll(t | t.v <= t.currentSeg().civilSpeed) " +
-                    "inv closedGateSafety:self.trains()->forAll(t | t.nextClosedGate() <> null implies t.nose + self.wcsd(t) < t.nextClosedGate().segment.segEnd) " +
-                    "inv crashSafety: self.trains()->forAll(t | t.nextTrain() <> null implies t.nose + self.wcsd(t) < t.nextTrain().nose - t.nextTrain().length) " +
+//                "context StationComputer " +
+//                    "inv bounderies: self.sb.nextPlus()->includes(self.se) " +
+//                    "inv civilSpeedSafety: self.trains()->forAll(t | t.v <= t.currentSeg().civilSpeed) " +
+//                    "inv closedGateSafety:self.trains()->forAll(t | t.nextClosedGate() <> null implies t.nose + self.wcsd(t) < t.nextClosedGate().segment.segEnd) " +
+//                    "inv crashSafety: self.trains()->forAll(t | t.nextTrain() <> null implies t.nose + self.wcsd(t) < t.nextTrain().nose - t.nextTrain().length) " +
                 "context Segment " +
                     "inv fitting: self.next <> null implies self.next.segBegin = self.segEnd " +
-                    "inv correctLength: self.segEnd - self.segBegin = self.length " +
+//                    "inv correctLength: self.segEnd - self.segBegin = self.length " +
                     "inv track: self.next <> null implies self.track = self.next.track " +
                 "context Train " +
-                    "inv line: self.orig.nextPlus()->includes(self.dest)";
+//                    "inv line: self.orig.nextPlus()->includes(self.dest)" +
+                    "inv vcm: self.vcm >= 0.0 and self.vcm <= 80.0" +
+                    "inv acm: (self.acm >= 0.0 and self.acm <= 3.0) or (self.acm >= -2.0 and self.acm <= -0.45)" +
+                "";
         TranslateHelper.translateOCLToGraph(ocl, GRAPH_LOCATION);
     }
 }

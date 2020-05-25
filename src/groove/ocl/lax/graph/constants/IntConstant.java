@@ -1,6 +1,6 @@
 package groove.ocl.lax.graph.constants;
 
-public class IntConstant implements Constant {
+public class IntConstant implements Constant<Integer> {
 
     private final int constant;
 
@@ -8,7 +8,8 @@ public class IntConstant implements Constant {
         this.constant = constant;
     }
 
-    public final int getConstant() {
+    @Override
+    public final Integer getConstant() {
         return constant;
     }
 

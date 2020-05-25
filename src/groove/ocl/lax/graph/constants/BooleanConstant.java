@@ -1,6 +1,6 @@
 package groove.ocl.lax.graph.constants;
 
-public enum BooleanConstant implements Constant {
+public enum BooleanConstant implements Constant<Boolean> {
     TRUE(true),
     FALSE(false);
 
@@ -10,7 +10,8 @@ public enum BooleanConstant implements Constant {
         this.constant = constant;
     }
 
-    public final boolean getConstant() {
+    @Override
+    public final Boolean getConstant() {
         return constant;
     }
 
